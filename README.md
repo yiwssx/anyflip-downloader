@@ -113,3 +113,19 @@ You can also combine this comand with any of the above for example:
 ```sh
 docker run --rm -v "$(pwd)":/data anyflip-downloader -title <your book title> <url to book>
 ```
+
+### Safe temporary workspaces and parameter limits
+
+Each run creates a new temporary directory (under the system temporary directory by default).
+If you set `-temp-download-folder`, the specified directory **must not already exist**;
+this prevents deleting files that were not created by the downloader. The workspace is
+removed after successful conversion unless `-keep-download-folder` is set; if a download
+or conversion fails, the image files are retained for troubleshooting.
+
+If the output PDF already exists, the downloader exits with an error instead of
+treating the operation as a success or overwriting an existing file.
+
+For predictable resource usage, `-threads` accepts 1–16, `-chunksize`
+accepts 1–1000, `-retries` accepts 0–10, and `-waitretry` accepts
+durations from 0 to 1 minute. This tool creates an **image-based PDF**,
+not the original text/vector PDF; use it only for content you are authorized to download.
