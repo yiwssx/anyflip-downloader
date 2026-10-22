@@ -76,7 +76,8 @@
 |---|---|---|---|
 | 2026-10-22 | วิเคราะห์โค้ด, เลือก Online Web GUI และกำหนดแผน | ✅ Completed | ตรวจสอบ Repository และแนวทางสถาปัตยกรรม |
 | 2026-10-22 | สร้าง Development Tracker | ✅ Completed | เอกสารฉบับนี้ |
-| — | P0–P5 งานพัฒนา | ⏳ Not started | ยังไม่มี PR implementation |
+| 2026-10-22 | P0-A: Workspaces, CLI Validation, Go CI Alignment | 🟡 PR open — awaiting full verification | [PR #2](https://github.com/yiwssx/anyflip-downloader/pull/2) |
+| — | P0 (remaining), P1–P5 | ⏳ Not started | P0 ยังไม่ผ่านเกณฑ์ตรวจรับ |
 
 ## ข้อกำหนดการติดตาม
 
