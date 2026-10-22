@@ -96,7 +96,7 @@ func run() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Temporary workspace: %s\\n", workDir)
+	fmt.Printf("Temporary workspace: %s\n", workDir)
 
 	if err := flipbook.downloadImages(
 		workDir,
