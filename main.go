@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-
 	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
