@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"strings"
 	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
@@ -64,6 +63,10 @@ func run() {
 		os.Exit(1)
 	}
 
+	if err := validateDownloadSettings(donwloadThreads, downloadRetries, downloadRetryDelay, chunkSize); err != nil {
+		log.Fatal(err)
+	}
+
 	anyflipURL, err := url.Parse(flag.Args()[0])
 	if err != nil {
 		log.Fatal(err)
@@ -80,31 +83,36 @@ func run() {
 		log.Fatal(err)
 	}
 
-	if tempDownloadFolder == "" {
-		tempDownloadFolder = flipbook.title
+	outputFile := flipbook.title + ".pdf"
+	if _, err := os.Stat(outputFile); err == nil {
+		log.Fatalf("output file %q already exists; refusing to overwrite it", outputFile)
+	} else if !os.IsNotExist(err) {
+		log.Fatalf("cannot inspect output file: %v", err)
 	}
-	// Use absolute path to avoid Windows "path not found" errors
-	tempDownloadFolder, err = filepath.Abs(tempDownloadFolder)
-	if err != nil {
-		log.Fatalf("invalid download path: %v", err)
-	}
-	outputFile := title + ".pdf"
 
-	err = flipbook.downloadImages(
-		tempDownloadFolder,
-		downloadOptions{threads: donwloadThreads, retries: downloadRetries, retryDelay: downloadRetryDelay},
-	)
+	// Every run owns a newly created workspace. Never reuse an existing folder:
+	// deleting a caller-owned directory would destroy unrelated data.
+	workDir, cleanupWorkspace, err := createDownloadWorkspace(tempDownloadFolder)
 	if err != nil {
 		log.Fatal(err)
+	}
+	fmt.Printf("Temporary workspace: %s\\n", workDir)
+
+	if err := flipbook.downloadImages(
+		workDir,
+		downloadOptions{threads: donwloadThreads, retries: downloadRetries, retryDelay: downloadRetryDelay},
+	); err != nil {
+		log.Fatalf("download failed (images kept at %s): %v", workDir, err)
 	}
 	fmt.Println("Converting to pdf")
-	err = createPDF(outputFile, tempDownloadFolder, int(chunkSize))
-	if err != nil {
-		log.Fatal(err)
+	if err := createPDF(outputFile, workDir, int(chunkSize)); err != nil {
+		log.Fatalf("PDF conversion failed (images kept at %s): %v", workDir, err)
 	}
 
 	if !keepDownloadFolder {
-		os.RemoveAll(tempDownloadFolder)
+		if err := cleanupWorkspace(); err != nil {
+			log.Printf("warning: could not remove temporary workspace %q: %v", workDir, err)
+		}
 	}
 
 	fmt.Println("Done")
@@ -119,13 +127,13 @@ func printUsage() {
 }
 
 func createPDF(outputFile string, imageDir string, chunkSize int) error {
-	outputFile = strings.ReplaceAll(outputFile, "'", "")
-	outputFile = strings.ReplaceAll(outputFile, "\\", "")
-	outputFile = strings.ReplaceAll(outputFile, ":", "")
-
+	if chunkSize < 1 {
+		return fmt.Errorf("chunk size must be at least 1")
+	}
 	if _, err := os.Stat(outputFile); err == nil {
-		fmt.Printf("Output file %s already exists\n", outputFile)
-		return nil
+		return fmt.Errorf("output file %q already exists; refusing to overwrite it", outputFile)
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("cannot inspect output file %q: %w", outputFile, err)
 	}
 
 	files, err := os.ReadDir(imageDir)
@@ -163,10 +171,12 @@ func createPDF(outputFile string, imageDir string, chunkSize int) error {
 		end := min(i+chunkSize, len(imagePaths))
 
 		imagePathChunk := imagePaths[i:end]
-		err = api.ImportImagesFile(imagePathChunk, outputFile, impConf, nil)
+		if err := api.ImportImagesFile(imagePathChunk, outputFile, impConf, nil); err != nil {
+			return fmt.Errorf("cannot import image pages %d-%d: %w", i+1, end, err)
+		}
 		bar.Add(min(chunkSize, len(imagePaths)-i))
 	}
 
 	fmt.Println()
-	return err
+	return nil
 }
