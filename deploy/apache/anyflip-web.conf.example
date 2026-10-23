@@ -1,0 +1,28 @@
+# Template only. Create a working TLS certificate before enabling.
+# Required Apache modules: proxy proxy_http ssl headers rewrite
+# Replace downloader.example.com everywhere with the actual DNS name.
+<VirtualHost *:80>
+    ServerName downloader.example.com
+    Redirect permanent / https://downloader.example.com/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName downloader.example.com
+    SSLEngine On
+    SSLCertificateFile /etc/letsencrypt/live/downloader.example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/downloader.example.com/privkey.pem
+
+    ProxyRequests Off
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:8094/
+    ProxyPassReverse / http://127.0.0.1:8094/
+
+    RequestHeader set X-Forwarded-Proto "https"
+    Header always set Strict-Transport-Security "max-age=31536000"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "no-referrer"
+
+    ProxyTimeout 130
+    ErrorLog ${APACHE_LOG_DIR}/anyflip-error.log
+    CustomLog ${APACHE_LOG_DIR}/anyflip-access.log combined
+</VirtualHost>
