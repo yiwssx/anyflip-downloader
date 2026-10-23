@@ -104,7 +104,7 @@ func run() {
 		log.Fatalf("download failed (images kept at %s): %v", workDir, err)
 	}
 	fmt.Println("Converting to pdf")
-	if err := createPDF(outputFile, workDir, int(chunkSize)); err != nil {
+	if err := createPDFVerified(outputFile, workDir, flipbook.pageCount, int(chunkSize)); err != nil {
 		log.Fatalf("PDF conversion failed (images kept at %s): %v", workDir, err)
 	}
 
