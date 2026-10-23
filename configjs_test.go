@@ -18,6 +18,8 @@ func TestGetPageFileNames(t *testing.T) {
 		{"separate names retain order", `{"fliphtml5_pages":[{"n":["a.webp"]},{"n":["b.webp"]}]}`, []string{"a.webp", "b.webp"}, false},
 		{"multiple alternatives are one page", `{"fliphtml5_pages":[{"n":["high.webp","thumb.jpg"]},{"n":["second.webp"]}]}`, []string{"high.webp", "second.webp"}, false},
 		{"spaces around colon", `{"fliphtml5_pages":[{"n" : ["1.jpg"]}]}`, []string{"1.jpg"}, false},
+		{"bracket inside filename", `{"fliphtml5_pages":[{"n":["page[1].webp"]}]}`, []string{"page[1].webp"}, false},
+		{"invalid JSON array", `{"fliphtml5_pages":[{"n":["missing",}]}`, nil, true},
 		{"empty primary name", `{"fliphtml5_pages":[{"n":[""]}]}`, nil, true},
 		{"empty array", `{"fliphtml5_pages":[{"n":[]}]}`, nil, true},
 		{"invalid array type", `{"fliphtml5_pages":[{"n":[1,2]}]}`, nil, true},
