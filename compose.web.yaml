@@ -1,0 +1,35 @@
+# The application is *not* published on a public interface.
+# Apache on the host proxies HTTPS traffic to loopback port 8094.
+services:
+  anyflip-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["-web", "-listen", "0.0.0.0:8080"]
+    environment:
+      ANYFLIP_WEB_TOKEN: ${ANYFLIP_WEB_TOKEN:?Generate a strong token and set it in .env}
+      ANYFLIP_JOB_DIR: /data/jobs
+    ports:
+      - "127.0.0.1:8094:8080"
+    volumes:
+      - anyflip_jobs:/data/jobs
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 2g
+    cpus: "2.0"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  anyflip_jobs:

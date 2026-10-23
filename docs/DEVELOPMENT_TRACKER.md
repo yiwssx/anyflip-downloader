@@ -1,6 +1,6 @@
 # AnyFlip Downloader — Online Web GUI Development Tracker
 
-**สถานะ:** 🟡 P0 Core merged and Go 1.25 verified; Online Web GUI MVP in PR #9; no public deployment  
+**สถานะ:** 🟡 P0 Core merged and Go 1.25 verified; Online Web GUI MVP merged as PR #9; deployment package PR #10, no public deployment  
 **อัปเดตครั้งแรก:** 2026-10-22  
 **เป้าหมาย:** Web GUI ผ่านเบราว์เซอร์ บน Ubuntu Server + Docker/Compose + Apache Reverse Proxy + HTTPS โดยคง CLI เดิมไว้
 
@@ -43,7 +43,7 @@
 - **เกณฑ์ผ่าน:** ทดสอบ end-to-end บนมือถือและ Desktop ผ่านทั้งกรณีสำเร็จ ล้มเหลว และ Cancel
 
 ### P3 — Server / Docker / Security (ต้องผ่านก่อนเปิดใช้งานออนไลน์)
-- [ ] Multi-stage Docker image, ไม่รันเป็น root, Compose + volumes ที่เหมาะสม
+- [x] เตรียม Multi-stage Docker image แบบ non-root, Compose + volumes ที่เหมาะสม (ยังต้อง Build/Run บน Docker host จริง)
 - [ ] Apache Reverse Proxy + HTTPS + security headers + health check
 - [ ] Authentication / Authorization, rate limiting, job ownership และการป้องกัน abuse/SSRF
 - [ ] จำกัด concurrent jobs, CPU/RAM, network, disk quota, timeout, max file size/page count
@@ -60,7 +60,7 @@
 - [ ] พิจารณา Desktop packaging ในอนาคตโดยใช้ Core เดียวกัน
 
 ### P5 — เอกสาร / Release
-- [ ] README สำหรับ Web GUI, Docker, Apache, คำแนะนำการใช้และข้อจำกัด PDF จากภาพ
+- [x] README/Runbook สำหรับ Web GUI, Docker, Apache, คำแนะนำการใช้และข้อจำกัด PDF จากภาพ (ตรวจเอกสารแล้ว ยังไม่ใช่ Production Release)
 - [ ] CI ทดสอบและ Build, Dependency/Security Checks, versioned release notes
 - [ ] คู่มือ Deploy/Upgrade/Rollback และ Checklist ตรวจรับก่อนปล่อยเวอร์ชัน
 
@@ -83,8 +83,8 @@
 | 2026-10-23 | P0-F: reusable cancellable job engine and progress events | ✅ Merged & Go 1.25 verified | [PR #7](https://github.com/yiwssx/anyflip-downloader/pull/7) |
 | 2026-10-23 | P0-G: DNS/IP egress, HTTPS hardening and exponential backoff | ✅ Merged & Go 1.25 verified | [PR #8](https://github.com/yiwssx/anyflip-downloader/pull/8) |
 | — | P0 verification gates | ⏳ GitHub Actions + permitted live-book checks outstanding | No public deployment approved |
-| 2026-10-23 | P2: Thai responsive browser UI, token-auth API and in-memory job queue | 🟡 PR in review, requires browser/mobile QA | [PR #9](https://github.com/yiwssx/anyflip-downloader/pull/9) |
-| — | P1/P3–P5: quality validation, production deployment, advanced features and release | ⏳ Open | No public web deployment claimed |
+| 2026-10-23 | P2: Thai responsive browser UI, token-auth API and in-memory job queue | ✅ Merged and Go 1.25 verified; browser/device QA pending | [PR #9](https://github.com/yiwssx/anyflip-downloader/pull/9) |
+| 2026-10-23 | P3-A: hardened Docker/Compose package and Apache HTTPS template | 🟡 PR #10 under review; target-server deployment not tested | [PR #10](https://github.com/yiwssx/anyflip-downloader/pull/10) |\n| — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### Real verification evidence
 
@@ -92,7 +92,7 @@
 - Executed: `gofmt` check, `go build ./...`, `go vet ./...`, `go test -count=1 ./...`, `CGO_ENABLED=1 go test -race -count=2 ./...` (all passed on each merged slice and the final Core branch).
 - Includes synthetic image-to-PDF integration tests via `pdfcpu`, page count/atomic output checks and cancellation.
 - **These are sandbox full-suite tests, not GitHub Actions checks.** Actions remains unverified (0 workflow runs).
-- End-to-end tests against live, publisher-authorized AnyFlip books and production Docker/Apache/HTTPS have **not** been performed.
+- End-to-end tests against live, publisher-authorized AnyFlip books, physical browser/mobile devices and production Docker/Apache/HTTPS have **not** been performed. P3-A supplies configuration templates, not proof of their deployment.
 
 ## ข้อกำหนดการติดตาม
 
