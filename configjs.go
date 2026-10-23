@@ -17,15 +17,16 @@ import (
 // array. Multiple strings within one page are alternate representations,
 // not additional pages. Missing arrays allow the legacy numbered-image mode.
 func getPageFileNames(configjs string) ([]string, error) {
-	pattern := regexp.MustCompile(`"n"\s*:\s*(\[[^\]]*\])`)
-	matches := pattern.FindAllStringSubmatch(configjs, -1)
+	pattern := regexp.MustCompile(`"n"\s*:`)
+	matches := pattern.FindAllStringIndex(configjs, -1)
 	if len(matches) == 0 {
 		return nil, nil
 	}
 	names := make([]string, 0, len(matches))
 	for i, match := range matches {
 		var choices []string
-		if err := json.Unmarshal([]byte(match[1]), &choices); err != nil {
+		decoder := json.NewDecoder(strings.NewReader(configjs[match[1]:]))
+		if err := decoder.Decode(&choices); err != nil {
 			return nil, fmt.Errorf("invalid page image metadata at index %d: %w", i+1, err)
 		}
 		if len(choices) == 0 || strings.TrimSpace(choices[0]) == "" {
