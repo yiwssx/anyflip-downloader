@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 	"strconv"
@@ -10,7 +12,19 @@ import (
 	"github.com/asaskevich/govalidator"
 )
 
+// prepareDownload keeps the CLI entry point without mutating global title state.
 func prepareDownload(anyflipURL *url.URL) (*flipbook, error) {
+	return prepareDownloadContext(context.Background(), anyflipURL, title, nil)
+}
+
+// prepareDownloadContext can be called independently by simultaneous jobs.
+func prepareDownloadContext(ctx context.Context, anyflipURL *url.URL, desiredTitle string, client *http.Client) (*flipbook, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("download context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if anyflipURL == nil {
 		return nil, fmt.Errorf("AnyFlip URL is required")
 	}
@@ -22,19 +36,20 @@ func prepareDownload(anyflipURL *url.URL) (*flipbook, error) {
 	}
 	newFlipbook.URL = canonicalURL
 
-	configjs, err := downloadConfigJSFile(canonicalURL)
+	configjs, err := downloadConfigJSFileContext(ctx, client, canonicalURL)
 	if err != nil {
 		return nil, err
 	}
 
-	if title == "" {
-		title, err = getBookTitle(configjs)
+	bookName := desiredTitle
+	if bookName == "" {
+		bookName, err = getBookTitle(configjs)
 		if err != nil {
-			title = path.Base(canonicalURL.Path)
+			bookName = path.Base(canonicalURL.Path)
 		}
 	}
 
-	safeTitle := govalidator.SafeFileName(title)
+	safeTitle := govalidator.SafeFileName(bookName)
 	if safeTitle == "" {
 		safeTitle = path.Base(canonicalURL.Path)
 	}
@@ -60,7 +75,6 @@ func prepareDownload(anyflipURL *url.URL) (*flipbook, error) {
 	}
 
 	downloadURL, _ := url.Parse("https://online.anyflip.com/")
-	println(newFlipbook.URL.String())
 	if len(pageFileNames) == 0 {
 		for i := 1; i <= newFlipbook.pageCount; i++ {
 			downloadURL.Path = path.Join(canonicalURL.Path, "files", "mobile", strconv.Itoa(i)+".jpg")

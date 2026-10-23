@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -76,6 +77,18 @@ func publishVerifiedFile(staging, output string) error {
 // staging folder and checks the resulting page count before publishing.
 // A failed conversion never creates a partial final output file.
 func createPDFVerified(outputFile, imageDir string, expectedPages, chunkSize int) error {
+	return createPDFVerifiedContext(context.Background(), outputFile, imageDir, expectedPages, chunkSize, nil)
+}
+
+// createPDFVerifiedContext checks cancellation between import chunks, validates
+// the completed PDF and publishes only after every check passes.
+func createPDFVerifiedContext(ctx context.Context, outputFile, imageDir string, expectedPages, chunkSize int, onProgress func(completed int)) error {
+	if ctx == nil {
+		return fmt.Errorf("PDF conversion context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if chunkSize < 1 || chunkSize > 1000 {
 		return fmt.Errorf("chunk size must be between 1 and 1000")
 	}
@@ -95,9 +108,15 @@ func createPDFVerified(outputFile, imageDir string, expectedPages, chunkSize int
 	stagingFile := filepath.Join(stageDir, "result.pdf")
 	configuration := pdfcpu.DefaultImportConfig()
 	for i := 0; i < len(pages); i += chunkSize {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		end := min(i+chunkSize, len(pages))
 		if err := api.ImportImagesFile(pages[i:end], stagingFile, configuration, nil); err != nil {
 			return fmt.Errorf("PDF conversion failed at pages %d-%d: %w", i+1, end, err)
+		}
+		if onProgress != nil {
+			onProgress(end)
 		}
 	}
 	actualPages, err := api.PageCountFile(stagingFile)
@@ -107,8 +126,14 @@ func createPDFVerified(outputFile, imageDir string, expectedPages, chunkSize int
 	if actualPages != expectedPages {
 		return fmt.Errorf("generated PDF has %d pages, expected %d", actualPages, expectedPages)
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := os.Chmod(stagingFile, 0600); err != nil {
 		return fmt.Errorf("secure generated PDF: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	return publishVerifiedFile(stagingFile, destination)
 }

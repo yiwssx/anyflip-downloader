@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -8,7 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
@@ -62,59 +65,28 @@ func run() {
 		os.Exit(1)
 	}
 
-	if err := validateDownloadSettings(donwloadThreads, downloadRetries, downloadRetryDelay, chunkSize); err != nil {
-		log.Fatal(err)
-	}
-
-	anyflipURL, err := url.Parse(flag.Args()[0])
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	if insecure {
-		fmt.Println("You enabled insecure downloads. This disables security checks. Stay safe!")
-		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		fmt.Println("Warning: insecure CLI mode disables TLS verification; do not use it on a hosted server.")
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
 	}
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	fmt.Println("Preparing to download")
-	flipbook, err := prepareDownload(anyflipURL)
+	output, err := RunDownloadJob(ctx, DownloadJobOptions{
+		URL:                flag.Args()[0],
+		Title:              title,
+		TempDownloadFolder: tempDownloadFolder,
+		KeepImages:         keepDownloadFolder,
+		Threads:            donwloadThreads,
+		Retries:            downloadRetries,
+		RetryDelay:         downloadRetryDelay,
+		ChunkSize:          chunkSize,
+	}, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	outputFile := flipbook.title + ".pdf"
-	if _, err := os.Stat(outputFile); err == nil {
-		log.Fatalf("output file %q already exists; refusing to overwrite it", outputFile)
-	} else if !os.IsNotExist(err) {
-		log.Fatalf("cannot inspect output file: %v", err)
-	}
-
-	// Every run owns a newly created workspace. Never reuse an existing folder:
-	// deleting a caller-owned directory would destroy unrelated data.
-	workDir, cleanupWorkspace, err := createDownloadWorkspace(tempDownloadFolder)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Temporary workspace: %s\n", workDir)
-
-	if err := flipbook.downloadImages(
-		workDir,
-		downloadOptions{threads: donwloadThreads, retries: downloadRetries, retryDelay: downloadRetryDelay},
-	); err != nil {
-		log.Fatalf("download failed (images kept at %s): %v", workDir, err)
-	}
-	fmt.Println("Converting to pdf")
-	if err := createPDFVerified(outputFile, workDir, flipbook.pageCount, int(chunkSize)); err != nil {
-		log.Fatalf("PDF conversion failed (images kept at %s): %v", workDir, err)
-	}
-
-	if !keepDownloadFolder {
-		if err := cleanupWorkspace(); err != nil {
-			log.Printf("warning: could not remove temporary workspace %q: %v", workDir, err)
-		}
-	}
-
-	fmt.Println("Done")
+	fmt.Printf("Done: %s\n", output)
 }
 
 func printUsage() {

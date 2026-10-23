@@ -30,6 +30,12 @@ func (fb *flipbook) downloadImages(folder string, options downloadOptions) error
 }
 
 func (fb *flipbook) downloadImagesContext(parent context.Context, client *http.Client, folder string, opts downloadOptions) error {
+	return fb.downloadImagesContextWithProgress(parent, client, folder, opts, nil)
+}
+
+// onPage receives the one-based page index and monotonic completed-page count.
+// Callbacks are serialized and may safely forward updates to a job event channel.
+func (fb *flipbook) downloadImagesContextWithProgress(parent context.Context, client *http.Client, folder string, opts downloadOptions, onPage func(page, completed int)) error {
 	if parent == nil {
 		return errors.New("download context is required")
 	}
@@ -62,13 +68,18 @@ func (fb *flipbook) downloadImagesContext(parent context.Context, client *http.C
 		boundedClient.Timeout = 45 * time.Second
 	}
 
-	bar := progressbar.NewOptions(fb.pageCount,
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetPredictTime(false),
-		progressbar.OptionShowCount(),
-		progressbar.OptionSetDescription("Downloading"),
-	)
-	defer bar.Close()
+	var bar *progressbar.ProgressBar
+	if onPage == nil {
+		bar = progressbar.NewOptions(fb.pageCount,
+			progressbar.OptionFullWidth(),
+			progressbar.OptionSetPredictTime(false),
+			progressbar.OptionShowCount(),
+			progressbar.OptionSetDescription("Downloading"),
+		)
+		defer bar.Close()
+	}
+	var progressMu sync.Mutex
+	completed := 0
 
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
@@ -96,7 +107,15 @@ func (fb *flipbook) downloadImagesContext(parent context.Context, client *http.C
 						cancel()
 						return
 					}
-					_ = bar.Add(1)
+					if bar != nil {
+						_ = bar.Add(1)
+					}
+					if onPage != nil {
+						progressMu.Lock()
+						completed++
+						onPage(page+1, completed)
+						progressMu.Unlock()
+					}
 				}
 			}
 		}()
