@@ -36,3 +36,54 @@ jobs:
 
     - name: Race Test
       run: go test -race ./...
+
+  docker-smoke:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check portable deployment script syntax
+      run: sh -n scripts/verify-web-deployment.sh
+
+    - name: Build and run non-root container
+      env:
+        # CI-only token: not used by any real deployment.
+        ANYFLIP_WEB_TOKEN: ci-only-temporary-token-20261023-strong
+      shell: bash
+      run: |
+        set -euo pipefail
+        cleanup() {
+          docker compose -f compose.web.yaml logs --tail=80 || true
+          # The Actions runner is ephemeral; this deliberately deletes only CI volumes.
+          docker compose -f compose.web.yaml down -v --remove-orphans || true
+        }
+        trap cleanup EXIT
+
+        docker compose -f compose.web.yaml config --quiet
+        docker compose -f compose.web.yaml up --detach --build
+
+        check_ready() {
+          local ok=0
+          for _ in {1..45}; do
+            if curl --fail --silent --show-error --max-time 2 http://127.0.0.1:8094/healthz >/dev/null 2>&1; then
+              ok=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ok" != 1 ]; then
+            echo "Web service did not become healthy within 90 seconds" >&2
+            docker compose -f compose.web.yaml ps || true
+            return 1
+          fi
+        }
+
+        check_ready
+        BASE_URL=http://127.0.0.1:8094 sh scripts/verify-web-deployment.sh
+
+        # Verify API/health remain available after a real container restart.
+        docker compose -f compose.web.yaml restart anyflip-web
+        check_ready
+        BASE_URL=http://127.0.0.1:8094 sh scripts/verify-web-deployment.sh
