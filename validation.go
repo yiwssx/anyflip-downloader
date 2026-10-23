@@ -14,7 +14,15 @@ var bookIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 // canonical HTTPS origin and the two identifiers of the book. Query strings,
 // fragments and viewer-specific trailing paths are not sent to the server.
 func validateBookURL(raw string) (*url.URL, error) {
-	u, err := url.Parse(strings.TrimSpace(raw))
+	raw = strings.TrimSpace(raw)
+	// URL schemes are case-insensitive, but net/url expects lowercase
+	// scheme syntax. Normalize only the scheme; preserve path identifiers.
+	if strings.HasPrefix(strings.ToLower(raw), "https://") {
+		raw = "https://" + raw[len("https://"):]
+	} else if strings.HasPrefix(strings.ToLower(raw), "http://") {
+		raw = "http://" + raw[len("http://"):]
+	}
+	u, err := url.Parse(raw)
 	if err != nil {
 		return nil, fmt.Errorf("invalid AnyFlip URL: %w", err)
 	}
