@@ -211,3 +211,15 @@ is `GET /healthz`. The MVP supports one shared administrator token and an
 in-memory queue limited to 12 pending jobs / 2 active downloads. It does **not**
 yet provide separate per-user accounts, durable queue persistence, OCR, or
 production deployment. See `docs/DEVELOPMENT_TRACKER.md` for remaining work.
+
+### Docker Compose + Apache production deployment recipe
+
+See [Ubuntu deployment runbook](docs/WEB_DEPLOYMENT.md) for a non-root Docker image,
+Compose with a **127.0.0.1:8094-only host port**, HTTPS Apache reverse proxy,
+strong token creation, health checks, volume persistence, rollbacks and security
+limitations. The included `deploy/apache/anyflip-web.conf.example` is a **template**:
+it does not provision a domain, DNS or TLS certificate.
+
+Start with `docker compose -f compose.web.yaml up -d --build` after securely
+creating `.env`. Do not open a public web endpoint without completing the
+production verification gates documented in the runbook.
