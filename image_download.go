@@ -23,6 +23,24 @@ import (
 
 const maxPageBytes int64 = 32 << 20
 
+// retryBackoff doubles the wait after each retry, capped at 60 seconds.
+func retryBackoff(initial time.Duration, attempt int) time.Duration {
+	if initial <= 0 || attempt < 1 {
+		return 0
+	}
+	delay := initial
+	for n := 1; n < attempt; n++ {
+		if delay >= time.Minute/2 {
+			return time.Minute
+		}
+		delay *= 2
+	}
+	if delay > time.Minute {
+		return time.Minute
+	}
+	return delay
+}
+
 // downloadImages retains the existing CLI API. Web jobs can use the
 // cancellation-aware downloadImagesContext with a per-job context.
 func (fb *flipbook) downloadImages(folder string, options downloadOptions) error {
@@ -200,7 +218,7 @@ func (fb *flipbook) downloadPageContext(ctx context.Context, client *http.Client
 			return err
 		}
 		if attempt > 0 {
-			timer := time.NewTimer(opts.retryDelay)
+			timer := time.NewTimer(retryBackoff(opts.retryDelay, attempt))
 			select {
 			case <-ctx.Done():
 				timer.Stop()

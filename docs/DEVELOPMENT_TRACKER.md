@@ -1,6 +1,6 @@
 # AnyFlip Downloader — Online Web GUI Development Tracker
 
-**สถานะ:** 🟡 P0 Core implemented and independently verified on Go 1.25; hosted Web GUI P1–P5 not implemented  
+**สถานะ:** 🟡 P0 Core built and verified with Go 1.25; GitHub Actions and authorized live-book verification outstanding; Web GUI not deployed  
 **อัปเดตครั้งแรก:** 2026-10-22  
 **เป้าหมาย:** Web GUI ผ่านเบราว์เซอร์ บน Ubuntu Server + Docker/Compose + Apache Reverse Proxy + HTTPS โดยคง CLI เดิมไว้
 
@@ -16,11 +16,11 @@
 
 ### P0 — ปรับปรุง Download Core และความปลอดภัย (Blocker)
 - [x] แยกการดาวน์โหลด/แปลง PDF ออกจาก `main.go` และ global flags ให้เรียกใช้ได้ทั้ง CLI และ Web
-- [ ] ตรวจสอบ AnyFlip URL ให้รัดกุม กำหนด allowlist ของ host, ตรวจ redirects / ป้องกัน SSRF ในโหมด Server — ตรวจ host/redirect แล้ว; ยังต้องตรวจ DNS/IP เพื่อป้องกัน private-network resolution ก่อนเปิด Web สาธารณะ
+- [x] ตรวจสอบ AnyFlip URL, host allowlist, HTTPS redirect และ DNS/IP egress เพื่อป้องกัน private-network SSRF
 - [x] ตรวจสอบข้อมูลจาก config.js: จำนวนหน้า ชื่อไฟล์หน้า missing arrays / malformed inputs
 - [x] ป้องกันค่า Threads/Chunk size ที่ไม่สมเหตุผล เช่น 0, ติดลบ และมากเกินขีดจำกัด
 - [x] ใช้ temporary directory แยกตาม job พร้อม cleanup ปลอดภัย ห้ามลบโฟลเดอร์ที่ผู้ใช้มีอยู่ก่อน
-- [ ] เพิ่ม HTTP timeouts, retries แบบจำกัด, backoff, error handling และ TLS verification ที่ปลอดภัย — มี timeout, retry-limit และ HTTPS แล้ว; ยังต้องประเมิน exponential backoff และ network guard สำหรับบริการสาธารณะ
+- [x] เพิ่ม HTTP timeouts, bounded retries, exponential backoff, error handling และ TLS certificate verification
 - [x] เพิ่ม cancellation ผ่าน `context.Context` และ progress event ที่ไม่ผูกกับ terminal
 - [x] ตรวจความครบหน้า ลำดับหน้า คุณภาพข้อมูล และไฟล์ PDF ไม่เสีย/ไม่เขียนทับโดยไม่แจ้ง
 - [ ] จัด Go version ให้ตรงกันระหว่าง `go.mod`, Docker และ CI; เพิ่ม unit/integration tests — Go/Docker/Workflow ตรงกันและทดสอบจริงผ่าน; GitHub Actions ยังแสดง 0 runs จึงยังไม่มี GitHub-native CI evidence
@@ -80,8 +80,9 @@
 | 2026-10-23 | P0-C: bounded config fetch, redirects and cancellation | ✅ Merged & Go 1.25 verified | [PR #4](https://github.com/yiwssx/anyflip-downloader/pull/4) |
 | 2026-10-23 | P0-D: bounded image fetch and retries | ✅ Merged & Go 1.25 verified | [PR #5](https://github.com/yiwssx/anyflip-downloader/pull/5) |
 | 2026-10-23 | P0-E: complete image set and verified PDF output | ✅ Merged & Go 1.25 verified | [PR #6](https://github.com/yiwssx/anyflip-downloader/pull/6) |
-| 2026-10-23 | P0-F: reusable cancellable job engine and progress events | 🟡 Awaiting PR merge | [PR #7](https://github.com/yiwssx/anyflip-downloader/pull/7) |
-| — | P0 remaining: hosted SSRF/DNS controls and Actions verification | ⏳ Open gates | GitHub Actions has 0 runs; no public deployment |
+| 2026-10-23 | P0-F: reusable cancellable job engine and progress events | ✅ Merged & Go 1.25 verified | [PR #7](https://github.com/yiwssx/anyflip-downloader/pull/7) |
+| 2026-10-23 | P0-G: DNS/IP egress, HTTPS hardening and exponential backoff | 🟡 Pending PR review | [PR #8](https://github.com/yiwssx/anyflip-downloader/pull/8) |
+| — | P0 verification gates | ⏳ GitHub Actions + permitted live-book checks outstanding | No public deployment approved |
 | — | P1–P5: quality, Web GUI, server hardening, features and release | ⏳ Not started | No hosted web UI claimed |
 
 ### Real verification evidence
