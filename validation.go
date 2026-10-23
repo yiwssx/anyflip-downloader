@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"path"
 	"regexp"
 	"strings"
 )
@@ -66,4 +67,21 @@ func validateBookPages(pageCount int, pageNames []string) error {
 		}
 	}
 	return nil
+}
+
+// safePagePath retains the page image within this book's files directory.
+// The input comes from third-party metadata and must not be allowed to refer
+// to another book, an arbitrary origin, or an unescaped query/fragment.
+func safePagePath(bookPath, name string) (string, error) {
+	if name == "" || strings.HasPrefix(name, "/") ||
+		strings.Contains(name, "://") || strings.Contains(name, "%") ||
+		strings.ContainsAny(name, "\x00\r\n?#\\") {
+		return "", fmt.Errorf("unsafe image filename %q", name)
+	}
+	base := path.Clean(bookPath) + "/files/"
+	resolved := path.Join(base, "large", name)
+	if !strings.HasPrefix(resolved, base) {
+		return "", fmt.Errorf("image filename escapes book files directory: %q", name)
+	}
+	return resolved, nil
 }
