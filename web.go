@@ -187,9 +187,10 @@ func (s *webServer) createJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.jobs[id] = job
+	response := s.snapshot(job)
 	s.mu.Unlock()
 	go s.runJob(ctx, job, body.URL, body.Title, body.Threads)
-	sendJSON(w, http.StatusAccepted, s.snapshot(job))
+	sendJSON(w, http.StatusAccepted, response)
 }
 
 func (s *webServer) runJob(ctx context.Context, job *webJob, url, title string, threads int) {
