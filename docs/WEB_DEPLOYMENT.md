@@ -54,6 +54,33 @@ curl -i http://127.0.0.1:8094/api/jobs/00000000000000000000000000000000
 
 The Docker Compose deployment allows a 35-second stop grace period, while the Go HTTP server cancels running jobs and attempts to drain active requests on SIGTERM. Files from interrupted jobs are subject to retention cleanup after a restart.\n\nThe app uses in-memory job state (maximum two active downloads, twelve pending jobs), a 20-minute per-job timeout and a one-hour terminal-job cleanup timer. This is an administrator-token MVP, **not a multi-tenant service**. Jobs in memory are not recovered across restarts; named-volume PDFs may remain if the server stops before the cleanup timer runs.
 
+## Post-deployment smoke test (safe)
+
+The repository includes `scripts/verify-web-deployment.sh`. It checks health,
+rejects unauthenticated API calls and (when the token is set) tests a
+nonexistent job and a deliberately invalid AnyFlip URL. **It never submits a
+valid download job**, so no book data is retrieved. It also validates Docker
+Compose configuration when the Docker CLI is available.
+
+From the deployment directory on the server, with the existing private
+`.env` file:
+
+```sh
+set -a
+. ./.env
+set +a
+sh scripts/verify-web-deployment.sh
+unset ANYFLIP_WEB_TOKEN
+```
+
+For HTTPS reverse proxy verification, supply `BASE_URL=https://your-real-domain`
+and keep certificate verification enabled. The script refuses ordinary HTTP
+to non-loopback hosts. Expected result: `SMOKE_CHECK_PASS` with any optional
+Docker checks explicitly marked `SKIP` if unavailable.
+
+This does not replace a real browser/mobile walkthrough, TLS/certificate
+check, authorized real-book test or Docker restart/recovery test.
+
 ## Maintenance, rollback and security limitations
 
 ```sh
