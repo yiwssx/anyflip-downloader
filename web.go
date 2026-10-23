@@ -47,11 +47,12 @@ type webJobResponse struct {
 }
 
 type webServer struct {
-	mu    sync.Mutex
-	jobs  map[string]*webJob
-	root  string
-	token string
-	sem   chan struct{}
+	mu     sync.Mutex
+	jobs   map[string]*webJob
+	root   string
+	token  string
+	sem    chan struct{}
+	client *http.Client // Optional controlled test transport; nil in production.
 }
 
 func newWebServer(token, root string) (*webServer, error) {
@@ -207,6 +208,7 @@ func (s *webServer) runJob(ctx context.Context, job *webJob, url, title string, 
 	result, err := RunDownloadJob(ctx, DownloadJobOptions{
 		URL: url, Title: title, OutputFile: output, TempDownloadFolder: workspace,
 		Threads: threads, Retries: 1, RetryDelay: time.Second, ChunkSize: 10,
+		HTTPClient: s.client,
 	}, func(event DownloadProgress) {
 		s.mu.Lock()
 		job.stage = event.Stage
