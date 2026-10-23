@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -14,11 +15,22 @@ import (
 const maxConfigJSBytes int64 = 16 << 20
 
 // newAnyFlipHTTPClient applies a finite timeout and refuses cross-origin
-// redirects. The CLI's -insecure setting is legacy behavior; a hosted Web
-// GUI must never expose that flag or disable certificate verification.
+// redirects and pins outbound connections to publicly routable IPs.
+// TLS verification is mandatory for this safe shared client.
 func newAnyFlipHTTPClient() *http.Client {
+	transport := &http.Transport{
+		Proxy:                 nil, // Never proxy untrusted book requests into private networks.
+		ForceAttemptHTTP2:     true,
+		DialContext:           dialAnyFlipContext,
+		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12},
+		TLSHandshakeTimeout:   10 * time.Second,
+		ResponseHeaderTimeout: 20 * time.Second,
+		IdleConnTimeout:       30 * time.Second,
+		MaxIdleConns:         16,
+	}
 	return &http.Client{
-		Timeout: 45 * time.Second,
+		Timeout:   45 * time.Second,
+		Transport: transport,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) >= 5 {
 				return fmt.Errorf("too many AnyFlip redirects")
