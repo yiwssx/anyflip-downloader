@@ -1,6 +1,6 @@
 # AnyFlip Downloader — Online Web GUI Development Tracker
 
-**สถานะ:** ⏳ Planned (ยังไม่เริ่มเขียนโค้ด)  
+**สถานะ:** 🟡 P0 Core implemented and independently verified on Go 1.25; hosted Web GUI P1–P5 not implemented  
 **อัปเดตครั้งแรก:** 2026-10-22  
 **เป้าหมาย:** Web GUI ผ่านเบราว์เซอร์ บน Ubuntu Server + Docker/Compose + Apache Reverse Proxy + HTTPS โดยคง CLI เดิมไว้
 
@@ -15,15 +15,15 @@
 ## Phase / Checklist
 
 ### P0 — ปรับปรุง Download Core และความปลอดภัย (Blocker)
-- [ ] แยกการดาวน์โหลด/แปลง PDF ออกจาก `main.go` และ global flags ให้เรียกใช้ได้ทั้ง CLI และ Web
-- [ ] ตรวจสอบ AnyFlip URL ให้รัดกุม กำหนด allowlist ของ host, ตรวจ redirects / ป้องกัน SSRF ในโหมด Server
-- [ ] ตรวจสอบข้อมูลจาก config.js: จำนวนหน้า ชื่อไฟล์หน้า missing arrays / malformed inputs
-- [ ] ป้องกันค่า Threads/Chunk size ที่ไม่สมเหตุผล เช่น 0, ติดลบ และมากเกินขีดจำกัด
-- [ ] ใช้ temporary directory แยกตาม job พร้อม cleanup ปลอดภัย ห้ามลบโฟลเดอร์ที่ผู้ใช้มีอยู่ก่อน
-- [ ] เพิ่ม HTTP timeouts, retries แบบจำกัด, backoff, error handling และ TLS verification ที่ปลอดภัย
-- [ ] เพิ่ม cancellation ผ่าน `context.Context` และ progress event ที่ไม่ผูกกับ terminal
-- [ ] ตรวจความครบหน้า ลำดับหน้า คุณภาพข้อมูล และไฟล์ PDF ไม่เสีย/ไม่เขียนทับโดยไม่แจ้ง
-- [ ] จัด Go version ให้ตรงกันระหว่าง `go.mod`, Docker และ CI; เพิ่ม unit/integration tests
+- [x] แยกการดาวน์โหลด/แปลง PDF ออกจาก `main.go` และ global flags ให้เรียกใช้ได้ทั้ง CLI และ Web
+- [ ] ตรวจสอบ AnyFlip URL ให้รัดกุม กำหนด allowlist ของ host, ตรวจ redirects / ป้องกัน SSRF ในโหมด Server — ตรวจ host/redirect แล้ว; ยังต้องตรวจ DNS/IP เพื่อป้องกัน private-network resolution ก่อนเปิด Web สาธารณะ
+- [x] ตรวจสอบข้อมูลจาก config.js: จำนวนหน้า ชื่อไฟล์หน้า missing arrays / malformed inputs
+- [x] ป้องกันค่า Threads/Chunk size ที่ไม่สมเหตุผล เช่น 0, ติดลบ และมากเกินขีดจำกัด
+- [x] ใช้ temporary directory แยกตาม job พร้อม cleanup ปลอดภัย ห้ามลบโฟลเดอร์ที่ผู้ใช้มีอยู่ก่อน
+- [ ] เพิ่ม HTTP timeouts, retries แบบจำกัด, backoff, error handling และ TLS verification ที่ปลอดภัย — มี timeout, retry-limit และ HTTPS แล้ว; ยังต้องประเมิน exponential backoff และ network guard สำหรับบริการสาธารณะ
+- [x] เพิ่ม cancellation ผ่าน `context.Context` และ progress event ที่ไม่ผูกกับ terminal
+- [x] ตรวจความครบหน้า ลำดับหน้า คุณภาพข้อมูล และไฟล์ PDF ไม่เสีย/ไม่เขียนทับโดยไม่แจ้ง
+- [ ] จัด Go version ให้ตรงกันระหว่าง `go.mod`, Docker และ CI; เพิ่ม unit/integration tests — Go/Docker/Workflow ตรงกันและทดสอบจริงผ่าน; GitHub Actions ยังแสดง 0 runs จึงยังไม่มี GitHub-native CI evidence
 - **เกณฑ์ผ่าน:** CLI เดิมทำงาน, `go test ./...` และ build ผ่าน, Cancel ได้, output ครบและปลอดภัย
 
 ### P1 — คุณภาพภาพและการแปลง PDF
@@ -70,18 +70,27 @@
 
 > ต้องผ่าน P3 ก่อนเปิดให้บุคคลภายนอกใช้งานจริง แม้ P2 จะมีหน้าเว็บที่ทำงานได้แล้วก็ตาม
 
-## บันทึกความคืบหน้า
+## บันทึกความคืบหน้า (ตรวจสอบ ณ 2026-10-23)
 
 | วันที่ | งาน | สถานะ | หลักฐาน |
 |---|---|---|---|
-| 2026-10-22 | วิเคราะห์โค้ด, เลือก Online Web GUI และกำหนดแผน | ✅ Completed | ตรวจสอบ Repository และแนวทางสถาปัตยกรรม |
-| 2026-10-22 | สร้าง Development Tracker | ✅ Completed | เอกสารฉบับนี้ |
-| 2026-10-22 | P0-A: Workspaces, CLI Validation, Go CI Alignment | 🟡 PR open — isolated Go 1.23 smoke/race/vet checks passed, full Go 1.25 CI not run | [PR #2](https://github.com/yiwssx/anyflip-downloader/pull/2) |
-| 2026-10-23 | P0-B: URL & metadata validation | 🟡 [PR #3](https://github.com/yiwssx/anyflip-downloader/pull/3) open — isolated tests passed, full CI pending | ยังไม่ผ่านเกณฑ์ตรวจรับ |
-| 2026-10-23 | P0-C: Bounded config fetch, timeout, redirects, cancellation | 🟡 [PR #4](https://github.com/yiwssx/anyflip-downloader/pull/4) open (stacked on #3) — isolated tests pass, full CI pending | Awaiting Go 1.25 full project checks |
-| 2026-10-23 | P0-D: Image HTTP timeout, retry, cancellation, image validation | 🟡 [PR #5](https://github.com/yiwssx/anyflip-downloader/pull/5) open (stacked on #4) | Full Go 1.25 CI and integration tests pending |
-| 2026-10-23 | P0-E: Page completeness + atomic verified PDF output | 🟡 [PR #6](https://github.com/yiwssx/anyflip-downloader/pull/6) open, stacked on #5 | Isolated page/commit tests passed; full Go 1.25 PDF integration pending |
-| — | P0 (remaining), P1–P5 | ⏳ Not started | P0 ยังไม่ผ่านเกณฑ์ตรวจรับ |
+| 2026-10-22 | Master Tracker | ✅ Merged | [PR #1](https://github.com/yiwssx/anyflip-downloader/pull/1) |
+| 2026-10-23 | P0-A: workspace, CLI input validation, Go CI toolchain | ✅ Merged & Go 1.25 verified | [PR #2](https://github.com/yiwssx/anyflip-downloader/pull/2) |
+| 2026-10-23 | P0-B: URL, config, page paths | ✅ Merged & Go 1.25 verified | [PR #3](https://github.com/yiwssx/anyflip-downloader/pull/3) |
+| 2026-10-23 | P0-C: bounded config fetch, redirects and cancellation | ✅ Merged & Go 1.25 verified | [PR #4](https://github.com/yiwssx/anyflip-downloader/pull/4) |
+| 2026-10-23 | P0-D: bounded image fetch and retries | ✅ Merged & Go 1.25 verified | [PR #5](https://github.com/yiwssx/anyflip-downloader/pull/5) |
+| 2026-10-23 | P0-E: complete image set and verified PDF output | ✅ Merged & Go 1.25 verified | [PR #6](https://github.com/yiwssx/anyflip-downloader/pull/6) |
+| 2026-10-23 | P0-F: reusable cancellable job engine and progress events | 🟡 Awaiting PR merge | [PR #7](https://github.com/yiwssx/anyflip-downloader/pull/7) |
+| — | P0 remaining: hosted SSRF/DNS controls and Actions verification | ⏳ Open gates | GitHub Actions has 0 runs; no public deployment |
+| — | P1–P5: quality, Web GUI, server hardening, features and release | ⏳ Not started | No hosted web UI claimed |
+
+### Real verification evidence
+
+- Target: Ubuntu 26.04 sandbox, Go 1.25.0, actual `go.mod` dependencies.
+- Executed: `gofmt` check, `go build ./...`, `go vet ./...`, `go test -count=1 ./...`, `CGO_ENABLED=1 go test -race -count=2 ./...` (all passed on each merged slice and the final Core branch).
+- Includes synthetic image-to-PDF integration tests via `pdfcpu`, page count/atomic output checks and cancellation.
+- **These are sandbox full-suite tests, not GitHub Actions checks.** Actions remains unverified (0 workflow runs).
+- End-to-end tests against live, publisher-authorized AnyFlip books and production Docker/Apache/HTTPS have **not** been performed.
 
 ## ข้อกำหนดการติดตาม
 
