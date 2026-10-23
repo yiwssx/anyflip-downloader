@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>AnyFlip Downloader — Download Manager</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#1b2841;background:#f4f7fb}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh}
+    header{background:linear-gradient(110deg,#102541,#183b66);color:#fff;padding:24px max(24px,calc((100% - 940px)/2))}
+    header strong{font-size:21px} header p{margin:7px 0 0;color:#d5e5f9;font-size:14px}
+    main{max-width:940px;margin:28px auto;padding:0 18px 50px}
+    .panel{background:#fff;border:1px solid #dbe4f0;border-radius:16px;box-shadow:0 5px 24px #152a4711;padding:26px;margin-bottom:18px}
+    h2{margin:0 0 6px;font-size:20px} .sub{color:#62738c;font-size:14px;margin:0 0 24px;line-height:1.7}
+    label{display:block;font-weight:650;font-size:14px;margin-bottom:9px}
+    input,select{width:100%;height:46px;border:1px solid #cbd7e5;background:#fff;border-radius:10px;padding:0 13px;color:#152a47;font:inherit}
+    input:focus,select:focus{outline:3px solid #bedaff;border-color:#2873bd}
+    .field{margin-bottom:18px} .fields{display:grid;grid-template-columns:1fr 160px;gap:16px}
+    button{height:45px;border-radius:10px;border:0;font-size:14px;font-weight:700;padding:0 20px;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .primary{background:#1762b4;color:white} .primary:hover:not(:disabled){background:#124e94}
+    .secondary{background:#edf3fa;color:#254566;border:1px solid #d6e3f0}
+    .danger{background:#fff0f0;color:#a52b2b;border:1px solid #f3d0d0}
+    .actions{display:flex;flex-wrap:wrap;gap:10px}
+    .notice{background:#f4f8fd;color:#53677f;border-radius:10px;padding:13px 16px;font-size:13px;line-height:1.7;margin-top:20px}
+    .progresshead{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:14px}
+    .pill{background:#edf4ff;border-radius:22px;color:#1d5d9a;font-size:12px;font-weight:700;padding:6px 11px}
+    .track{height:12px;border-radius:30px;background:#e7edf5;overflow:hidden}
+    .fill{height:100%;width:0;background:linear-gradient(90deg,#177ac7,#42a6e6);transition:width .35s}
+    .meta{display:flex;justify-content:space-between;gap:10px;color:#607189;font-size:13px;margin:12px 0 22px}
+    .error{color:#b32632;margin:14px 0 0;font-size:14px}
+    footer{font-size:12px;color:#78869b;text-align:center;margin:28px 0 0}
+    @media(max-width:630px){header{padding:20px 20px}main{margin:18px auto}.panel{padding:20px}.fields{grid-template-columns:1fr}.actions button{flex:1}}
+  </style>
+</head>
+<body>
+<header>
+  <strong>AnyFlip Downloader</strong>
+  <p>ดาวน์โหลดหนังสือที่มีสิทธิ์เข้าถึง และสร้างไฟล์ PDF จากภาพ — Web Download Manager</p>
+</header>
+<main>
+  <section class="panel" aria-labelledby="newJobTitle">
+    <h2 id="newJobTitle">สร้างงานดาวน์โหลด</h2>
+    <p class="sub">วางลิงก์หนังสือจาก AnyFlip เพื่อตรวจสอบหน้าเอกสารและรวมเป็น PDF โดยประมวลผลบนเซิร์ฟเวอร์</p>
+    <form id="jobForm">
+      <div class="field"><label for="token">รหัสเข้าใช้งานระบบ (Access Token)</label>
+        <input id="token" type="password" autocomplete="off" required placeholder="Token ที่ผู้ดูแลระบบกำหนด"></div>
+      <div class="field"><label for="bookURL">ลิงก์หนังสือ AnyFlip</label>
+        <input id="bookURL" type="url" inputmode="url" required placeholder="https://anyflip.com/publisher/book"></div>
+      <div class="fields">
+        <div class="field"><label for="bookTitle">ชื่อไฟล์ PDF (ไม่บังคับ)</label><input id="bookTitle" maxlength="110" placeholder="ใช้ชื่อหนังสืออัตโนมัติ"></div>
+        <div class="field"><label for="threads">การดาวน์โหลดพร้อมกัน</label>
+          <select id="threads"><option value="1">1 หน้า</option><option value="2">2 หน้า</option><option value="3" selected>3 หน้า</option><option value="4">4 หน้า</option><option value="6">6 หน้า</option><option value="8">8 หน้า</option></select></div>
+      </div>
+      <div class="actions"><button class="primary" id="startButton" type="submit">เริ่มดาวน์โหลด</button></div>
+      <p class="error" id="formError" role="alert" hidden></p>
+    </form>
+    <div class="notice">ผลลัพธ์เป็น <strong>Image-based PDF</strong> ไม่ใช่ PDF ต้นฉบับที่เก็บข้อความหรือกราฟิกเวกเตอร์ไว้ทั้งหมด โปรดใช้งานเฉพาะหนังสือที่ได้รับอนุญาตให้ดาวน์โหลดหรือทำสำเนาเท่านั้น ระบบไม่ข้ามการตรวจสอบสิทธิ์หรือ DRM</div>
+  </section>
+  <section class="panel" id="jobPanel" aria-labelledby="progressTitle" hidden>
+    <div class="progresshead"><h2 id="progressTitle">สถานะการดาวน์โหลด</h2><span class="pill" id="jobState">รอเริ่มงาน</span></div>
+    <p class="sub" id="jobDescription">กำลังรอข้อมูลจากเซิร์ฟเวอร์</p>
+    <div class="track" role="progressbar" aria-label="ความคืบหน้าการดาวน์โหลด" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack"><div class="fill" id="progressFill"></div></div>
+    <div class="meta"><span id="pageCount">0 / 0 หน้า</span><span id="percent">0%</span></div>
+    <div class="actions">
+      <button type="button" class="danger" id="cancelButton">ยกเลิกงาน</button>
+      <button type="button" class="primary" id="downloadButton" hidden>ดาวน์โหลด PDF</button>
+    </div>
+    <p class="error" id="jobError" role="alert" hidden></p>
+  </section>
+  <footer>AnyFlip Downloader • Self-hosted Web GUI • เชื่อมต่อผ่าน HTTPS เมื่อเปิดใช้งานออนไลน์</footer>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const labels = {queued:'อยู่ในคิว',preparing:'เตรียมข้อมูล',downloading:'ดาวน์โหลดภาพ',converting:'สร้าง PDF',completed:'สำเร็จ',failed:'ไม่สำเร็จ',cancelled:'ยกเลิกแล้ว'};
+  let currentJob = null, poll = null;
+  $('token').value = sessionStorage.getItem('anyflip-access-token') || '';
+  function error(el,msg){el.textContent=msg;el.hidden=!msg}
+  async function request(path, opts={}) {
+    const token = $('token').value.trim();
+    const headers = {...opts.headers,Authorization:'Bearer '+token};
+    const res = await fetch(path,{...opts,headers,cache:'no-store'});
+    if(!res.ok){const text=await res.text();if(res.status===401)throw new Error('Access Token ไม่ถูกต้อง');throw new Error(res.status===429?'ขณะนี้คิวงานเต็ม กรุณาลองใหม่อีกครั้ง':text.trim()||'เกิดข้อผิดพลาด ('+res.status+')')}
+    return res;
+  }
+  async function refresh(){
+    if(!currentJob)return;
+    try{
+      const res = await request('/api/jobs/'+currentJob);
+      const j = await res.json(), total=j.total||0, completed=j.completed||0;
+      const progress=total?Math.min(100,Math.round(completed*100/total)):0;
+      $('jobState').textContent=labels[j.stage]||j.stage;
+      $('jobDescription').textContent=j.stage==='completed'?'สร้าง PDF สำเร็จแล้ว พร้อมดาวน์โหลด':j.stage==='failed'?'งานนี้ไม่สำเร็จ':j.stage==='cancelled'?'งานถูกยกเลิก':'ระบบกำลังดำเนินการ: '+(labels[j.stage]||j.stage);
+      $('progressFill').style.width=progress+'%';
+      $('progressTrack').setAttribute('aria-valuenow',progress);
+      $('pageCount').textContent=completed+' / '+total+' หน้า';
+      $('percent').textContent=progress+'%';
+      error($('jobError'),j.error||'');
+      const done=['completed','failed','cancelled'].includes(j.stage);
+      $('cancelButton').hidden=done;
+      $('downloadButton').hidden=!j.downloadReady;
+      $('startButton').disabled=!done;
+      if(done && poll){clearInterval(poll);poll=null;}
+    }catch(e){error($('jobError'),e.message);}
+  }
+  $('jobForm').addEventListener('submit',async event=>{
+    event.preventDefault();error($('formError'),'');
+    if(currentJob && poll)return;
+    $('startButton').disabled=true;
+    try{
+      const token=$('token').value.trim();
+      if(token.length<16)throw new Error('กรุณากรอก Access Token ที่ผู้ดูแลระบบกำหนด');
+      sessionStorage.setItem('anyflip-access-token',token);
+      const res=await request('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        url:$('bookURL').value.trim(),title:$('bookTitle').value.trim(),threads:Number($('threads').value)
+      })});
+      const j=await res.json();currentJob=j.id;$('jobPanel').hidden=false;$('cancelButton').hidden=false;$('downloadButton').hidden=true;
+      await refresh(); if(poll)clearInterval(poll); poll=setInterval(refresh,1100);
+    }catch(e){error($('formError'),e.message);$('startButton').disabled=false;}
+  });
+  $('cancelButton').addEventListener('click',async()=>{if(!currentJob)return;try{await request('/api/jobs/'+currentJob+'/cancel',{method:'POST'});await refresh();}catch(e){error($('jobError'),e.message)}});
+  $('downloadButton').addEventListener('click',async()=>{
+    if(!currentJob)return;
+    try{
+      $('downloadButton').disabled=true;
+      const res=await request('/api/jobs/'+currentJob+'/download');
+      const blob=await res.blob();const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download='anyflip-'+currentJob+'.pdf';document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),10000);
+    }catch(e){error($('jobError'),e.message)}finally{$('downloadButton').disabled=false;}
+  });
+})();
+</script>
+</body>
+</html>

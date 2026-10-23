@@ -181,3 +181,33 @@ allowing certificate verification to be disabled. This is an intentional
 security change for server readiness. A future hosted service must still
 enforce user authentication, permission checks, resource limits and job
 ownership; a secure HTTP client alone does not make a public endpoint safe.
+
+## Self-hosted Web GUI (MVP)
+
+The same Go binary now includes an authenticated browser interface. It is
+intended to run behind a trusted HTTPS reverse proxy (such as Apache) on an
+Ubuntu server; **it has not been deployed or tested against live books**.
+
+1. Set a long, unique `ANYFLIP_WEB_TOKEN` value (at least 16 characters).
+2. Run `ANYFLIP_WEB_TOKEN=your-long-random-token ./anyflip-downloader -web`
+   or `go run . -web` with that environment variable set.
+3. Open `http://127.0.0.1:8080`, enter the token and paste the URL of a
+   book that you are authorized to download.
+4. Monitor preparation, page download and PDF conversion; cancel or retrieve
+   the **image-based PDF** once complete.
+
+By default, the web listener is **127.0.0.1:8080** (not publicly reachable).
+The `-listen` flag changes that address. Do not expose a public listener
+without HTTPS, a strong token, strict firewall/reverse-proxy controls and
+server-side monitoring. API calls require `Authorization: Bearer <token>`.
+Tokens are not placed in URLs. Completed job files expire after one hour
+while the server is running; set `ANYFLIP_JOB_DIR` for the job storage folder.
+
+HTTP API: `POST /api/jobs` with JSON `{"url":"...","title":"...","threads":3}`
+creates a job; `GET /api/jobs/{id}` retrieves progress;
+`POST /api/jobs/{id}/cancel` requests cancellation; and
+`GET /api/jobs/{id}/download` returns the verified PDF. The health endpoint
+is `GET /healthz`. The MVP supports one shared administrator token and an
+in-memory queue limited to 12 pending jobs / 2 active downloads. It does **not**
+yet provide separate per-user accounts, durable queue persistence, OCR, or
+production deployment. See `docs/DEVELOPMENT_TRACKER.md` for remaining work.
