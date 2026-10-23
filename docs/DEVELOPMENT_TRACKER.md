@@ -1,6 +1,6 @@
 # AnyFlip Downloader — Online Web GUI Development Tracker
 
-**สถานะ:** 🟡 P0 Core merged and Go 1.25 verified; Online Web GUI MVP merged as PR #9; deployment package PR #10, no public deployment  
+**สถานะ:** 🟡 Download Core + Web GUI + Docker CI verified; **not deployed on the target Ubuntu/Apache HTTPS host**  
 **อัปเดตครั้งแรก:** 2026-10-22  
 **เป้าหมาย:** Web GUI ผ่านเบราว์เซอร์ บน Ubuntu Server + Docker/Compose + Apache Reverse Proxy + HTTPS โดยคง CLI เดิมไว้
 
@@ -23,7 +23,7 @@
 - [x] เพิ่ม HTTP timeouts, bounded retries, exponential backoff, error handling และ TLS certificate verification
 - [x] เพิ่ม cancellation ผ่าน `context.Context` และ progress event ที่ไม่ผูกกับ terminal
 - [x] ตรวจความครบหน้า ลำดับหน้า คุณภาพข้อมูล และไฟล์ PDF ไม่เสีย/ไม่เขียนทับโดยไม่แจ้ง
-- [ ] จัด Go version ให้ตรงกันระหว่าง `go.mod`, Docker และ CI; เพิ่ม unit/integration tests — Go/Docker/Workflow ตรงกันและทดสอบจริงผ่าน; GitHub Actions ยังแสดง 0 runs จึงยังไม่มี GitHub-native CI evidence
+- [x] จัด Go version ให้ตรงกันระหว่าง `go.mod`, Docker และ CI; เพิ่ม Unit/Integration/Race tests — GitHub Actions Go + Docker smoke jobs ผ่าน
 - **เกณฑ์ผ่าน:** CLI เดิมทำงาน, `go test ./...` และ build ผ่าน, Cancel ได้, output ครบและปลอดภัย
 
 ### P1 — คุณภาพภาพและการแปลง PDF
@@ -82,12 +82,12 @@
 | 2026-10-23 | P0-E: complete image set and verified PDF output | ✅ Merged & Go 1.25 verified | [PR #6](https://github.com/yiwssx/anyflip-downloader/pull/6) |
 | 2026-10-23 | P0-F: reusable cancellable job engine and progress events | ✅ Merged & Go 1.25 verified | [PR #7](https://github.com/yiwssx/anyflip-downloader/pull/7) |
 | 2026-10-23 | P0-G: DNS/IP egress, HTTPS hardening and exponential backoff | ✅ Merged & Go 1.25 verified | [PR #8](https://github.com/yiwssx/anyflip-downloader/pull/8) |
-| — | P0 verification gates | ⏳ GitHub Actions + permitted live-book checks outstanding | No public deployment approved |
+| — | P0 verification gates | ✅ Go CI + Docker runtime CI ผ่าน; ⏳ หนังสือที่ได้รับอนุญาตและ Browser QA ยังไม่ทดสอบ | No public deployment approved |
 | 2026-10-23 | P2: Thai responsive browser UI, token-auth API and in-memory job queue | ✅ Merged and Go 1.25 verified; browser/device QA pending | [PR #9](https://github.com/yiwssx/anyflip-downloader/pull/9) |
 | 2026-10-23 | P3-A: hardened Docker/Compose package and Apache HTTPS template | ✅ Merged; Compose v2.40.3 config check passed; target-server deployment still pending | [PR #10](https://github.com/yiwssx/anyflip-downloader/pull/10) |\n| 2026-10-23 | P3-B: restart-safe orphan cleanup for retained job PDFs/images | ✅ Merged; Go 1.25 Build/Test/Vet/Race pass | [PR #12](https://github.com/yiwssx/anyflip-downloader/pull/12) |
 | 2026-10-23 | P3-C: graceful shutdown, HTTP timeouts, Docker stop grace | ✅ Merged; Go 1.25 full suite and real local SIGTERM smoke pass | [PR #13](https://github.com/yiwssx/anyflip-downloader/pull/13) |
-| 2026-10-23 | P3-D: post-deployment HTTP/Compose smoke script | 🟡 PR #14 — tests pending | [PR #14](https://github.com/yiwssx/anyflip-downloader/pull/14) |
-| 2026-10-23 | P3-E: GitHub Actions Docker build, Compose smoke, and restart | 🟡 PR #15 — CI verification pending | [PR #15](https://github.com/yiwssx/anyflip-downloader/pull/15) |
+| 2026-10-23 | P3-D: post-deployment HTTP/Compose smoke script | ✅ Merged; HTTP 200/401/404/400 smoke tests ผ่าน | [PR #14](https://github.com/yiwssx/anyflip-downloader/pull/14) |
+| 2026-10-23 | P3-E: GitHub Actions Docker build, Compose smoke, and restart | ✅ Merged; Go + Docker smoke ผ่านทั้ง PR และ main | [PR #15](https://github.com/yiwssx/anyflip-downloader/pull/15) · [Actions run](https://github.com/yiwssx/anyflip-downloader/actions/runs/39898711151) |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### Real verification evidence
@@ -95,8 +95,8 @@
 - Target: Ubuntu 26.04 sandbox, Go 1.25.0, actual `go.mod` dependencies.
 - Executed: `gofmt` check, `go build ./...`, `go vet ./...`, `go test -count=1 ./...`, `CGO_ENABLED=1 go test -race -count=2 ./...` (all passed on each merged slice and the final Core branch).
 - Includes synthetic image-to-PDF integration tests via `pdfcpu`, page count/atomic output checks and cancellation.
-- GitHub Actions began running on 2026-10-23: completed Go build/test jobs for recent PRs #12–#14 and `main` passed. PR #15 adds a real Docker Compose integration job; its results must be verified separately.
-- Docker deployment config: `docker compose --env-file /tmp/anyflip-ci.env -f compose.web.yaml config --quiet` **PASS** on Ubuntu 26.04 with Docker Compose v2.40.3, using a temporary sandbox-only token. No Docker Engine build or container boot executed.
+- GitHub Actions has confirmed **successful** Go Build/Vet/Unit/Race and Docker image/Compose runtime smoke on PR #15, including restart and post-restart checks: [run 39898711151](https://github.com/yiwssx/anyflip-downloader/actions/runs/39898711151). The equivalent post-merge `main` run 39898810788 also completed successfully.
+- Docker deployment config: Compose v2.40.3 static validation passed in sandbox; **real Docker image build, non-root container boot, API probes and restart** later passed on GitHub-hosted Actions runner. This does not establish deployment on the user's Ubuntu server.
 - End-to-end tests against live, publisher-authorized AnyFlip books, physical browser/mobile devices and production Docker/Apache/HTTPS have **not** been performed. P3-A supplies configuration templates, not proof of their deployment.
 
 ## ข้อกำหนดการติดตาม
