@@ -18,12 +18,18 @@ import (
 )
 
 func prepareDownload(anyflipURL *url.URL) (*flipbook, error) {
+	if anyflipURL == nil {
+		return nil, fmt.Errorf("AnyFlip URL is required")
+	}
 	var newFlipbook flipbook
 
-	sanitizeURL(anyflipURL)
-	newFlipbook.URL = anyflipURL
+	canonicalURL, err := validateBookURL(anyflipURL.String())
+	if err != nil {
+		return nil, err
+	}
+	newFlipbook.URL = canonicalURL
 
-	configjs, err := downloadConfigJSFile(anyflipURL)
+	configjs, err := downloadConfigJSFile(canonicalURL)
 	if err != nil {
 		return nil, err
 	}
@@ -31,13 +37,13 @@ func prepareDownload(anyflipURL *url.URL) (*flipbook, error) {
 	if title == "" {
 		title, err = getBookTitle(configjs)
 		if err != nil {
-			title = path.Base(anyflipURL.String())
+			title = path.Base(canonicalURL.Path)
 		}
 	}
 
 	safeTitle := govalidator.SafeFileName(title)
 	if safeTitle == "" {
-		safeTitle = path.Base(anyflipURL.Path)
+		safeTitle = path.Base(canonicalURL.Path)
 	}
 	if safeTitle == "" || safeTitle == "." {
 		safeTitle = "anyflip-download"
@@ -49,28 +55,36 @@ func prepareDownload(anyflipURL *url.URL) (*flipbook, error) {
 	}
 	newFlipbook.title = safeTitle
 	newFlipbook.pageCount, err = getPageCount(configjs)
-	pageFileNames := getPageFileNames(configjs)
+	if err != nil {
+		return nil, fmt.Errorf("invalid AnyFlip book configuration: %w", err)
+	}
+	pageFileNames, err := getPageFileNames(configjs)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateBookPages(newFlipbook.pageCount, pageFileNames); err != nil {
+		return nil, err
+	}
 
 	downloadURL, _ := url.Parse("https://online.anyflip.com/")
 	println(newFlipbook.URL.String())
 	if len(pageFileNames) == 0 {
 		for i := 1; i <= newFlipbook.pageCount; i++ {
-			downloadURL.Path = path.Join(newFlipbook.URL.Path, "files", "mobile", strconv.Itoa(i)+".jpg")
+			downloadURL.Path = path.Join(canonicalURL.Path, "files", "mobile", strconv.Itoa(i)+".jpg")
 			newFlipbook.pageURLs = append(newFlipbook.pageURLs, downloadURL.String())
 		}
 	} else {
 		for i := 0; i < newFlipbook.pageCount; i++ {
-			downloadURL.Path = path.Join(newFlipbook.URL.Path, "files", "large", pageFileNames[i])
+			imagePath, err := safePagePath(canonicalURL.Path, pageFileNames[i])
+			if err != nil {
+				return nil, fmt.Errorf("page %d: %w", i+1, err)
+			}
+			downloadURL.Path = imagePath
 			newFlipbook.pageURLs = append(newFlipbook.pageURLs, downloadURL.String())
 		}
 	}
 
-	return &newFlipbook, err
-}
-
-func sanitizeURL(anyflipURL *url.URL) {
-	bookURLPathElements := strings.Split(anyflipURL.Path, "/")
-	anyflipURL.Path = path.Join("/", bookURLPathElements[1], bookURLPathElements[2])
+	return &newFlipbook, nil
 }
 
 func (fb *flipbook) downloadImages(downloadFolder string, options downloadOptions) error {

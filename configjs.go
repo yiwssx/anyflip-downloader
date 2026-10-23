@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,23 +13,28 @@ import (
 	"strings"
 )
 
-func getPageFileNames(configjs string) []string {
-	r := regexp.MustCompile(`"n":\[".*?"\]`)
-	matches := r.FindAllString(configjs, -1)
-
-	for i, match := range matches {
-		replacer := strings.NewReplacer(
-			"[", "",
-			"\"", "",
-			"]", "",
-		)
-		match = strings.Split(match, ":")[1]
-		match = replacer.Replace(match)
-
-		matches[i] = match
+// getPageFileNames selects the primary image filename for each page's "n"
+// array. Multiple strings within one page are alternate representations,
+// not additional pages. Missing arrays allow the legacy numbered-image mode.
+func getPageFileNames(configjs string) ([]string, error) {
+	pattern := regexp.MustCompile(`"n"\s*:`)
+	matches := pattern.FindAllStringIndex(configjs, -1)
+	if len(matches) == 0 {
+		return nil, nil
 	}
-
-	return matches
+	names := make([]string, 0, len(matches))
+	for i, match := range matches {
+		var choices []string
+		decoder := json.NewDecoder(strings.NewReader(configjs[match[1]:]))
+		if err := decoder.Decode(&choices); err != nil {
+			return nil, fmt.Errorf("invalid page image metadata at index %d: %w", i+1, err)
+		}
+		if len(choices) == 0 || strings.TrimSpace(choices[0]) == "" {
+			return nil, fmt.Errorf("missing primary page image name at index %d", i+1)
+		}
+		names = append(names, choices[0])
+	}
+	return names, nil
 }
 
 func getBookTitle(configjs string) (string, error) {
