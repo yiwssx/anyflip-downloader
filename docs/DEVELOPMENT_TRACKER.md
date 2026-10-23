@@ -79,6 +79,7 @@
 | 2026-10-22 | P0-A: Workspaces, CLI Validation, Go CI Alignment | 🟡 PR open — isolated Go 1.23 smoke/race/vet checks passed, full Go 1.25 CI not run | [PR #2](https://github.com/yiwssx/anyflip-downloader/pull/2) |
 | 2026-10-23 | P0-B: URL & metadata validation | 🟡 [PR #3](https://github.com/yiwssx/anyflip-downloader/pull/3) open — isolated tests passed, full CI pending | ยังไม่ผ่านเกณฑ์ตรวจรับ |
 | 2026-10-23 | P0-C: Bounded config fetch, timeout, redirects, cancellation | 🟡 [PR #4](https://github.com/yiwssx/anyflip-downloader/pull/4) open (stacked on #3) — isolated tests pass, full CI pending | Awaiting Go 1.25 full project checks |
+| 2026-10-23 | P0-D: Image HTTP timeout, retry, cancellation, image validation | 🟡 [PR #5](https://github.com/yiwssx/anyflip-downloader/pull/5) open (stacked on #4) | Full Go 1.25 CI and integration tests pending |
 | — | P0 (remaining), P1–P5 | ⏳ Not started | P0 ยังไม่ผ่านเกณฑ์ตรวจรับ |
 
 ## ข้อกำหนดการติดตาม
