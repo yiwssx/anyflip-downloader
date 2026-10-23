@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
@@ -45,7 +43,7 @@ func init() {
 	flag.Usage = printUsage
 	flag.StringVar(&tempDownloadFolder, "temp-download-folder", "", "Specifies the name of the temporary download folder")
 	flag.StringVar(&title, "title", "", "Specifies the name of the generated PDF document (uses book title if not specified)")
-	flag.BoolVar(&insecure, "insecure", false, "Skip certificate validation")
+	flag.BoolVar(&insecure, "insecure", false, "Deprecated; rejected because disabling certificate checks is unsafe")
 	flag.BoolVar(&keepDownloadFolder, "keep-download-folder", false, "Keep the temporary download folder instead of deleting it after completion")
 	flag.IntVar(&donwloadThreads, "threads", 1, "Number of parallel download processes")
 	flag.IntVar(&downloadRetries, "retries", 1, "Number of download retries")
@@ -66,8 +64,7 @@ func run() {
 	}
 
 	if insecure {
-		fmt.Println("Warning: insecure CLI mode disables TLS verification; do not use it on a hosted server.")
-		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
+		log.Fatal("the -insecure flag is no longer supported; HTTPS certificate verification is required")
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
