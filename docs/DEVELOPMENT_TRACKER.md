@@ -87,6 +87,7 @@
 | 2026-10-23 | P3-A: hardened Docker/Compose package and Apache HTTPS template | ✅ Merged; Compose v2.40.3 config check passed; target-server deployment still pending | [PR #10](https://github.com/yiwssx/anyflip-downloader/pull/10) |\n| 2026-10-23 | P3-B: restart-safe orphan cleanup for retained job PDFs/images | ✅ Merged; Go 1.25 Build/Test/Vet/Race pass | [PR #12](https://github.com/yiwssx/anyflip-downloader/pull/12) |
 | 2026-10-23 | P3-C: graceful shutdown, HTTP timeouts, Docker stop grace | ✅ Merged; Go 1.25 full suite and real local SIGTERM smoke pass | [PR #13](https://github.com/yiwssx/anyflip-downloader/pull/13) |
 | 2026-10-23 | P3-D: post-deployment HTTP/Compose smoke script | 🟡 PR #14 — tests pending | [PR #14](https://github.com/yiwssx/anyflip-downloader/pull/14) |
+| 2026-10-23 | P3-E: GitHub Actions Docker build, Compose smoke, and restart | 🟡 PR #15 — CI verification pending | [PR #15](https://github.com/yiwssx/anyflip-downloader/pull/15) |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### Real verification evidence
@@ -94,7 +95,7 @@
 - Target: Ubuntu 26.04 sandbox, Go 1.25.0, actual `go.mod` dependencies.
 - Executed: `gofmt` check, `go build ./...`, `go vet ./...`, `go test -count=1 ./...`, `CGO_ENABLED=1 go test -race -count=2 ./...` (all passed on each merged slice and the final Core branch).
 - Includes synthetic image-to-PDF integration tests via `pdfcpu`, page count/atomic output checks and cancellation.
-- **These are sandbox full-suite tests, not GitHub Actions checks.** Actions remains unverified (0 workflow runs).
+- GitHub Actions began running on 2026-10-23: completed Go build/test jobs for recent PRs #12–#14 and `main` passed. PR #15 adds a real Docker Compose integration job; its results must be verified separately.
 - Docker deployment config: `docker compose --env-file /tmp/anyflip-ci.env -f compose.web.yaml config --quiet` **PASS** on Ubuntu 26.04 with Docker Compose v2.40.3, using a temporary sandbox-only token. No Docker Engine build or container boot executed.
 - End-to-end tests against live, publisher-authorized AnyFlip books, physical browser/mobile devices and production Docker/Apache/HTTPS have **not** been performed. P3-A supplies configuration templates, not proof of their deployment.
 
