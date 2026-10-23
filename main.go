@@ -18,6 +18,8 @@ import (
 )
 
 var title string
+var webMode bool
+var webListen string
 var tempDownloadFolder string
 var insecure bool
 var keepDownloadFolder bool
@@ -41,6 +43,8 @@ type downloadOptions struct {
 
 func init() {
 	flag.Usage = printUsage
+	flag.BoolVar(&webMode, "web", false, "Start the authenticated Web GUI server")
+	flag.StringVar(&webListen, "listen", "127.0.0.1:8080", "Web GUI listen address")
 	flag.StringVar(&tempDownloadFolder, "temp-download-folder", "", "Specifies the name of the temporary download folder")
 	flag.StringVar(&title, "title", "", "Specifies the name of the generated PDF document (uses book title if not specified)")
 	flag.BoolVar(&insecure, "insecure", false, "Deprecated; rejected because disabling certificate checks is unsafe")
@@ -53,6 +57,12 @@ func init() {
 
 func main() {
 	flag.Parse()
+	if webMode {
+		if err := runWeb(webListen); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	run()
 }
 
