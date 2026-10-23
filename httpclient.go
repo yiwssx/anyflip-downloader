@@ -26,7 +26,7 @@ func newAnyFlipHTTPClient() *http.Client {
 		TLSHandshakeTimeout:   10 * time.Second,
 		ResponseHeaderTimeout: 20 * time.Second,
 		IdleConnTimeout:       30 * time.Second,
-		MaxIdleConns:         16,
+		MaxIdleConns:          16,
 	}
 	return &http.Client{
 		Timeout:   45 * time.Second,
