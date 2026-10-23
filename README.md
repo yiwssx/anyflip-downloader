@@ -1,7 +1,6 @@
 # anyflip-downloader
 
-[![build](https://github.com/Lofter1/anyflip-downloader/actions/workflows/build.yml/badge.svg)](https://github.com/Lofter1/anyflip-downloader/actions/workflows/build.yml)
-[![goreleaser](https://github.com/Lofter1/anyflip-downloader/actions/workflows/release.yml/badge.svg)](https://github.com/Lofter1/anyflip-downloader/actions/workflows/release.yml)
+[![build](https://github.com/yiwssx/anyflip-downloader/actions/workflows/build.yml/badge.svg)](https://github.com/yiwssx/anyflip-downloader/actions/workflows/build.yml)
 
 Download anyflip books as PDF
 
