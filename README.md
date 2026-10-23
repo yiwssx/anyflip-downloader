@@ -129,3 +129,40 @@ For predictable resource usage, `-threads` accepts 1–16, `-chunksize`
 accepts 1–1000, `-retries` accepts 0–10, and `-waitretry` accepts
 durations from 0 to 1 minute. This tool creates an **image-based PDF**,
 not the original text/vector PDF; use it only for content you are authorized to download.
+
+### Reusable job engine (P0 Core)
+
+The Go code now provides `RunDownloadJob(ctx, DownloadJobOptions, onProgress)`,
+which is separate from CLI global flags and can be invoked by future job-based
+web services. Supported progress phases: `preparing`, `downloading`,
+`converting`, `completed`, `failed` and `cancelled`. Download updates
+include a monotonic completed-page count. Every job can be cancelled using
+`context.Context` (the PDF importer checks cancellation between chunks);
+the CLI also responds to Ctrl+C/SIGTERM.
+
+Example from another Go file **within the same module**:
+
+```go
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
+output, err := RunDownloadJob(ctx, DownloadJobOptions{
+    URL: "https://anyflip.com/publisher/book",
+    Threads: 2,
+    Retries: 1,
+    RetryDelay: time.Second,
+    ChunkSize: 10,
+    OutputFile: "/a/server-controlled/directory/book.pdf",
+}, func(event DownloadProgress) {
+    log.Printf("%s %d/%d", event.Stage, event.Completed, event.Total)
+})
+_ = output
+_ = err
+```
+
+The web backend must **never** accept arbitrary output/workspace paths from
+unauthenticated clients; use per-user/per-job, server-owned directories. Do
+not make an unauthenticated endpoint public. Restrict outbound network access
+and verify DNS/private-network protections before hosted deployment. Current
+jobs retain temporary images on failure for diagnostics. This code does not
+yet provide a Web GUI, authentication, quotas, queue persistence or a hosted
+deployment. Only download content you are authorized to reproduce.
