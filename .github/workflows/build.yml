@@ -8,6 +8,10 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
 
@@ -24,5 +28,11 @@ jobs:
     - name: Build
       run: go build -v ./...
 
+    - name: Vet
+      run: go vet ./...
+
     - name: Test
       run: go test -v ./...
+
+    - name: Race Test
+      run: go test -race ./...
