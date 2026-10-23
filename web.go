@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"embed"
@@ -17,7 +18,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"context"
 )
 
 //go:embed web/index.html
