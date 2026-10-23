@@ -166,3 +166,18 @@ and verify DNS/private-network protections before hosted deployment. Current
 jobs retain temporary images on failure for diagnostics. This code does not
 yet provide a Web GUI, authentication, quotas, queue persistence or a hosted
 deployment. Only download content you are authorized to reproduce.
+
+### Outbound network safety
+
+By default, downloader HTTP requests use TLS certificate verification, an
+HTTPS-only AnyFlip origin, bounded timeouts and redirect checks. The resolver
+rejects private, loopback, link-local, documentation, carrier-grade NAT and
+other reserved destination IP addresses before connecting, and outbound
+proxies are disabled in the built-in HTTP client. Retries use exponential
+backoff capped at 60 seconds.
+
+The legacy `-insecure` CLI option is now explicitly **rejected** rather than
+allowing certificate verification to be disabled. This is an intentional
+security change for server readiness. A future hosted service must still
+enforce user authentication, permission checks, resource limits and job
+ownership; a secure HTTP client alone does not make a public endpoint safe.
