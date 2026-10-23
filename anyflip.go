@@ -144,7 +144,7 @@ func (fb *flipbook) downloadImages(downloadFolder string, options downloadOption
 
 	var errors []error
 	for err := range downloadErrors {
-		fmt.Printf("Error occured: %e\n", err)
+		fmt.Printf("Error occurred: %v\n", err)
 		errors = append(errors, err)
 	}
 
