@@ -1,6 +1,6 @@
 # AnyFlip Downloader — Online Web GUI Development Tracker
 
-**สถานะ:** 🟡 P0 Core built and verified with Go 1.25; GitHub Actions and authorized live-book verification outstanding; Web GUI not deployed  
+**สถานะ:** 🟡 P0 Core merged and Go 1.25 verified; Online Web GUI MVP in PR #9; no public deployment  
 **อัปเดตครั้งแรก:** 2026-10-22  
 **เป้าหมาย:** Web GUI ผ่านเบราว์เซอร์ บน Ubuntu Server + Docker/Compose + Apache Reverse Proxy + HTTPS โดยคง CLI เดิมไว้
 
@@ -34,12 +34,12 @@
 - **เกณฑ์ผ่าน:** เอกสารทดสอบที่ได้รับอนุญาตรวมเป็น PDF ได้ครบ เรียงหน้าและเปิดอ่านได้
 
 ### P2 — Web GUI MVP
-- [ ] หน้าเว็บ Responsive ใช้ได้ทั้ง Desktop/Mobile และข้อความภาษาไทย
-- [ ] ฟอร์ม URL, ตรวจ metadata ที่หาได้, ชื่อไฟล์, เริ่มงาน, แสดงสถานะ, ยกเลิก, ดาวน์โหลดไฟล์
-- [ ] Go HTTP API สำหรับ job lifecycle และ SSE (หรือวิธีเทียบเท่า) สำหรับ progress แบบ real-time
-- [ ] ระบุสถานะ queued → preparing → downloading → converting → completed / failed / cancelled
-- [ ] มี Job ID, แยกไฟล์แต่ละงาน, จำกัดการเข้าถึงไฟล์ และไม่เผย filesystem path
-- [ ] Loading, error, retry guidance, accessibility พื้นฐาน; คง CLI ทำงานต่อได้
+- [x] หน้าเว็บ Responsive ภาษาไทยสำหรับ Desktop/Mobile (โค้ดพร้อม; ยังต้องทำ browser QA จริง)
+- [x] ฟอร์ม URL, ตรวจ metadata ที่หาได้, ชื่อไฟล์, เริ่มงาน, แสดงสถานะ, ยกเลิก, ดาวน์โหลดไฟล์
+- [x] Go HTTP API สำหรับ job lifecycle และ polling 1.1 วินาทีสำหรับ progress
+- [x] ระบุสถานะ queued → preparing → downloading → converting → completed / failed / cancelled
+- [x] มี Job ID, แยกไฟล์แต่ละงาน, จำกัดการเข้าถึงไฟล์ และไม่เผย filesystem path
+- [x] Loading, error, retry guidance, accessibility พื้นฐาน; คง CLI ทำงานต่อได้
 - **เกณฑ์ผ่าน:** ทดสอบ end-to-end บนมือถือและ Desktop ผ่านทั้งกรณีสำเร็จ ล้มเหลว และ Cancel
 
 ### P3 — Server / Docker / Security (ต้องผ่านก่อนเปิดใช้งานออนไลน์)
@@ -81,9 +81,10 @@
 | 2026-10-23 | P0-D: bounded image fetch and retries | ✅ Merged & Go 1.25 verified | [PR #5](https://github.com/yiwssx/anyflip-downloader/pull/5) |
 | 2026-10-23 | P0-E: complete image set and verified PDF output | ✅ Merged & Go 1.25 verified | [PR #6](https://github.com/yiwssx/anyflip-downloader/pull/6) |
 | 2026-10-23 | P0-F: reusable cancellable job engine and progress events | ✅ Merged & Go 1.25 verified | [PR #7](https://github.com/yiwssx/anyflip-downloader/pull/7) |
-| 2026-10-23 | P0-G: DNS/IP egress, HTTPS hardening and exponential backoff | 🟡 Pending PR review | [PR #8](https://github.com/yiwssx/anyflip-downloader/pull/8) |
+| 2026-10-23 | P0-G: DNS/IP egress, HTTPS hardening and exponential backoff | ✅ Merged & Go 1.25 verified | [PR #8](https://github.com/yiwssx/anyflip-downloader/pull/8) |
 | — | P0 verification gates | ⏳ GitHub Actions + permitted live-book checks outstanding | No public deployment approved |
-| — | P1–P5: quality, Web GUI, server hardening, features and release | ⏳ Not started | No hosted web UI claimed |
+| 2026-10-23 | P2: Thai responsive browser UI, token-auth API and in-memory job queue | 🟡 PR in review, requires browser/mobile QA | [PR #9](https://github.com/yiwssx/anyflip-downloader/pull/9) |
+| — | P1/P3–P5: quality validation, production deployment, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### Real verification evidence
 
