@@ -18,6 +18,9 @@ import (
 )
 
 func prepareDownload(anyflipURL *url.URL) (*flipbook, error) {
+	if anyflipURL == nil {
+		return nil, fmt.Errorf("AnyFlip URL is required")
+	}
 	var newFlipbook flipbook
 
 	canonicalURL, err := validateBookURL(anyflipURL.String())
