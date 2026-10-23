@@ -47,12 +47,14 @@ type webJobResponse struct {
 }
 
 type webServer struct {
-	mu     sync.Mutex
-	jobs   map[string]*webJob
-	root   string
-	token  string
-	sem    chan struct{}
-	client *http.Client // Optional controlled test transport; nil in production.
+	mu       sync.Mutex
+	jobs     map[string]*webJob
+	jobsWG   sync.WaitGroup
+	stopping bool
+	root     string
+	token    string
+	sem      chan struct{}
+	client   *http.Client // Optional controlled test transport; nil in production.
 }
 
 func newWebServer(token, root string) (*webServer, error) {
@@ -179,6 +181,12 @@ func (s *webServer) createJob(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	job := &webJob{id: id, stage: "queued", created: time.Now(), cancel: cancel}
 	s.mu.Lock()
+	if s.stopping {
+		s.mu.Unlock()
+		cancel()
+		http.Error(w, "server is shutting down", http.StatusServiceUnavailable)
+		return
+	}
 	pending := 0
 	for _, other := range s.jobs {
 		if other.stage != "completed" && other.stage != "failed" && other.stage != "cancelled" {
@@ -192,9 +200,13 @@ func (s *webServer) createJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.jobs[id] = job
+	s.jobsWG.Add(1)
 	response := s.snapshot(job)
 	s.mu.Unlock()
-	go s.runJob(ctx, job, body.URL, body.Title, body.Threads)
+	go func() {
+		defer s.jobsWG.Done()
+		s.runJob(ctx, job, body.URL, body.Title, body.Threads)
+	}()
 	sendJSON(w, http.StatusAccepted, response)
 }
 
@@ -294,13 +306,5 @@ func runWeb(addr string) error {
 	if err != nil {
 		return err
 	}
-	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
-		defer ticker.Stop()
-		for now := range ticker.C {
-			server.purgeOldJobs(now)
-		}
-	}()
-	log.Printf("Web GUI listening at %s (token authentication required)", addr)
-	return http.ListenAndServe(addr, server.handler())
+	return serveWebUntilSignal(addr, server)
 }

@@ -23,6 +23,8 @@ services:
     pids_limit: 128
     mem_limit: 2g
     cpus: "2.0"
+    # Allow the Go service to cancel jobs and drain requests on SIGTERM.
+    stop_grace_period: 35s
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
