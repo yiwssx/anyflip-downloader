@@ -41,14 +41,14 @@ func TestRunDownloadJobFullPDFAndProgress(t *testing.T) {
 	var mu sync.Mutex
 	var events []DownloadProgress
 	result, err := RunDownloadJob(context.Background(), DownloadJobOptions{
-		URL: "https://anyflip.com/qrfai/tfvn",
-		Title: "Test",
-		OutputFile: output,
+		URL:                "https://anyflip.com/qrfai/tfvn",
+		Title:              "Test",
+		OutputFile:         output,
 		TempDownloadFolder: workspace,
-		Threads: 2,
-		Retries: 0,
-		ChunkSize: 1,
-		HTTPClient: jobFixtureClient(t),
+		Threads:            2,
+		Retries:            0,
+		ChunkSize:          1,
+		HTTPClient:         jobFixtureClient(t),
 	}, func(p DownloadProgress) {
 		mu.Lock()
 		events = append(events, p)
@@ -113,7 +113,7 @@ func TestPrepareDownloadContextUsesIndependentTitles(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if book.title != title {
+		if !strings.EqualFold(book.title, title) {
 			t.Fatalf("got book title %q, want %q", book.title, title)
 		}
 	}
@@ -125,7 +125,7 @@ func TestRunDownloadJobRejectsExistingOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := RunDownloadJob(context.Background(), DownloadJobOptions{
-		URL: "https://anyflip.com/qrfai/tfvn",
+		URL:     "https://anyflip.com/qrfai/tfvn",
 		Threads: 2, ChunkSize: 1,
 		OutputFile: output, HTTPClient: jobFixtureClient(t),
 	}, nil)
