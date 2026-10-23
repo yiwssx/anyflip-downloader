@@ -65,7 +65,11 @@ func newWebServer(token, root string) (*webServer, error) {
 	if err := os.MkdirAll(root, 0700); err != nil {
 		return nil, err
 	}
-	return &webServer{jobs: make(map[string]*webJob), root: root, token: token, sem: make(chan struct{}, 2)}, nil
+	server := &webServer{jobs: make(map[string]*webJob), root: root, token: token, sem: make(chan struct{}, 2)}
+	if err := server.removeExpiredJobArtifacts(time.Now()); err != nil {
+		return nil, err
+	}
+	return server, nil
 }
 
 func (s *webServer) handler() http.Handler {
@@ -278,20 +282,6 @@ func (s *webServer) downloadJob(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"anyflip-"+job.id+".pdf\"")
 	http.ServeFile(w, r, file)
-}
-
-// purgeOldJobs removes only server-generated job-id files from this job root.
-func (s *webServer) purgeOldJobs(now time.Time) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for id, job := range s.jobs {
-		if job.finished.IsZero() || now.Sub(job.finished) < time.Hour {
-			continue
-		}
-		delete(s.jobs, id)
-		_ = os.Remove(filepath.Join(s.root, id+".pdf"))
-		_ = os.RemoveAll(filepath.Join(s.root, id+".images"))
-	}
 }
 
 func runWeb(addr string) error {
