@@ -84,7 +84,7 @@
 | 2026-10-23 | P0-G: DNS/IP egress, HTTPS hardening and exponential backoff | ✅ Merged & Go 1.25 verified | [PR #8](https://github.com/yiwssx/anyflip-downloader/pull/8) |
 | — | P0 verification gates | ⏳ GitHub Actions + permitted live-book checks outstanding | No public deployment approved |
 | 2026-10-23 | P2: Thai responsive browser UI, token-auth API and in-memory job queue | ✅ Merged and Go 1.25 verified; browser/device QA pending | [PR #9](https://github.com/yiwssx/anyflip-downloader/pull/9) |
-| 2026-10-23 | P3-A: hardened Docker/Compose package and Apache HTTPS template | 🟡 PR #10 under review; target-server deployment not tested | [PR #10](https://github.com/yiwssx/anyflip-downloader/pull/10) |\n| — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
+| 2026-10-23 | P3-A: hardened Docker/Compose package and Apache HTTPS template | ✅ Merged; Compose v2.40.3 config check passed; target-server deployment still pending | [PR #10](https://github.com/yiwssx/anyflip-downloader/pull/10) |\n| — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### Real verification evidence
 
@@ -92,6 +92,7 @@
 - Executed: `gofmt` check, `go build ./...`, `go vet ./...`, `go test -count=1 ./...`, `CGO_ENABLED=1 go test -race -count=2 ./...` (all passed on each merged slice and the final Core branch).
 - Includes synthetic image-to-PDF integration tests via `pdfcpu`, page count/atomic output checks and cancellation.
 - **These are sandbox full-suite tests, not GitHub Actions checks.** Actions remains unverified (0 workflow runs).
+- Docker deployment config: `docker compose --env-file /tmp/anyflip-ci.env -f compose.web.yaml config --quiet` **PASS** on Ubuntu 26.04 with Docker Compose v2.40.3, using a temporary sandbox-only token. No Docker Engine build or container boot executed.
 - End-to-end tests against live, publisher-authorized AnyFlip books, physical browser/mobile devices and production Docker/Apache/HTTPS have **not** been performed. P3-A supplies configuration templates, not proof of their deployment.
 
 ## ข้อกำหนดการติดตาม
