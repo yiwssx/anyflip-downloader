@@ -58,7 +58,10 @@ func prepareDownload(anyflipURL *url.URL) (*flipbook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid AnyFlip book configuration: %w", err)
 	}
-	pageFileNames := getPageFileNames(configjs)
+	pageFileNames, err := getPageFileNames(configjs)
+	if err != nil {
+		return nil, err
+	}
 	if err := validateBookPages(newFlipbook.pageCount, pageFileNames); err != nil {
 		return nil, err
 	}
@@ -72,7 +75,11 @@ func prepareDownload(anyflipURL *url.URL) (*flipbook, error) {
 		}
 	} else {
 		for i := 0; i < newFlipbook.pageCount; i++ {
-			downloadURL.Path = path.Join(canonicalURL.Path, "files", "large", pageFileNames[i])
+			imagePath, err := safePagePath(canonicalURL.Path, pageFileNames[i])
+			if err != nil {
+				return nil, fmt.Errorf("page %d: %w", i+1, err)
+			}
+			downloadURL.Path = imagePath
 			newFlipbook.pageURLs = append(newFlipbook.pageURLs, downloadURL.String())
 		}
 	}
