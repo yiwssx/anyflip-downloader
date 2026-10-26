@@ -81,6 +81,32 @@ Docker checks explicitly marked `SKIP` if unavailable.
 This does not replace a real browser/mobile walkthrough, TLS/certificate
 check, authorized real-book test or Docker restart/recovery test.
 
+## Diagnosing a URL that works in CLI but fails in Web GUI
+
+CLI and Web GUI share the same Go download engine. If the same authorized
+AnyFlip reader URL works locally but fails in a deployed Web GUI:
+
+1. Confirm that the Web UI accepts your administrator token and creates a Job ID.
+   A 401 from `/api/jobs` indicates incorrect Web authentication; it is not
+   a book/download permission issue.
+2. Check the Job ID and displayed error code (`network_error`,
+   `source_access_denied`, `metadata_invalid`, `storage_error`,
+   `job_timeout`, etc.). Codes are deliberately safe to share; do not
+   share administrator tokens, source credentials, or full raw server logs.
+3. Review logs privately on the Docker host:
+   `docker compose -f compose.web.yaml logs --tail=100 anyflip-web`.
+   Locate the Job ID and its full underlying error. For DNS/egress errors,
+   inspect outbound HTTPS access from the **container**, not just the CLI
+   host; for storage errors, inspect volume ownership and available disk space.
+4. When code has been updated, redeploy using
+   `docker compose -f compose.web.yaml up -d --build`, then rerun
+   `scripts/verify-web-deployment.sh` and retest with an authorized document.
+   Do not weaken TLS verification, AnyFlip hostname checks or network
+   restrictions to make a failing book work.
+
+A test of an available first page is not proof that an entire book or the
+production server will succeed. Web jobs have a 20-minute maximum duration.
+
 ## Maintenance, rollback and security limitations
 
 ```sh
