@@ -31,6 +31,7 @@ type webJob struct {
 	completed int
 	total     int
 	errorText string
+	errorCode string
 	file      string
 	created   time.Time
 	finished  time.Time
@@ -43,6 +44,7 @@ type webJobResponse struct {
 	Completed     int    `json:"completed"`
 	Total         int    `json:"total"`
 	Error         string `json:"error,omitempty"`
+	ErrorCode     string `json:"errorCode,omitempty"`
 	DownloadReady bool   `json:"downloadReady"`
 }
 
@@ -122,7 +124,8 @@ func (s *webServer) authorize(next http.Handler) http.Handler {
 func (s *webServer) snapshot(job *webJob) webJobResponse {
 	return webJobResponse{
 		ID: job.id, Stage: job.stage, Completed: job.completed, Total: job.total,
-		Error: job.errorText, DownloadReady: job.stage == "completed",
+		Error: job.errorText, ErrorCode: job.errorCode,
+		DownloadReady: job.stage == "completed",
 	}
 }
 
@@ -244,8 +247,8 @@ func (s *webServer) finishJob(job *webJob, file string, err error) {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			job.stage = "cancelled"
 		}
-		job.errorText = "ไม่สามารถดาวน์โหลดหรือสร้าง PDF ได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงเอกสารและลองอีกครั้ง"
-		log.Printf("job %s failed: %v", job.id, err)
+		job.errorCode, job.errorText = describeWebJobError(err)
+		log.Printf("job %s failed (code=%s): %v", job.id, job.errorCode, err)
 		return
 	}
 	job.stage = "completed"
