@@ -87,7 +87,17 @@ func safePagePath(bookPath, name string) (string, error) {
 		return "", fmt.Errorf("unsafe image filename %q", name)
 	}
 	base := path.Clean(bookPath) + "/files/"
-	resolved := path.Join(base, "large", name)
+	// Actual AnyFlip page metadata also uses paths such as
+	// "../files/large/<image>.webp". Resolve only these recognized
+	// book-local variants directly, rather than producing /files/files/
+	// and relying on a later URL cleanup pass.
+	var resolved string
+	switch {
+	case strings.HasPrefix(name, "../files/large/"), strings.HasPrefix(name, "../files/mobile/"):
+		resolved = path.Join(base, strings.TrimPrefix(name, "../files/"))
+	default:
+		resolved = path.Join(base, "large", name)
+	}
 	if !strings.HasPrefix(resolved, base) {
 		return "", fmt.Errorf("image filename escapes book files directory: %q", name)
 	}

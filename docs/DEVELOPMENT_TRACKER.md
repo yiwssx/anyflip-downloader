@@ -70,7 +70,7 @@
 
 > ต้องผ่าน P3 ก่อนเปิดให้บุคคลภายนอกใช้งานจริง แม้ P2 จะมีหน้าเว็บที่ทำงานได้แล้วก็ตาม
 
-## บันทึกความคืบหน้า (ตรวจสอบ ณ 2026-10-23)
+## บันทึกความคืบหน้า (ตรวจสอบ ณ 2026-10-26)
 
 | วันที่ | งาน | สถานะ | หลักฐาน |
 |---|---|---|---|
@@ -88,6 +88,7 @@
 | 2026-10-23 | P3-C: graceful shutdown, HTTP timeouts, Docker stop grace | ✅ Merged; Go 1.25 full suite and real local SIGTERM smoke pass | [PR #13](https://github.com/yiwssx/anyflip-downloader/pull/13) |
 | 2026-10-23 | P3-D: post-deployment HTTP/Compose smoke script | ✅ Merged; HTTP 200/401/404/400 smoke tests ผ่าน | [PR #14](https://github.com/yiwssx/anyflip-downloader/pull/14) |
 | 2026-10-23 | P3-E: GitHub Actions Docker build, Compose smoke, and restart | ✅ Merged; Go + Docker smoke ผ่านทั้ง PR และ main | [PR #15](https://github.com/yiwssx/anyflip-downloader/pull/15) · [Actions run](https://github.com/yiwssx/anyflip-downloader/actions/runs/39898711151) |
+| 2026-10-26 | Web GUI same-link diagnosis: canonical image URLs, redacted error codes, visible Job ID | ✅ Go 1.25 + GitHub CI passed; ⏳ user-hosted Docker/Apache E2E still required | [PR #17](https://github.com/yiwssx/anyflip-downloader/pull/17) |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### Real verification evidence

@@ -81,9 +81,11 @@ func TestValidateBookPages(t *testing.T) {
 func TestSafePagePath(t *testing.T) {
 	base := "/publisher/book"
 	valid := map[string]string{
-		"page.webp":       "/publisher/book/files/large/page.webp",
-		"folder/page.jpg": "/publisher/book/files/large/folder/page.jpg",
-		"../mobile/1.jpg": "/publisher/book/files/mobile/1.jpg",
+		"page.webp":                "/publisher/book/files/large/page.webp",
+		"folder/page.jpg":          "/publisher/book/files/large/folder/page.jpg",
+		"../mobile/1.jpg":          "/publisher/book/files/mobile/1.jpg",
+		"../files/large/real.webp": "/publisher/book/files/large/real.webp",
+		"../files/mobile/real.jpg": "/publisher/book/files/mobile/real.jpg",
 	}
 	for name, want := range valid {
 		got, err := safePagePath(base, name)
@@ -96,6 +98,7 @@ func TestSafePagePath(t *testing.T) {
 		"https://evil.example/image.webp", "https:%2f%2fevil.example/file",
 		"../../../../", "foo?token=secret", "foo#fragment",
 		"some%2fencoded.jpg", "foo\\bar.jpg", "image\x00.webp",
+		"../files/large/../../../../etc/passwd", "../files/mobile/../../../../private.png",
 	}
 	for _, name := range invalid {
 		if p, err := safePagePath(base, name); err == nil {
