@@ -68,6 +68,7 @@
       <button type="button" class="primary" id="downloadButton" hidden>ดาวน์โหลด PDF</button>
     </div>
     <p class="error" id="jobError" role="alert" hidden></p>
+    <p class="sub" id="jobReference" aria-label="รหัสงานสำหรับตรวจสอบ" hidden></p>
   </section>
   <footer>AnyFlip Downloader • Self-hosted Web GUI • เชื่อมต่อผ่าน HTTPS เมื่อเปิดใช้งานออนไลน์</footer>
 </main>
@@ -97,7 +98,7 @@
       $('progressTrack').setAttribute('aria-valuenow',progress);
       $('pageCount').textContent=completed+' / '+total+' หน้า';
       $('percent').textContent=progress+'%';
-      error($('jobError'),j.error||'');
+      error($('jobError'),j.error ? j.error+(j.errorCode?' (รหัส: '+j.errorCode+')':'') : '');
       const done=['completed','failed','cancelled'].includes(j.stage);
       $('cancelButton').hidden=done;
       $('downloadButton').hidden=!j.downloadReady;
@@ -116,7 +117,7 @@
       const res=await request('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         url:$('bookURL').value.trim(),title:$('bookTitle').value.trim(),threads:Number($('threads').value)
       })});
-      const j=await res.json();currentJob=j.id;$('jobPanel').hidden=false;$('cancelButton').hidden=false;$('downloadButton').hidden=true;
+      const j=await res.json();currentJob=j.id;$('jobReference').textContent='Job ID: '+j.id;$('jobReference').hidden=false;$('jobPanel').hidden=false;$('cancelButton').hidden=false;$('downloadButton').hidden=true;
       await refresh(); if(poll)clearInterval(poll); poll=setInterval(refresh,1100);
     }catch(e){error($('formError'),e.message);$('startButton').disabled=false;}
   });
