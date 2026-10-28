@@ -250,7 +250,10 @@ func (s *webServer) finishJob(job *webJob, file string, err error) {
 			job.stage = "cancelled"
 		}
 		job.errorCode, job.errorText = describeWebJobError(err)
-		log.Printf("job %s failed (code=%s): %v", job.id, job.errorCode, err)
+		// Errors can embed signed source URLs, bearer-like query values,
+		// private workspace paths and upstream transport details. Record
+		// only bounded, generated identifiers and classified status.
+		log.Printf("job %s finished (stage=%s code=%s)", job.id, job.stage, job.errorCode)
 		return
 	}
 	job.stage = "completed"
