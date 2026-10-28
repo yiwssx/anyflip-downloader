@@ -29,7 +29,7 @@
 ### P1 — คุณภาพภาพและการแปลง PDF
 - [ ] เลือกภาพคุณภาพสูงสุดที่เข้าถึงได้ **โดยได้รับอนุญาต** พร้อม fallback ที่ชัดเจน — P1-C มี 404/410-only fallback; P1-E (#27) ผ่าน CI สำหรับโหมด opt-in เปรียบเทียบจำนวนพิกเซลจากตัวเลือกใน metadata และยังคงค่าเริ่มต้นเดิม; **รอหนังสือจริงที่ได้รับอนุญาตและการตรวจด้วยโปรแกรมอ่าน PDF**
 - [ ] รองรับ JPG/PNG/WebP ตามความสามารถตัวแปลง และตรวจการจัดเรียง/หมุน/ขนาดหน้า — PR #19 ทดสอบ binary formats/corruption, PR #23 ทดสอบ MediaBox/สัดส่วน/ลำดับ และ PR #25 ตรวจ EXIF 1–8 ด้วย PDF จริงใน CI; รอ visual QA และหนังสือที่ได้รับอนุญาตจริงก่อนปิด Gate
-- [ ] แสดงประเภทผลลัพธ์เป็น **Image-based PDF** อย่างชัดเจน
+- [x] แสดงประเภทผลลัพธ์เป็น **Image-based PDF** อย่างชัดเจน — CLI, Web GUI, และ HTTP download header ระบุประเภทไฟล์ พร้อม regression tests; ตรวจรับผ่านเมื่อ CI ของ PR นี้เป็นสีเขียว
 - [ ] เพิ่ม test fixtures สำหรับหน้าขาด ภาพเสีย ชื่อต่างรูปแบบ จำนวนหน้ามาก — P1-F (#31) ผ่าน CI ด้วย PDF 129 หน้าจากภาพทดสอบจริง (รวมหน้าขาดและเสียช่วงท้าย) แต่ยังต้องทดสอบหนังสือที่ได้รับอนุญาตและการใช้งานจริง
 - **เกณฑ์ผ่าน:** เอกสารทดสอบที่ได้รับอนุญาตรวมเป็น PDF ได้ครบ เรียงหน้าและเปิดอ่านได้
 
@@ -99,7 +99,8 @@
 | 2026-10-28 | P1-E Web QA regression: browser-form markup, authenticated opt-in job API and PDF geometry using mock-origin fixtures | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI passed; physical browser, LAN host and live book validation still OPEN | [PR #28](https://github.com/yiwssx/anyflip-downloader/pull/28) · [CI 40659004326](https://github.com/yiwssx/anyflip-downloader/actions/runs/40659004326) |
 | 2026-10-28 | P3-G: Web job log privacy — no raw source URL, credentials, workspace or transport details | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI passed; server-side observability and public readiness remain OPEN | [PR #30](https://github.com/yiwssx/anyflip-downloader/pull/30) · [CI 40662371036](https://github.com/yiwssx/anyflip-downloader/actions/runs/40662371036) |
 | 2026-10-28 | P1-F: synthetic 129-page complete PDF, chunk order, missing/late-corrupt page fail-closed | ✅ Merged; Build/Vet/Unit/Race + Docker CI passed; not evidence of a real authorized book or large-server benchmark | [PR #31](https://github.com/yiwssx/anyflip-downloader/pull/31) · [CI 40662689066](https://github.com/yiwssx/anyflip-downloader/actions/runs/40662689066) |
-| 2026-10-28 | P3-H: reject oversized decoded image dimensions before PDF import; safe Web error | 🔄 CI pending; target-host memory and disk quota gates OPEN | Branch `fix/p3-image-dimension-guard` |
+| 2026-10-28 | P3-H: reject oversized decoded image dimensions before PDF import; safe Web error | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; target-host memory and disk quota gates OPEN | [PR #33](https://github.com/yiwssx/anyflip-downloader/pull/33) · [CI 40665058331](https://github.com/yiwssx/anyflip-downloader/actions/runs/40665058331) |
+| 2026-10-28 | P1-G: explicitly label CLI, GUI and PDF HTTP download as image-based (not source vector/text PDF) | 🔄 CI pending; unrelated real-book viewer acceptance remains OPEN | Branch `feat/p1-explicit-image-based-pdf-type` |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### P1 acceptance evidence and remaining gates
