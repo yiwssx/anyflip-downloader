@@ -19,7 +19,7 @@ access controls, authentication or publisher restrictions.
 | P1-A2 Corrupt/missing page | Broken data fails closed; no incomplete final PDF | CI passed #19/#23 |
 | P1-C1 Declared alternate | Metadata advertises variant; 404/410 primary falls back to explicitly declared same-book URL | CI passed #22 |
 | P1-C2 Access control | 401/403, throttling, network errors and unsafe redirect never select a lower variant | CI passed #22 |
-| P1-C3 Highest available resolution | Compare actual pixel dimensions of publisher-authorized candidate images without generating new URLs; record which chosen source was largest | **OPEN** |
+| P1-C3 Highest available resolution | Opt-in mode downloads only up to 8 publisher-listed candidates per page; selects greatest decoded width × height (ties keep metadata order) | **CI pending; actual authorized-book verification OPEN** |
 | P1-D1 Mixed geometry | Real PDF MediaBox ratios correspond to 4 ordered portrait/landscape/square PNG pages, including across chunk boundaries | CI passed #23 |
 | P1-D2 EXIF rotation | EXIF 1–8, little/big-endian TIFF, actual PDF geometry and input immutability | **CI passed #25; physical viewer QA OPEN** |
 | P1-D3 Visual fidelity | Compare legibility, margins, page color, crop, and embedded-image clarity on desktop and mobile | **OPEN** |
@@ -31,6 +31,14 @@ access controls, authentication or publisher restrictions.
 is not proven to be the highest pixel-resolution variant. A 404/410-only
 fallback is a resilience feature, not a quality guarantee. Missing permission
 is never grounds for fallback.
+
+## Explicit high-resolution selection
+
+- Default mode keeps publisher metadata order and uses alternate image URLs only after a 404/410 (PR #22).
+- Optional `-best-quality` (CLI) or the unchecked **เลือกภาพความละเอียดสูงสุด** checkbox (Web GUI) downloads and checks every publisher-declared image candidate (at most eight) for each page, ranks successful images by decoded pixel count `width × height`, and keeps the first declared candidate on a tie. It does **not** generate, guess, scrape or probe unlisted image URLs.
+- A declared 404/410 image may be skipped. An authentication denial, rate limit, redirect outside the book, network failure or corrupt image fails the quality job without publishing a partial result. This is **not** an access-control bypass.
+- This opt-in can increase publisher requests, network transfer, storage I/O, and job duration by up to the number of publisher-listed variants per page. It is not automatically enabled for existing LAN clients. Larger pixel count does not always guarantee better legibility or less compression, and does not establish access to an original PDF.
+- Compare actual output, not source names (`large`, `mobile`) or HTTP Content-Length; do not close the P1 live quality gate without authorized real-book and viewer evidence.
 
 ## Authorized acceptance walkthrough
 

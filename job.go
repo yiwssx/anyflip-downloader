@@ -23,6 +23,7 @@ type DownloadJobOptions struct {
 	Retries            int
 	RetryDelay         time.Duration
 	ChunkSize          uint
+	BestQuality        bool // inspect every publisher-listed candidate; default false
 	HTTPClient         *http.Client
 }
 
@@ -99,7 +100,7 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 		}
 	}
 	if err := book.downloadImagesContextWithProgress(ctx, opts.HTTPClient, workspace,
-		downloadOptions{threads: opts.Threads, retries: opts.Retries, retryDelay: opts.RetryDelay}, pageReporter); err != nil {
+		downloadOptions{threads: opts.Threads, retries: opts.Retries, retryDelay: opts.RetryDelay, bestQuality: opts.BestQuality}, pageReporter); err != nil {
 		return "", fmt.Errorf("download images (workspace %s): %w", workspace, err)
 	}
 	emit(DownloadProgress{Stage: "converting", Total: book.pageCount})

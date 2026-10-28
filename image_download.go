@@ -180,6 +180,9 @@ func (fb *flipbook) downloadPageContext(ctx context.Context, client *http.Client
 	if opts.retries < 0 || opts.retries > 10 || opts.retryDelay < 0 || opts.retryDelay > time.Minute {
 		return errors.New("invalid page retry settings")
 	}
+	if opts.bestQuality {
+		return fb.downloadPageBestQualityContext(ctx, client, page, folder, opts)
+	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}

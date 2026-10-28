@@ -27,6 +27,7 @@ var donwloadThreads int
 var downloadRetries int
 var downloadRetryDelay time.Duration
 var chunkSize uint
+var bestQuality bool
 
 type flipbook struct {
 	URL       *url.URL
@@ -41,6 +42,7 @@ type downloadOptions struct {
 	threads    int
 	retries    int
 	retryDelay time.Duration
+	bestQuality bool
 }
 
 func init() {
@@ -55,6 +57,7 @@ func init() {
 	flag.IntVar(&downloadRetries, "retries", 1, "Number of download retries")
 	flag.DurationVar(&downloadRetryDelay, "waitretry", time.Second, "Wait time between download retries")
 	flag.UintVar(&chunkSize, "chunksize", 10, "Amount of images converted at once. Higher amount amount will end in less write actions but more memory usage")
+	flag.BoolVar(&bestQuality, "best-quality", false, "Opt in to compare publisher-listed image dimensions for each page (more downloads)")
 }
 
 func main() {
@@ -91,6 +94,7 @@ func run() {
 		Retries:            downloadRetries,
 		RetryDelay:         downloadRetryDelay,
 		ChunkSize:          chunkSize,
+		BestQuality:        bestQuality,
 	}, nil)
 	if err != nil {
 		log.Fatal(err)

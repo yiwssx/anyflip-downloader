@@ -16,6 +16,8 @@
     label{display:block;font-weight:650;font-size:14px;margin-bottom:9px}
     input,select{width:100%;height:46px;border:1px solid #cbd7e5;background:#fff;border-radius:10px;padding:0 13px;color:#152a47;font:inherit}
     input:focus,select:focus{outline:3px solid #bedaff;border-color:#2873bd}
+    input[type=checkbox]{width:auto;height:auto;accent-color:#1762b4}
+    .quality-toggle{display:flex;align-items:flex-start;gap:10px;line-height:1.5;font-weight:500}
     .field{margin-bottom:18px} .fields{display:grid;grid-template-columns:1fr 160px;gap:16px}
     button{height:45px;border-radius:10px;border:0;font-size:14px;font-weight:700;padding:0 20px;cursor:pointer}
     button:disabled{opacity:.5;cursor:not-allowed}
@@ -53,6 +55,7 @@
         <div class="field"><label for="threads">การดาวน์โหลดพร้อมกัน</label>
           <select id="threads"><option value="1">1 หน้า</option><option value="2">2 หน้า</option><option value="3" selected>3 หน้า</option><option value="4">4 หน้า</option><option value="6">6 หน้า</option><option value="8">8 หน้า</option></select></div>
       </div>
+      <div class="field"><label class="quality-toggle" for="bestQuality"><input id="bestQuality" type="checkbox"><span>เลือกภาพความละเอียดสูงสุดที่ผู้เผยแพร่ระบุไว้ <small>(อาจใช้เวลาและปริมาณดาวน์โหลดเพิ่ม; ค่าปกติไม่เลือก)</small></span></label></div>
       <div class="actions"><button class="primary" id="startButton" type="submit">เริ่มดาวน์โหลด</button></div>
       <p class="error" id="formError" role="alert" hidden></p>
     </form>
@@ -115,7 +118,7 @@
       if(token.length<16)throw new Error('กรุณากรอก Access Token ที่ผู้ดูแลระบบกำหนด');
       sessionStorage.setItem('anyflip-access-token',token);
       const res=await request('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        url:$('bookURL').value.trim(),title:$('bookTitle').value.trim(),threads:Number($('threads').value)
+        url:$('bookURL').value.trim(),title:$('bookTitle').value.trim(),threads:Number($('threads').value),bestQuality:$('bestQuality').checked
       })});
       const j=await res.json();currentJob=j.id;$('jobReference').textContent='Job ID: '+j.id;$('jobReference').hidden=false;$('jobPanel').hidden=false;$('cancelButton').hidden=false;$('downloadButton').hidden=true;
       await refresh(); if(poll)clearInterval(poll); poll=setInterval(refresh,1100);
