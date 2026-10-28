@@ -106,6 +106,12 @@ func createPDFVerifiedContext(ctx context.Context, outputFile, imageDir string, 
 	}
 	defer os.RemoveAll(stageDir)
 	stagingFile := filepath.Join(stageDir, "result.pdf")
+	// Apply JPEG EXIF rotations to isolated lossless PNG copies before
+	// importing; the source images are never edited or replaced.
+	pages, err = preparePDFPageOrientation(ctx, pages, stageDir)
+	if err != nil {
+		return err
+	}
 	configuration := pdfcpu.DefaultImportConfig()
 	for i := 0; i < len(pages); i += chunkSize {
 		if err := ctx.Err(); err != nil {
