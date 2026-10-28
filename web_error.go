@@ -28,6 +28,7 @@ func describeWebJobError(err error) (code, message string) {
 		return "source_rate_limited", "เว็บไซต์ต้นทางจำกัดจำนวนคำขอ (HTTP 429) กรุณาลองใหม่ภายหลัง"
 	case strings.Contains(reason, "unsupported image extension"),
 		strings.Contains(reason, "invalid image data"),
+		strings.Contains(reason, "image dimensions exceed supported limit"),
 		strings.Contains(reason, "missing downloaded image"):
 		return "image_invalid", "ข้อมูลภาพจากหนังสือไม่สมบูรณ์หรือเป็นรูปแบบที่ระบบยังไม่รองรับ"
 	case strings.Contains(reason, "invalid anyflip book configuration"),

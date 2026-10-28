@@ -21,7 +21,25 @@ import (
 	_ "golang.org/x/image/webp"
 )
 
-const maxPageBytes int64 = 32 << 20
+const (
+	maxPageBytes int64 = 32 << 20
+	// Bound decoded image dimensions before pdfcpu can allocate pixel
+	// buffers. 7680x4320 (8K UHD) fits inside these limits.
+	maxPagePixels int64 = 40_000_000
+	maxPageDimension = 12_000
+)
+
+// validatePageDimensions prevents tiny compressed image headers from
+// advertising implausibly large allocations. Division avoids integer
+// overflow even for malformed PNG dimensions.
+func validatePageDimensions(width, height int) error {
+	if width < 1 || height < 1 ||
+		width > maxPageDimension || height > maxPageDimension ||
+		int64(width) > maxPagePixels/int64(height) {
+		return fmt.Errorf("image dimensions exceed supported limit (%d px per side, %d total pixels)", maxPageDimension, maxPagePixels)
+	}
+	return nil
+}
 
 // retryBackoff doubles the wait after each retry, capped at 60 seconds.
 func retryBackoff(initial time.Duration, attempt int) time.Duration {
@@ -353,8 +371,8 @@ func saveImageResponse(filename string, resp *http.Response) (resultErr error) {
 	if err != nil {
 		return fmt.Errorf("invalid image data: %w", err)
 	}
-	if cfg.Width < 1 || cfg.Height < 1 {
-		return errors.New("invalid image dimensions")
+	if err := validatePageDimensions(cfg.Width, cfg.Height); err != nil {
+		return err
 	}
 	if format != "jpeg" && format != "png" && format != "webp" {
 		return fmt.Errorf("unsupported image format %q", format)
