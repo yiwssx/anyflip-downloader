@@ -1,32 +1,69 @@
-name: goreleaser
+name: Release candidate (manual, no publication)
 
+# Releases must not be published by pushing a tag before the P1/P3 host
+# acceptance gates and operator sign-off are complete.
 on:
-  push:
-    # run only against tags
-    tags:
-      - '*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Candidate version (for example v0.2.0-rc.1)"
+        required: true
+        type: string
 
 permissions:
-  contents: write
-  # packages: write
-  # issues: write
+  contents: read
 
 jobs:
-  goreleaser:
+  candidate:
+    name: Validate and package candidate
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          fetch-depth: 0
-      - run: git fetch --force --tags
-      - uses: actions/setup-go@v4
-        with:
-          go-version: stable
-      # More assembly might be required: Docker logins, GPG, etc. It all depends
-      # on your needs.
-      - uses: goreleaser/goreleaser-action@v4
-        with:
-          version: latest
-          args: release --clean
+          go-version-file: go.mod
+      - name: Validate version format
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CANDIDATE_VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          [[ "$CANDIDATE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || {
+            echo "Version must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-rc.N" >&2
+            exit 1
+          }
+      - name: Verify module checksums and static analysis
+        run: |
+          go mod download
+          go mod verify
+          go vet ./...
+      - name: Run full Go tests including race detector
+        run: |
+          go test -count=1 ./...
+          go test -race -count=1 ./...
+      - name: Scan reachable Go dependencies
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - name: Package CLI release candidate
+        env:
+          CANDIDATE_VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for target in linux/amd64 linux/arm64 windows/amd64 darwin/arm64; do
+            os="${target%/*}"
+            arch="${target#*/}"
+            output="dist/anyflip-downloader_${CANDIDATE_VERSION}_${os}_${arch}"
+            if [[ "$os" == windows ]]; then output="${output}.exe"; fi
+            GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -o "$output" .
+          done
+          ( cd dist && sha256sum anyflip-downloader_* > SHA256SUMS )
+          cp docs/RELEASE_CHECKLIST.md dist/
+          cp CHANGELOG.md dist/
+      - name: Upload unapproved candidate assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: anyflip-candidate-${{ inputs.version }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
