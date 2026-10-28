@@ -94,6 +94,7 @@
 | 2026-10-28 | P1-B: actual mixed JPEG/PNG/WebP import, corruption fail-closed and source immutability | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI all passed on final PR head; other P1 gates still open | [PR #19](https://github.com/yiwssx/anyflip-downloader/pull/19) · [CI 40631954574](https://github.com/yiwssx/anyflip-downloader/actions/runs/40631954574) |
 | 2026-10-28 | P1-C: publisher-advertised image fallback after 404/410 only | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; resolution-quality proof and full authorized book remain open | [PR #22](https://github.com/yiwssx/anyflip-downloader/pull/22) · [CI 40638593872](https://github.com/yiwssx/anyflip-downloader/actions/runs/40638593872) |
 | 2026-10-28 | P1-D: real PDF per-page MediaBox geometry, portrait/landscape order across PDF chunks | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; EXIF rotation and browser rendering still open | [PR #23](https://github.com/yiwssx/anyflip-downloader/pull/23) · [CI 40638773859](https://github.com/yiwssx/anyflip-downloader/actions/runs/40638773859) |
+| 2026-10-28 | P1-D2: JPEG EXIF orientation 1–8 in isolated PDF staging + MediaBox regression | 🔄 CI pending; physical reader visual QA and full-book acceptance open | Branch `fix/p1-exif-orientation-pdf` |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### P1 acceptance evidence and remaining gates
