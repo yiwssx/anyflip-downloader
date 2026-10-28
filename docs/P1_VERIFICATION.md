@@ -24,7 +24,7 @@ access controls, authentication or publisher restrictions.
 | P1-D1 Mixed geometry | Real PDF MediaBox ratios correspond to 4 ordered portrait/landscape/square PNG pages, including across chunk boundaries | CI passed #23 |
 | P1-D2 EXIF rotation | EXIF 1–8, little/big-endian TIFF, actual PDF geometry and input immutability | **CI passed #25; physical viewer QA OPEN** |
 | P1-D3 Visual fidelity | Compare legibility, margins, page color, crop, and embedded-image clarity on desktop and mobile | **OPEN** |
-| P1-F1 129-page synthetic PDF | Real PNG fixtures across six import chunks, PDF page count/MediaBox first/middle/last, source immutability, missing last page and late corruption never publish partial output | **CI pending; synthetic fixture only** |
+| P1-F1 129-page synthetic PDF | Real PNG fixtures across six import chunks, PDF page count/MediaBox first/middle/last, source immutability, missing last page and late corruption never publish partial output | **CI passed #31; synthetic fixture only** |
 | P1-E1 Complete authorized book | One entire publisher-authorized book, correct source page count, valid PDF, first/middle/last page opened | **OPEN** |
 | P1-E2 Target host | On actual Ubuntu/Docker, check 20-minute job timeout, disk/volume usage, restart cleanup, safe errors | **OPEN** |
 | P1-E3 Release | Operator records test evidence, reviews security/HTTPS requirements, approves release separately | **OPEN** |
