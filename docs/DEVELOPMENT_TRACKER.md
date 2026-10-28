@@ -61,9 +61,9 @@
 
 ### P3-J3 — Crash-Orphan PDF Staging Recovery
 
-- [ ] **Code slice (PR #46, CI pending):** พัฒนา cleanup สำหรับโฟลเดอร์ `.anyflip-pdf-stage-*` ที่ค้างจากการปิดโปรเซสผิดปกติ โดยยืนยันชื่อที่ระบบสร้าง, ตรวจอายุของทุกไฟล์ภายใน, ไม่ตาม symlink และไม่ลบเมื่อมี Web job กำลังทำงาน; regression tests ครอบคลุม restart, active-job protection และไฟล์ที่ไม่เกี่ยวข้อง
+- [x] **Code slice:** พัฒนา cleanup สำหรับโฟลเดอร์ `.anyflip-pdf-stage-*` ที่ค้างจากการปิดโปรเซสผิดปกติ โดยยืนยันชื่อที่ระบบสร้าง, ตรวจอายุของทุกไฟล์ภายใน, ไม่ตาม symlink และไม่ลบเมื่อมี Web job กำลังทำงาน; regression tests ครอบคลุม restart, active-job protection และไฟล์ที่ไม่เกี่ยวข้อง
 - [ ] **Physical acceptance:** ทดสอบการหยุด Docker ระหว่างประกอบ PDF และตรวจการคืนพื้นที่จริงหลังครบ retention พร้อม low-disk/host hard quota บน Ubuntu Server; ยังห้ามปิด P3 production gate
-- **สถานะ:** งานโค้ดเสร็จบน PR นี้; รอ Go/Docker CI เพื่อยืนยันก่อน Merge
+- **สถานะ:** [PR #46](https://github.com/yiwssx/anyflip-downloader/pull/46) ผ่าน Go Build/Vet/Unit/Race/Govulncheck และ Docker Compose smoke ใน [CI 40722973213](https://github.com/yiwssx/anyflip-downloader/actions/runs/40722973213); ยังรอทดสอบ physical host
 
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
@@ -119,6 +119,7 @@
 | 2026-10-28 | P5 CI hardening, remediation of 5 reachable Go vulnerabilities, manual release candidate packaging and acceptance checklist | ✅ Merged; Go/Docker/Govulncheck CI passed; no tag/release published | [PR #41](https://github.com/yiwssx/anyflip-downloader/pull/41) · [CI 40710618424](https://github.com/yiwssx/anyflip-downloader/actions/runs/40710618424) |
 | 2026-10-28 | P4 admin-only batch, transient job history and failed/cancelled retry | ✅ Merged; Go/Docker/Govulncheck CI passed; no persistent DB or multi-user identity | [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42) · [CI 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203) · [main 40712120907](https://github.com/yiwssx/anyflip-downloader/actions/runs/40712120907) |
 | 2026-10-28 | P4 terminal Web history: 50 redacted JSON records / seven-day metadata retention across restart, separate one-hour PDF cleanup; no persisted source URL/token/retry settings | ✅ Merged to `main`; PR final-head [40716753587](https://github.com/yiwssx/anyflip-downloader/actions/runs/40716753587) and post-merge main [40716907611](https://github.com/yiwssx/anyflip-downloader/actions/runs/40716907611) Go/Docker/security CI all green | [PR #44](https://github.com/yiwssx/anyflip-downloader/pull/44) |
+| 2026-10-28 | P3-J3 reclaim crash-orphan PDF staging dirs after one hour, only with no active Web job and safe filesystem entries | ✅ Go Build/Vet/Unit/Race/Govulncheck + Docker CI verified; host abrupt-restart acceptance OPEN | [PR #46](https://github.com/yiwssx/anyflip-downloader/pull/46) · [CI 40722973213](https://github.com/yiwssx/anyflip-downloader/actions/runs/40722973213) |
 | — | P1/P2/P3 real host/browser/authorized-book acceptance; P4 OCR/target-host performance/desktop; P5 public release | ⏳ OPEN (not verified; do not mark complete) | Operator host/permission/production sign-off required |
 
 ### P1 acceptance evidence and remaining gates
