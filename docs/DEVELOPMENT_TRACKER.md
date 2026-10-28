@@ -30,7 +30,7 @@
 - [ ] เลือกภาพคุณภาพสูงสุดที่เข้าถึงได้ **โดยได้รับอนุญาต** พร้อม fallback ที่ชัดเจน — P1-C มี 404/410-only fallback; P1-E (#27) ผ่าน CI สำหรับโหมด opt-in เปรียบเทียบจำนวนพิกเซลจากตัวเลือกใน metadata และยังคงค่าเริ่มต้นเดิม; **รอหนังสือจริงที่ได้รับอนุญาตและการตรวจด้วยโปรแกรมอ่าน PDF**
 - [ ] รองรับ JPG/PNG/WebP ตามความสามารถตัวแปลง และตรวจการจัดเรียง/หมุน/ขนาดหน้า — PR #19 ทดสอบ binary formats/corruption, PR #23 ทดสอบ MediaBox/สัดส่วน/ลำดับ และ PR #25 ตรวจ EXIF 1–8 ด้วย PDF จริงใน CI; รอ visual QA และหนังสือที่ได้รับอนุญาตจริงก่อนปิด Gate
 - [ ] แสดงประเภทผลลัพธ์เป็น **Image-based PDF** อย่างชัดเจน
-- [ ] เพิ่ม test fixtures สำหรับหน้าขาด ภาพเสีย ชื่อต่างรูปแบบ จำนวนหน้ามาก — P1-F เพิ่ม 129-page binary PDF fixture (รวมหน้าขาดและเสียช่วงท้าย); รอ CI และไม่อ้างว่าเป็นหนังสือจริง
+- [ ] เพิ่ม test fixtures สำหรับหน้าขาด ภาพเสีย ชื่อต่างรูปแบบ จำนวนหน้ามาก — P1-F (#31) ผ่าน CI ด้วย PDF 129 หน้าจากภาพทดสอบจริง (รวมหน้าขาดและเสียช่วงท้าย) แต่ยังต้องทดสอบหนังสือที่ได้รับอนุญาตและการใช้งานจริง
 - **เกณฑ์ผ่าน:** เอกสารทดสอบที่ได้รับอนุญาตรวมเป็น PDF ได้ครบ เรียงหน้าและเปิดอ่านได้
 
 ### P2 — Web GUI MVP
@@ -48,7 +48,7 @@
 - [ ] Authentication / Authorization, rate limiting, job ownership และการป้องกัน abuse/SSRF
 - [ ] จำกัด concurrent jobs, CPU/RAM, network, disk quota, timeout, max file size/page count
 - [ ] จัดเก็บไฟล์ชั่วคราวพร้อมกำหนด retention/auto cleanup และแยกข้อมูลผู้ใช้ — เพิ่ม cleanup หลัง restart พร้อมตรวจอายุและชื่อไฟล์ของระบบแล้ว; ยังไม่มี multi-user accounts และต้องทดสอบ Volume จริง
-- [ ] Logging/observability ที่ไม่เปิดเผยข้อมูลลับ, แนวทาง backup/rollback, ทดสอบ restart/recovery — P3-G ป้องกันการบันทึก error ดิบใน Web job logs (URL/Token/Path); รอ CI และการตรวจสอบ Logs/Restart บนเครื่องจริง
+- [ ] Logging/observability ที่ไม่เปิดเผยข้อมูลลับ, แนวทาง backup/rollback, ทดสอบ restart/recovery — P3-G (#30) ผ่าน CI ตรวจว่า Web job logs ไม่มี error ดิบ (URL/Token/Path); ยังรอการตรวจสอบ Logs/Restart บนเครื่องจริง
 - [ ] ทดสอบ security และการใช้งานจริงก่อนเชื่อม public domain
 - **เกณฑ์ผ่าน:** HTTPS และสิทธิ์ผู้ใช้ปลอดภัย; ไม่สามารถเข้าถึงไฟล์ข้ามงาน; ระบบมี resource caps
 
@@ -98,12 +98,12 @@
 | 2026-10-28 | P1-E: opt-in high-pixel-resolution selection from publisher-declared choices (CLI/Web) | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; full authorized book and visual QA still OPEN | [PR #27](https://github.com/yiwssx/anyflip-downloader/pull/27) · [CI 40658697472](https://github.com/yiwssx/anyflip-downloader/actions/runs/40658697472) |
 | 2026-10-28 | P1-E Web QA regression: browser-form markup, authenticated opt-in job API and PDF geometry using mock-origin fixtures | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI passed; physical browser, LAN host and live book validation still OPEN | [PR #28](https://github.com/yiwssx/anyflip-downloader/pull/28) · [CI 40659004326](https://github.com/yiwssx/anyflip-downloader/actions/runs/40659004326) |
 | 2026-10-28 | P3-G: Web job log privacy — no raw source URL, credentials, workspace or transport details | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI passed; server-side observability and public readiness remain OPEN | [PR #30](https://github.com/yiwssx/anyflip-downloader/pull/30) · [CI 40662371036](https://github.com/yiwssx/anyflip-downloader/actions/runs/40662371036) |
-| 2026-10-28 | P1-F: synthetic 129-page complete PDF, chunk order, missing/late-corrupt page fail-closed | 🔄 CI pending; not evidence of a real authorized book or large-server benchmark | Branch `test/p1-129-page-pdf-integrity` |
+| 2026-10-28 | P1-F: synthetic 129-page complete PDF, chunk order, missing/late-corrupt page fail-closed | ✅ Merged; Build/Vet/Unit/Race + Docker CI passed; not evidence of a real authorized book or large-server benchmark | [PR #31](https://github.com/yiwssx/anyflip-downloader/pull/31) · [CI 40662689066](https://github.com/yiwssx/anyflip-downloader/actions/runs/40662689066) |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### P1 acceptance evidence and remaining gates
 
-- **Verified in CI:** PR #19 real JPEG/PNG/WebP import and fail-closed corruption; PR #22 publisher-declared 404/410-only fallback + full two-page PDF regression and refusal to fall back on auth/rate-limit/redirect; PR #23 4-page mixed MediaBox aspect/ordering, original SHA-256 and incomplete-output rejection; PR #25 EXIF orientation 1–8, both TIFF endiannesses, isolated lossless PNG normalization, source preservation, rotated PDF MediaBox and malformed Exif rejection.
+- **Verified in CI:** PR #19 real JPEG/PNG/WebP import and fail-closed corruption; PR #22 publisher-declared 404/410-only fallback + full two-page PDF regression and refusal to fall back on auth/rate-limit/redirect; PR #23 4-page mixed MediaBox aspect/ordering, original SHA-256 and incomplete-output rejection; PR #25 EXIF orientation 1–8, both TIFF endiannesses, isolated lossless PNG normalization, source preservation, rotated PDF MediaBox and malformed Exif rejection; PR #27/#28 opt-in quality selection and Web API from publisher-listed mock-origin images; PR #31 synthetic 129-page PDF integrity and late-page fail-closed regressions.
 - **Not verified:** highest **actual** pixel resolution across all publisher choices, visual EXIF fidelity in multiple PDF viewers, page/crop/Thai text fidelity, full publisher-authorized book, browser/mobile, target Ubuntu storage and runtime limits. For rotated JPEGs above 25 million pixels the system fails explicitly; this is a documented limit, not proof of support. A release claim requires these independently recorded checks.
 - [P1 verification matrix](P1_VERIFICATION.md) records repeatable acceptance steps without publishing a real token, copied pages or server-private logs.
 
