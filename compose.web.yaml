@@ -9,6 +9,9 @@ services:
     environment:
       ANYFLIP_WEB_TOKEN: ${ANYFLIP_WEB_TOKEN:?Generate a strong token and set it in .env}
       ANYFLIP_JOB_DIR: /data/jobs
+      # Allow pdfcpu to initialize its config without writing to read-only root.
+      HOME: /data/jobs
+      XDG_CONFIG_HOME: /data/jobs/.config
     ports:
       - "127.0.0.1:8094:8080"
     volumes:
