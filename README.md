@@ -44,6 +44,16 @@ go install github.com/Lofter1/anyflip-downloader@latest
 anyflip-downloader <url to book>
 ```
 
+### Optional: best available publisher-listed image resolution
+
+Default: use the first image listed in publisher metadata, with explicit 404/410 fallback. For books you have permission to copy, add `-best-quality` to compare **actual decoded width × height** for publisher-listed variants (up to 8 per page), select the largest, and keep the first-listed image on a tie:
+
+```sh
+anyflip-downloader -best-quality https://anyflip.com/publisher/book
+```
+
+The Web GUI also offers an **unchecked** quality-selection checkbox. This mode can download multiple images per page, increasing network use and time. It never guesses unlisted URLs or bypasses 401/403 access controls, rate limiting or third-party restrictions; any restricted, malformed or network-failed candidate causes a fail-closed job. Largest pixel dimensions are not proof of best perceptual quality or of access to the publisher's original PDF. Verify the result with an authorized book before accepting quality claims. [P1 verification matrix](docs/P1_VERIFICATION.md).
+
 ### Set title manually
 
 If you do not want to use the book title from anyflip, you can change it using the `-title` flag.
