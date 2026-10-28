@@ -162,9 +162,11 @@ The web backend must **never** accept arbitrary output/workspace paths from
 unauthenticated clients; use per-user/per-job, server-owned directories. Do
 not make an unauthenticated endpoint public. Restrict outbound network access
 and verify DNS/private-network protections before hosted deployment. Current
-jobs retain temporary images on failure for diagnostics. This code does not
-yet provide a Web GUI, authentication, quotas, queue persistence or a hosted
-deployment. Only download content you are authorized to reproduce.
+jobs retain temporary images on failure for diagnostics. The core engine alone does not provide authentication or multi-user job
+ownership. This fork includes a separate authenticated Web GUI with a single
+administrator token and bounded in-memory queue, but not persistent job
+history or approved public production deployment. Only download content
+you are authorized to reproduce.
 
 ### Outbound network safety
 
@@ -183,9 +185,12 @@ ownership; a secure HTTP client alone does not make a public endpoint safe.
 
 ## Self-hosted Web GUI (MVP)
 
-The same Go binary now includes an authenticated browser interface. It is
-intended to run behind a trusted HTTPS reverse proxy (such as Apache) on an
-Ubuntu server; **it has not been deployed or tested against live books**.
+The same Go binary includes an authenticated browser interface. A LAN-only
+self-hosted deployment was operator-confirmed working on 2026-10-28 after
+[pdfcpu's writable-config fix (PR #18)](https://github.com/yiwssx/anyflip-downloader/pull/18).
+This does **not** verify an entire authorized book, mobile/desktop acceptance,
+or security readiness for public access. A public deployment should use a
+trusted HTTPS reverse proxy (such as Apache) only after the remaining gates.
 
 1. Set a long, unique `ANYFLIP_WEB_TOKEN` value (at least 16 characters).
 2. Run `ANYFLIP_WEB_TOKEN=your-long-random-token ./anyflip-downloader -web`
@@ -220,5 +225,9 @@ limitations. The included `deploy/apache/anyflip-web.conf.example` is a **templa
 it does not provision a domain, DNS or TLS certificate.
 
 Start with `docker compose -f compose.web.yaml up -d --build` after securely
-creating `.env`. Do not open a public web endpoint without completing the
-production verification gates documented in the runbook.
+creating `.env`. The repository's stock Compose binds loopback; an existing
+operator-customized LAN bind must not be overwritten by copying the template
+blindly. An administrator token over plain HTTP on a LAN is **not encrypted**:
+restrict network access and use HTTPS or an SSH tunnel when handling credentials.
+Do not open a public endpoint without completing the production verification
+gates documented in the runbook.
