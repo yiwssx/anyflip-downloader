@@ -104,6 +104,12 @@ func TestWebJobLifecycleWithMockedImages(t *testing.T) {
 	if pdf.StatusCode != http.StatusOK {
 		t.Fatalf("PDF download status=%d", pdf.StatusCode)
 	}
+	if got := pdf.Header.Get("X-AnyFlip-Output-Type"); got != "image-based-pdf" {
+		t.Fatalf("download did not declare its image-based artifact type: %q", got)
+	}
+	if got := pdf.Header.Get("Content-Type"); got != "application/pdf" {
+		t.Fatalf("download content type=%q", got)
+	}
 	b, err := io.ReadAll(pdf.Body)
 	pdf.Body.Close()
 	if err != nil || len(b) < 100 || !bytes.HasPrefix(b, []byte("%PDF-")) {
