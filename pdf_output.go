@@ -83,6 +83,13 @@ func createPDFVerified(outputFile, imageDir string, expectedPages, chunkSize int
 // createPDFVerifiedContext checks cancellation between import chunks, validates
 // the completed PDF and publishes only after every check passes.
 func createPDFVerifiedContext(ctx context.Context, outputFile, imageDir string, expectedPages, chunkSize int, onProgress func(completed int)) error {
+	return createPDFVerifiedWithBudget(ctx, outputFile, imageDir, expectedPages, chunkSize, onProgress, 0)
+}
+
+// createPDFVerifiedWithBudget also checks the live workspace plus isolated PDF
+// staging size between import chunks and before atomic publication. A failed
+// budget check never publishes the final PDF.
+func createPDFVerifiedWithBudget(ctx context.Context, outputFile, imageDir string, expectedPages, chunkSize int, onProgress func(completed int), maxBytes int64) error {
 	if ctx == nil {
 		return fmt.Errorf("PDF conversion context is required")
 	}
@@ -112,6 +119,9 @@ func createPDFVerifiedContext(ctx context.Context, outputFile, imageDir string, 
 	if err != nil {
 		return err
 	}
+	if err := checkJobStorageBudget(maxBytes, imageDir, stageDir); err != nil {
+		return err
+	}
 	configuration := pdfcpu.DefaultImportConfig()
 	for i := 0; i < len(pages); i += chunkSize {
 		if err := ctx.Err(); err != nil {
@@ -120,6 +130,9 @@ func createPDFVerifiedContext(ctx context.Context, outputFile, imageDir string, 
 		end := min(i+chunkSize, len(pages))
 		if err := api.ImportImagesFile(pages[i:end], stagingFile, configuration, nil); err != nil {
 			return fmt.Errorf("PDF conversion failed at pages %d-%d: %w", i+1, end, err)
+		}
+		if err := checkJobStorageBudget(maxBytes, imageDir, stageDir); err != nil {
+			return err
 		}
 		if onProgress != nil {
 			onProgress(end)
@@ -139,6 +152,9 @@ func createPDFVerifiedContext(ctx context.Context, outputFile, imageDir string, 
 		return fmt.Errorf("secure generated PDF: %w", err)
 	}
 	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := checkJobStorageBudget(maxBytes, imageDir, stageDir); err != nil {
 		return err
 	}
 	return publishVerifiedFile(stagingFile, destination)
