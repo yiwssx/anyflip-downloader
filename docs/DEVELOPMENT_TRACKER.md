@@ -48,7 +48,7 @@
 - [ ] Authentication / Authorization, rate limiting, job ownership และการป้องกัน abuse/SSRF
 - [ ] จำกัด concurrent jobs, CPU/RAM, network, disk quota, timeout, max file size/page count
 - [ ] จัดเก็บไฟล์ชั่วคราวพร้อมกำหนด retention/auto cleanup และแยกข้อมูลผู้ใช้ — เพิ่ม cleanup หลัง restart พร้อมตรวจอายุและชื่อไฟล์ของระบบแล้ว; ยังไม่มี multi-user accounts และต้องทดสอบ Volume จริง
-- [ ] Logging/observability ที่ไม่เปิดเผยข้อมูลลับ, แนวทาง backup/rollback, ทดสอบ restart/recovery
+- [ ] Logging/observability ที่ไม่เปิดเผยข้อมูลลับ, แนวทาง backup/rollback, ทดสอบ restart/recovery — P3-G ป้องกันการบันทึก error ดิบใน Web job logs (URL/Token/Path); รอ CI และการตรวจสอบ Logs/Restart บนเครื่องจริง
 - [ ] ทดสอบ security และการใช้งานจริงก่อนเชื่อม public domain
 - **เกณฑ์ผ่าน:** HTTPS และสิทธิ์ผู้ใช้ปลอดภัย; ไม่สามารถเข้าถึงไฟล์ข้ามงาน; ระบบมี resource caps
 
@@ -97,6 +97,7 @@
 | 2026-10-28 | P1-D2: JPEG EXIF orientation 1–8 in isolated PDF staging + MediaBox regression | ✅ Merged; Build/Vet/Unit/Race + Docker CI passed. Physical reader visual QA and full-book acceptance open | [PR #25](https://github.com/yiwssx/anyflip-downloader/pull/25) · [CI 40657393852](https://github.com/yiwssx/anyflip-downloader/actions/runs/40657393852) |
 | 2026-10-28 | P1-E: opt-in high-pixel-resolution selection from publisher-declared choices (CLI/Web) | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; full authorized book and visual QA still OPEN | [PR #27](https://github.com/yiwssx/anyflip-downloader/pull/27) · [CI 40658697472](https://github.com/yiwssx/anyflip-downloader/actions/runs/40658697472) |
 | 2026-10-28 | P1-E Web QA regression: browser-form markup, authenticated opt-in job API and PDF geometry using mock-origin fixtures | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI passed; physical browser, LAN host and live book validation still OPEN | [PR #28](https://github.com/yiwssx/anyflip-downloader/pull/28) · [CI 40659004326](https://github.com/yiwssx/anyflip-downloader/actions/runs/40659004326) |
+| 2026-10-28 | P3-G: Web job log privacy — no raw source URL, credentials, workspace or transport details | 🔄 PR pending CI; only generated job IDs, stage and classified error code logged; server-side observability and public readiness remain OPEN | Branch `fix/p3-redacted-job-logs` |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### P1 acceptance evidence and remaining gates
