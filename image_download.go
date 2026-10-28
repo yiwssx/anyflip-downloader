@@ -210,7 +210,16 @@ func (fb *flipbook) downloadPageContext(ctx context.Context, client *http.Client
 		client = newAnyFlipHTTPClient()
 	}
 	safeClient := *client
-	safeClient.CheckRedirect = newAnyFlipHTTPClient().CheckRedirect
+	originRedirect := newAnyFlipHTTPClient().CheckRedirect
+	safeClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if err := originRedirect(req, via); err != nil {
+			return err
+		}
+		if _, err := validatePageImageURL(bookURL, req.URL.String()); err != nil {
+			return fmt.Errorf("image redirect escapes selected book: %w", err)
+		}
+		return nil
+	}
 	if safeClient.Timeout <= 0 || safeClient.Timeout > 45*time.Second {
 		safeClient.Timeout = 45 * time.Second
 	}
