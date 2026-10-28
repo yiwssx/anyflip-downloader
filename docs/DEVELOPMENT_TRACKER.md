@@ -61,7 +61,7 @@
 
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
-- [ ] Batch Download / Queue / History / Retry failed tasks — P4 code slice: authenticated atomic 8-item batch, temporary last-50 status history, new-ID retry of failed/cancelled jobs; CI/PR acceptance pending; persistent history is tracked separately
+- [x] Batch Download / Queue / History / Retry failed tasks — [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42): authenticated atomic 8-item batch, last-50 temporary statuses, new-ID retry of failed/cancelled jobs; Go Build/Vet/Unit/Race/Govulncheck + Docker CI passed ([run 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203)). History is **memory-only**; durable history remains separately unchecked.
 - [ ] Persistence (เช่น SQLite) หากมีการใช้งานหลายงานหรือจำเป็นต้องกลับมาดูประวัติ
 - [ ] Benchmark และปรับ concurrency ตามสเปก Server จริง
 - [ ] พิจารณา Desktop packaging ในอนาคตโดยใช้ Core เดียวกัน
@@ -109,7 +109,10 @@
 | 2026-10-28 | P3-H: reject oversized decoded image dimensions before PDF import; safe Web error | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; target-host memory and disk quota gates OPEN | [PR #33](https://github.com/yiwssx/anyflip-downloader/pull/33) · [CI 40665058331](https://github.com/yiwssx/anyflip-downloader/actions/runs/40665058331) |
 | 2026-10-28 | P1-G: explicitly label CLI, GUI and PDF HTTP download as image-based (not source vector/text PDF) | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI passed; unrelated real-book viewer acceptance remains OPEN | [PR #34](https://github.com/yiwssx/anyflip-downloader/pull/34) · [CI 40665519907](https://github.com/yiwssx/anyflip-downloader/actions/runs/40665519907) |
 | 2026-10-28 | P3-I: bounded failed-token throttle for Web API | ✅ Merged; Go Build/Vet/Unit/Race and Docker Compose smoke passed on final PR head; target Ubuntu and public authorization gates OPEN | [PR #36](https://github.com/yiwssx/anyflip-downloader/pull/36) · [CI 40702293824](https://github.com/yiwssx/anyflip-downloader/actions/runs/40702293824) |
-| 2026-10-28 | P3-J1: checkpointed per-Web-job page/storage budget and fail-closed PDF publishing | ✅ Merged, Go Build/Vet/Unit/Race and Docker Compose smoke passed; **only soft job limit**, hard volume quota and target-host capacity still OPEN | [PR #38](https://github.com/yiwssx/anyflip-downloader/pull/38) · [CI 40704369464](https://github.com/yiwssx/anyflip-downloader/actions/runs/40704369464) |\n| — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
+| 2026-10-28 | P3-J1: checkpointed per-Web-job page/storage budget and fail-closed PDF publishing | ✅ Merged, Go Build/Vet/Unit/Race and Docker Compose smoke passed; **only soft job limit**, hard volume quota and target-host capacity still OPEN | [PR #38](https://github.com/yiwssx/anyflip-downloader/pull/38) · [CI 40704369464](https://github.com/yiwssx/anyflip-downloader/actions/runs/40704369464) |\n| 2026-10-28 | P3-J2 code admission: managed aggregate 4 GiB soft ceiling, nonroot free-space guard and concurrent reservations | ✅ Merged; PR/main Go+Docker CI passed; **hard host quota OPEN** | [PR #40](https://github.com/yiwssx/anyflip-downloader/pull/40) · [CI 40709563153](https://github.com/yiwssx/anyflip-downloader/actions/runs/40709563153) · [main 40709998946](https://github.com/yiwssx/anyflip-downloader/actions/runs/40709998946) |
+| 2026-10-28 | P5 CI hardening, remediation of 5 reachable Go vulnerabilities, manual release candidate packaging and acceptance checklist | ✅ Merged; Go/Docker/Govulncheck CI passed; no tag/release published | [PR #41](https://github.com/yiwssx/anyflip-downloader/pull/41) · [CI 40710618424](https://github.com/yiwssx/anyflip-downloader/actions/runs/40710618424) |
+| 2026-10-28 | P4 admin-only batch, transient job history and failed/cancelled retry | ✅ Merged; Go/Docker/Govulncheck CI passed; no persistent DB or multi-user identity | [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42) · [CI 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203) · [main 40712120907](https://github.com/yiwssx/anyflip-downloader/actions/runs/40712120907) |
+| — | P1/P2/P3 remaining real host/browser/authorized-book acceptance, P4 OCR/persistence/performance/desktop and P5 public release | ⏳ OPEN (not verified; do not mark complete) | Operator host/permission/production sign-off required |
 
 ### P1 acceptance evidence and remaining gates
 
@@ -126,6 +129,14 @@
 - Docker deployment config: Compose v2.40.3 static validation passed in sandbox; **real Docker image build, non-root container boot, API probes and restart** later passed on GitHub-hosted Actions runner. This does not establish deployment on the user's Ubuntu server.
 - Operator feedback on 2026-10-28 confirms the self-hosted LAN Web GUI works after PR #18's writable pdfcpu configuration change. This is **not** proof of a complete authorized book, cross-device browser acceptance, public Apache/HTTPS deployment, or production security readiness. Preserve the existing host-specific LAN bind (`10.10.1.100:8094`); the stock Compose template intentionally remains loopback-only.
 - Full end-to-end production Docker/Apache/HTTPS and physical browser/mobile QA remain open. P3-A includes configuration templates, not proof of public deployment.
+
+### Code-only handoff (2026-10-28)
+
+- All runtime work completed in this round (#40 capacity admission, #42 batch/history/retry) and CI/security/release-candidate guard (#41) are merged into `main`. The exact post-merge `main` CI run for #42 passed: [40712120907](https://github.com/yiwssx/anyflip-downloader/actions/runs/40712120907).
+- The 4 GiB managed-volume ceiling and 512 MiB job reservations are application-level checks, **not hard disk quotas**. A separate filesystem-level Ubuntu quota remains mandatory before multi-user or public service.
+- P1 live authorized-book visual QA, P2 browser/mobile testing and all target-host HTTPS/volume/restart/security gates are **OPEN**. LAN-only operation is separate from an approved public release.
+- P4 OCR, durable history (SQLite or equivalent), target-machine benchmarks and optional desktop packaging remain discretionary, independent features. Do not describe them as completed.
+- P5 candidate workflow is manual and intentionally does **not** publish any GitHub release. Acceptance checklist exists; full Release gate remains OPEN until operator authorization.
 
 ## ข้อกำหนดการติดตาม
 
