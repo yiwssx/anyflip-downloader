@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -57,6 +58,7 @@ type webServer struct {
 	token    string
 	sem      chan struct{}
 	client   *http.Client // Optional controlled test transport; nil in production.
+	authThrottle *authThrottle
 }
 
 func newWebServer(token, root string) (*webServer, error) {
@@ -69,7 +71,7 @@ func newWebServer(token, root string) (*webServer, error) {
 	if err := os.MkdirAll(root, 0700); err != nil {
 		return nil, err
 	}
-	server := &webServer{jobs: make(map[string]*webJob), root: root, token: token, sem: make(chan struct{}, 2)}
+	server := &webServer{jobs: make(map[string]*webJob), root: root, token: token, sem: make(chan struct{}, 2), authThrottle: newAuthThrottle()}
 	if err := server.removeExpiredJobArtifacts(time.Now()); err != nil {
 		return nil, err
 	}
@@ -111,12 +113,20 @@ func (s *webServer) handler() http.Handler {
 
 func (s *webServer) authorize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if wait := s.authThrottle.retryAfter(r.RemoteAddr); wait > 0 {
+			seconds := int((wait + time.Second - 1) / time.Second)
+			w.Header().Set("Retry-After", strconv.Itoa(seconds))
+			http.Error(w, "too many failed authentication attempts", http.StatusTooManyRequests)
+			return
+		}
 		value := r.Header.Get("Authorization")
 		if !strings.HasPrefix(value, "Bearer ") ||
 			subtle.ConstantTimeCompare([]byte(strings.TrimPrefix(value, "Bearer ")), []byte(s.token)) != 1 {
+			s.authThrottle.recordFailure(r.RemoteAddr)
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
+		s.authThrottle.recordSuccess(r.RemoteAddr)
 		next.ServeHTTP(w, r)
 	})
 }
