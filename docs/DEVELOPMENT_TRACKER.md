@@ -59,6 +59,12 @@
 - [ ] **Operational acceptance**: Verify low disk, abrupt restart, retention, failed PDF conversion and real Ubuntu/Docker capacity using an authorized book. Preserve existing LAN `10.10.1.100:8094`.
 - **OPEN** until host quota and physical tests are documented. No public deployment approval. GitHub Issues are disabled; track here.
 
+### P3-J3 — Crash-Orphan PDF Staging Recovery
+
+- [x] **Code slice:** พัฒนา cleanup สำหรับโฟลเดอร์ `.anyflip-pdf-stage-*` ที่ค้างจากการปิดโปรเซสผิดปกติ โดยยืนยันชื่อที่ระบบสร้าง, ตรวจอายุของทุกไฟล์ภายใน, ไม่ตาม symlink และไม่ลบเมื่อมี Web job กำลังทำงาน; regression tests ครอบคลุม restart, active-job protection และไฟล์ที่ไม่เกี่ยวข้อง
+- [ ] **Physical acceptance:** ทดสอบการหยุด Docker ระหว่างประกอบ PDF และตรวจการคืนพื้นที่จริงหลังครบ retention พร้อม low-disk/host hard quota บน Ubuntu Server; ยังห้ามปิด P3 production gate
+- **สถานะ:** งานโค้ดเสร็จบน PR นี้; รอ Go/Docker CI เพื่อยืนยันก่อน Merge
+
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
 - [x] Batch Download / Queue / History / Retry failed tasks — [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42): authenticated atomic 8-item batch, last-50 temporary statuses, new-ID retry of failed/cancelled jobs; Go Build/Vet/Unit/Race/Govulncheck + Docker CI passed ([run 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203)). History is **memory-only**; durable history remains separately unchecked.
