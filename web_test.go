@@ -121,9 +121,22 @@ func TestWebJobLifecycleWithMockedImages(t *testing.T) {
 	s.mu.Unlock()
 	s.purgeOldJobs(time.Now())
 	after := webRequest(t, ts, "GET", "/api/jobs/"+created.ID, nil, true)
+	if after.StatusCode != http.StatusOK {
+		after.Body.Close()
+		t.Fatalf("archived job status after file expiry: %d", after.StatusCode)
+	}
+	var archived webJobResponse
+	if err := json.NewDecoder(after.Body).Decode(&archived); err != nil {
+		t.Fatal(err)
+	}
 	after.Body.Close()
-	if after.StatusCode != http.StatusNotFound {
-		t.Fatalf("job remained accessible after expiry: %d", after.StatusCode)
+	if !archived.Archived || archived.DownloadReady || archived.Stage != "completed" {
+		t.Fatalf("expired job must be archived without a download: %+v", archived)
+	}
+	missingPDF := webRequest(t, ts, "GET", "/api/jobs/"+created.ID+"/download", nil, true)
+	missingPDF.Body.Close()
+	if missingPDF.StatusCode != http.StatusNotFound {
+		t.Fatalf("expired job PDF was still served: %d", missingPDF.StatusCode)
 	}
 }
 

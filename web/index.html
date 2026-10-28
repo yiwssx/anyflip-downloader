@@ -87,8 +87,8 @@
     <p class="error" id="batchError" role="alert" hidden></p>
   </section>
   <section class="panel" aria-labelledby="historyTitle">
-    <div class="progresshead"><h2 id="historyTitle">ประวัติงานชั่วคราว</h2><button type="button" class="secondary" id="refreshHistory">รีเฟรช</button></div>
-    <p class="sub">ข้อมูลอยู่ในหน่วยความจำของเซิร์ฟเวอร์และหมดอายุตามรอบเก็บรักษา ไม่ใช่ประวัติถาวร</p>
+    <div class="progresshead"><h2 id="historyTitle">ประวัติงานล่าสุด</h2><button type="button" class="secondary" id="refreshHistory">รีเฟรช</button></div>
+    <p class="sub">เก็บสถานะงานสูงสุด 50 รายการนานไม่เกิน 7 วัน แม้รีสตาร์ตเซิร์ฟเวอร์ โดยไม่เก็บลิงก์ต้นทางหรือ Token; ไฟล์ PDF ยังหมดอายุภายใน 1 ชั่วโมง และงานที่กู้ประวัติจะไม่สามารถดาวน์โหลดหรือลองใหม่จากข้อมูลเดิมได้</p>
     <div id="historyList" aria-live="polite"><p class="sub">กรอก Access Token แล้วกดรีเฟรชเพื่อดูงานล่าสุด</p></div>
     <p class="error" id="historyError" role="alert" hidden></p>
   </section>
@@ -122,8 +122,8 @@
       $('percent').textContent=progress+'%';
       error($('jobError'),j.error ? j.error+(j.errorCode?' (รหัส: '+j.errorCode+')':'') : '');
       const done=['completed','failed','cancelled'].includes(j.stage);
-      $('cancelButton').hidden=done;
-      $('downloadButton').hidden=!j.downloadReady;
+      $('cancelButton').hidden=done||j.archived;
+      $('downloadButton').hidden=!j.downloadReady||j.archived;
       $('startButton').disabled=!done;
       if(done && poll){clearInterval(poll);poll=null;loadHistory();}
     }catch(e){error($('jobError'),e.message);}
@@ -152,20 +152,20 @@
       list.replaceChildren();
       if(!history.jobs.length) {
         const empty=document.createElement('p');
-        empty.className='sub';empty.textContent='ยังไม่มีงานที่อยู่ในหน่วยความจำ';
+        empty.className='sub';empty.textContent='ยังไม่มีประวัติงาน';
         list.appendChild(empty);
       }
       for(const job of history.jobs) {
         const item=document.createElement('div');
         item.className='historyRow';
         const summary=document.createElement('span');
-        summary.textContent=job.id.slice(0,8)+' · '+(labels[job.stage]||job.stage)+' · '+(job.completed||0)+'/'+(job.total||0)+' หน้า';
+        summary.textContent=job.id.slice(0,8)+' · '+(labels[job.stage]||job.stage)+' · '+(job.completed||0)+'/'+(job.total||0)+' หน้า'+(job.archived?' · เก็บประวัติ':'');
         const controls=document.createElement('div');controls.className='actions';
         const open=document.createElement('button');
-        open.type='button';open.className='secondary';open.textContent='ดูสถานะ';
+        open.type='button';open.className='secondary';open.textContent=job.archived?'ดูประวัติ':'ดูสถานะ';
         open.addEventListener('click',()=>selectJob(job.id));
         controls.appendChild(open);
-        if(job.stage==='failed'||job.stage==='cancelled'){
+        if(!job.archived&&(job.stage==='failed'||job.stage==='cancelled')){
           const retry=document.createElement('button');
           retry.type='button';retry.className='secondary';retry.textContent='ลองใหม่';
           retry.addEventListener('click',async()=>{

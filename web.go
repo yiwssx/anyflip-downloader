@@ -46,11 +46,13 @@ type webJobResponse struct {
 	Error         string `json:"error,omitempty"`
 	ErrorCode     string `json:"errorCode,omitempty"`
 	DownloadReady bool   `json:"downloadReady"`
+	Archived      bool   `json:"archived,omitempty"`
 }
 
 type webServer struct {
 	mu       sync.Mutex
 	jobs     map[string]*webJob
+	history  []archivedWebJob
 	jobsWG   sync.WaitGroup
 	stopping bool
 	root     string
@@ -72,6 +74,9 @@ func newWebServer(token, root string) (*webServer, error) {
 		return nil, err
 	}
 	server := &webServer{jobs: make(map[string]*webJob), root: root, token: token, sem: make(chan struct{}, 2), authThrottle: newAuthThrottle()}
+	if err := server.loadWebHistory(time.Now()); err != nil {
+		return nil, err
+	}
 	if err := server.removeExpiredJobArtifacts(time.Now()); err != nil {
 		return nil, err
 	}
@@ -234,21 +239,34 @@ func (s *webServer) finishJob(job *webJob, file string, err error) {
 		// private workspace paths and upstream transport details. Record
 		// only bounded, generated identifiers and classified status.
 		log.Printf("job %s finished (stage=%s code=%s)", job.id, job.stage, job.errorCode)
+		s.archiveFinishedJobLocked(job)
 		return
 	}
 	job.stage = "completed"
 	job.file = file
 	job.completed = job.total
+	s.archiveFinishedJobLocked(job)
 }
 
 func (s *webServer) getJob(w http.ResponseWriter, r *http.Request) {
-	job, ok := s.lookupJob(w, r)
-	if !ok {
+	id := r.PathValue("id")
+	if !jobIDPattern.MatchString(id) {
+		http.NotFound(w, r)
 		return
 	}
 	s.mu.Lock()
-	value := s.snapshot(job)
+	job, ok := s.jobs[id]
+	var value webJobResponse
+	if ok {
+		value = s.snapshot(job)
+	} else {
+		value, ok = s.archivedSnapshotLocked(id)
+	}
 	s.mu.Unlock()
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
 	sendJSON(w, http.StatusOK, value)
 }
 

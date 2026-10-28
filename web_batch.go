@@ -146,23 +146,30 @@ func (s *webServer) createBatch(w http.ResponseWriter, r *http.Request) {
 
 func (s *webServer) listJobs(w http.ResponseWriter, _ *http.Request) {
 	s.mu.Lock()
-	list := make([]*webJob, 0, len(s.jobs))
+	type listEntry struct {
+		status webJobResponse
+		at time.Time
+	}
+	entries := make([]listEntry, 0, len(s.jobs)+len(s.history))
 	for _, job := range s.jobs {
-		list = append(list, job)
+		entries = append(entries, listEntry{status:s.snapshot(job), at:job.created})
 	}
-	sort.Slice(list, func(i, j int) bool {
-		if list[i].created.Equal(list[j].created) {
-			return list[i].id > list[j].id
+	for _, item := range s.history {
+		if _, live := s.jobs[item.Response.ID]; live {
+			continue
 		}
-		return list[i].created.After(list[j].created)
+		status := item.Response
+		status.Archived = true
+		status.DownloadReady = false
+		entries = append(entries, listEntry{status:status, at:item.Finished})
+	}
+	sort.Slice(entries, func(i,j int) bool {
+		if entries[i].at.Equal(entries[j].at) {return entries[i].status.ID > entries[j].status.ID}
+		return entries[i].at.After(entries[j].at)
 	})
-	if len(list) > 50 {
-		list = list[:50]
-	}
-	result := make([]webJobResponse, 0, len(list))
-	for _, job := range list {
-		result = append(result, s.snapshot(job))
-	}
+	if len(entries) > webHistoryMaxEntries { entries=entries[:webHistoryMaxEntries] }
+	result := make([]webJobResponse, 0, len(entries))
+	for _, entry := range entries {result=append(result,entry.status)}
 	s.mu.Unlock()
 	sendJSON(w, http.StatusOK, struct {
 		Jobs []webJobResponse `json:"jobs"`
