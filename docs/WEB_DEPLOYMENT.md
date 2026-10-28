@@ -64,6 +64,12 @@ Before a queued Web job begins, the Linux service counts only files with the str
 
 This is **fail-closed admission only, not an active-write hard quota**. Existing writers can exceed their checkpointed limits transiently, or other host processes may fill the filesystem. If the service runs outside Linux, Web admission refuses execution because usable disk space cannot be verified; the CLI remains usable. A hard limit must be separately enforced by a dedicated filesystem, filesystem project quota or other host-supported storage mechanism, tested on the actual Ubuntu Docker host. Do not switch an existing Docker named volume to a bind mount without an independently verified data migration/rollback plan. Test low-free-space, two simultaneous jobs, restart/retention and failed PDF output before enabling any public-facing endpoint.
 
+### Crash-orphan PDF staging cleanup (P3-J3 code gate)
+
+PDF conversion builds a temporary `.anyflip-pdf-stage-*` directory next to the final job PDF. A sudden container stop can strand that directory; unlike named job PDFs/image workspaces, it cannot be attributed to a specific job ID. The startup/janitor cleanup now reclaims a strictly generated stage directory **only when no Web jobs are active**, its directory and every regular descendant are older than one hour, and it contains no symlinks or other special files. Unexpected files and recent stages are preserved. This does **not** interrupt an active Web conversion or clean unrelated host files. A stale directory containing suspicious filesystem entries is retained for manual inspection; capacity admission may refuse new work until resolved.
+
+The cleanup is a **code/CI gate only** until restart, interrupted conversion, volume retention and actual disk capacity are tested on the operator's Ubuntu Docker host. It does not impose a hard disk quota, preserve pending jobs or authorize public access. The existing host-specific LAN port mapping and named volume must remain unchanged.
+
 ### Web job storage budget (P3-J1)
 
 The Web GUI enforces an application-level **512-page limit and a 512 MiB per-job storage budget** (image workspace plus isolated PDF staging). The original CLI has no new default limits. After every completed image and PDF import chunk, the service checks on-disk files and fails closed with safe `page_limit_exceeded` or `storage_quota_exceeded` errors rather than publishing incomplete PDFs. Quota failures remove only that job's exclusively owned image workspace immediately.
