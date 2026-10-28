@@ -28,7 +28,7 @@
 
 ### P1 — คุณภาพภาพและการแปลง PDF
 - [ ] เลือกภาพคุณภาพสูงสุดที่เข้าถึงได้ **โดยได้รับอนุญาต** พร้อม fallback ที่ชัดเจน — P1-C เพิ่ม fallback เฉพาะรายการที่ผู้เผยแพร่ประกาศใน config.js เมื่อภาพหลักตอบ 404/410; การพิสูจน์ภาพสูงสุด/ความคมชัดจริงยังค้าง
-- [ ] รองรับ JPG/PNG/WebP ตามความสามารถตัวแปลง และตรวจการจัดเรียง/หมุน/ขนาดหน้า — Binary format+corruption tests passed in PR #19, but page geometry/orientation still require dedicated verification
+- [ ] รองรับ JPG/PNG/WebP ตามความสามารถตัวแปลง และตรวจการจัดเรียง/หมุน/ขนาดหน้า — PR #19 ทดสอบ binary formats/corruption; PR #23 ทดสอบ MediaBox/สัดส่วน/ลำดับจริงแล้ว; รอ EXIF rotation, visual QA และหนังสือจริงก่อนปิด Gate
 - [ ] แสดงประเภทผลลัพธ์เป็น **Image-based PDF** อย่างชัดเจน
 - [ ] เพิ่ม test fixtures สำหรับหน้าขาด ภาพเสีย ชื่อต่างรูปแบบ จำนวนหน้ามาก
 - **เกณฑ์ผ่าน:** เอกสารทดสอบที่ได้รับอนุญาตรวมเป็น PDF ได้ครบ เรียงหน้าและเปิดอ่านได้
@@ -93,8 +93,14 @@
 | 2026-10-28 | P3-F: pdfcpu read-only volume HOME/config correction; LAN operator smoke | ✅ PR #18 merged; Go + Docker CI passed; operator reports Web GUI works; ⏳ complete-book output not independently verified | [PR #18](https://github.com/yiwssx/anyflip-downloader/pull/18) · [Actions run](https://github.com/yiwssx/anyflip-downloader/actions/runs/40433393217) |
 | 2026-10-28 | P1-B: actual mixed JPEG/PNG/WebP import, corruption fail-closed and source immutability | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI all passed on final PR head; other P1 gates still open | [PR #19](https://github.com/yiwssx/anyflip-downloader/pull/19) · [CI 40631954574](https://github.com/yiwssx/anyflip-downloader/actions/runs/40631954574) |
 | 2026-10-28 | P1-C: publisher-advertised image fallback after 404/410 only | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; resolution-quality proof and full authorized book remain open | [PR #22](https://github.com/yiwssx/anyflip-downloader/pull/22) · [CI 40638593872](https://github.com/yiwssx/anyflip-downloader/actions/runs/40638593872) |
-| 2026-10-28 | P1-D: real PDF per-page MediaBox geometry, portrait/landscape order across PDF chunks | 🔄 PR validation pending; does not prove visual pixel orientation or EXIF handling | Branch `test/p1-pdf-orientation-geometry` |
+| 2026-10-28 | P1-D: real PDF per-page MediaBox geometry, portrait/landscape order across PDF chunks | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; EXIF rotation and browser rendering still open | [PR #23](https://github.com/yiwssx/anyflip-downloader/pull/23) · [CI 40638773859](https://github.com/yiwssx/anyflip-downloader/actions/runs/40638773859) |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
+
+### P1 acceptance evidence and remaining gates
+
+- **Verified in CI:** PR #19 real JPEG/PNG/WebP import and fail-closed corruption; PR #22 publisher-declared 404/410-only fallback + full two-page PDF regression and refusal to fall back on auth/rate-limit/redirect; PR #23 4-page mixed MediaBox aspect/ordering, original SHA-256 and incomplete-output rejection.
+- **Not verified:** highest **actual** pixel resolution across all publisher choices, JPEG EXIF orientation, visual page/crop fidelity in multiple PDF viewers, full publisher-authorized book, browser/mobile, target Ubuntu storage and runtime limits. A release claim requires these independently recorded checks.
+- [P1 verification matrix](P1_VERIFICATION.md) records repeatable acceptance steps without publishing a real token, copied pages or server-private logs.
 
 ### Real verification evidence
 
