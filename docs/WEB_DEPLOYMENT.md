@@ -72,6 +72,14 @@ The Web GUI enforces an application-level **512-page limit and a 512 MiB per-job
 
 The app uses in-memory job state (maximum two active downloads, twelve pending jobs), a 20-minute per-job timeout and a one-hour terminal-job cleanup timer. Uploaded/downloaded page image responses are limited to 32 MiB per page. For memory safety, the image header must also declare no more than 40 million decoded pixels or 12,000 pixels along either dimension; a typical 7680×4320 (8K UHD) image is inside this guard. A page exceeding these limits fails the job rather than silently downsampling. JPEGs requiring EXIF normalization additionally have a 25-million-pixel transformation limit. These bounds do not replace a validated job-level disk quota or production load testing. This is an administrator-token MVP, **not a multi-tenant service**. Jobs in memory are not recovered across restarts; named-volume PDFs may remain if the server stops before the cleanup timer runs.
 
+## Operator batch queue and temporary history (P4)
+
+The same administrator token grants access to the authenticated **POST `/api/jobs/batch`** endpoint (JSON `{"jobs":[{"url":"https://anyflip.com/authorized/book","threads":3,"bestQuality":false}]}`), capped at eight URLs per request and the shared 12-active-or-queued job limit. The server validates every member and checks queue space before scheduling any of them. Jobs receive separate unpredictable IDs, temporary folders, cancellation contexts and PDF files. No publisher permissions or network allowlist are bypassed.
+
+Authenticated **GET `/api/jobs`** returns at most 50 current in-memory job statuses, without original URLs, titles, tokens or server paths. Authenticated **POST `/api/jobs/{id}/retry`** schedules a *new job ID* with the prior failed/cancelled job's internal settings; running or completed jobs cannot be retried. The Thai Web interface has a batch URL field, status selector and manual retry controls.
+
+**Important:** The current API is an administrator-only service with a shared token; it is not multi-user and provides no per-person job ownership. Job history and retry source settings live in process memory only, expire after the one-hour retention window and disappear after restart. A durable audited history or separate user accounts are not implemented. Do not expose this API to untrusted users or call it a persistent queue.
+
 ## Post-deployment smoke test (safe)
 
 The repository includes `scripts/verify-web-deployment.sh`. It checks health,
