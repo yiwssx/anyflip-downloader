@@ -82,6 +82,20 @@ func (s *webServer) purgeOldJobs(now time.Time) {
 		}
 		delete(s.jobs, id)
 	}
+	// History is metadata-only and has a longer retention period than files.
+	// Prune it independently, including when the server stays up for days.
+	kept := s.history[:0]
+	for _, entry := range s.history {
+		if now.Sub(entry.Finished) <= webHistoryMaxAge {
+			kept = append(kept, entry)
+		}
+	}
+	if len(kept) != len(s.history) {
+		s.history = kept
+		if err := s.persistWebHistoryLocked(); err != nil {
+			log.Printf("job history retention write failed")
+		}
+	}
 	s.mu.Unlock()
 	if err := s.removeExpiredJobArtifacts(now); err != nil {
 		log.Printf("job retention cleanup failed: %v", err)
