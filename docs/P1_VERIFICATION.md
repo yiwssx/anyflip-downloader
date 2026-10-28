@@ -19,7 +19,8 @@ access controls, authentication or publisher restrictions.
 | P1-A2 Corrupt/missing page | Broken data fails closed; no incomplete final PDF | CI passed #19/#23 |
 | P1-C1 Declared alternate | Metadata advertises variant; 404/410 primary falls back to explicitly declared same-book URL | CI passed #22 |
 | P1-C2 Access control | 401/403, throttling, network errors and unsafe redirect never select a lower variant | CI passed #22 |
-| P1-C3 Highest available resolution | Opt-in mode downloads only up to 8 publisher-listed candidates per page; selects greatest decoded width × height (ties keep metadata order) | **CI pending; actual authorized-book verification OPEN** |
+| P1-C3 Highest available resolution | Opt-in mode downloads only up to 8 publisher-listed candidates per page; selects greatest decoded width × height (ties keep metadata order) | **CI passed #27; actual authorized-book verification OPEN** |
+| P1-C4 Web opt-in job | Thai checkbox defaults off; authenticated request selects publisher-listed high-pixel images and creates a valid PDF in mock-origin Web API integration | **CI pending; physical browsers/host OPEN** |
 | P1-D1 Mixed geometry | Real PDF MediaBox ratios correspond to 4 ordered portrait/landscape/square PNG pages, including across chunk boundaries | CI passed #23 |
 | P1-D2 EXIF rotation | EXIF 1–8, little/big-endian TIFF, actual PDF geometry and input immutability | **CI passed #25; physical viewer QA OPEN** |
 | P1-D3 Visual fidelity | Compare legibility, margins, page color, crop, and embedded-image clarity on desktop and mobile | **OPEN** |
