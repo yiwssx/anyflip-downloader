@@ -97,9 +97,12 @@ AnyFlip reader URL works locally but fails in a deployed Web GUI:
    share administrator tokens, source credentials, or full raw server logs.
 3. Review logs privately on the Docker host:
    `docker compose -f compose.web.yaml logs --tail=100 anyflip-web`.
-   Locate the Job ID and its full underlying error. For DNS/egress errors,
-   inspect outbound HTTPS access from the **container**, not just the CLI
-   host; for storage errors, inspect volume ownership and available disk space.
+   Find the generated Job ID and classified `stage`/`code` fields.
+   Web job logs deliberately **do not include raw source URLs, URL query
+   credentials, temporary filesystem paths, or transport error strings**.
+   For DNS/egress errors, check the container's approved outbound HTTPS
+   connectivity; for storage errors, inspect the named volume's ownership and
+   available disk space. Never re-enable raw errors in persistent logs.
 4. When code has been updated, redeploy using
    `docker compose -f compose.web.yaml up -d --build`, then rerun
    `scripts/verify-web-deployment.sh` and retest with an authorized document.

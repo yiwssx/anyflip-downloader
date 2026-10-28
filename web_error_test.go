@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -70,4 +72,83 @@ func TestWebJobFailureIsUsefulButRedacted(t *testing.T) {
 	if payload.Stage != "failed" || payload.DownloadReady {
 		t.Fatalf("unexpected job state: %+v", payload)
 	}
+}
+
+func TestWebJobLogsContainCodesButNeverRawErrorDetails(t *testing.T) {
+	// Capture process logs only within the synchronous finishJob call.
+	// Never use t.Parallel: the standard logger is global.
+	s, err := newWebServer(testWebToken, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, tc := range []struct {
+		rawError string
+		wantCode string
+		wantStage string
+		secret   []string
+	}{
+		{
+			rawError: "fetch source https://online.anyflip.com/abcd/efgh/files/mobile/page.jpg?token=hidden-api-key; workspace /mnt/private/jobs/abc; 403 Forbidden",
+			wantCode: "source_access_denied",
+			wantStage: "failed",
+			secret: []string{"https://", "hidden-api-key", "/mnt/private", "page.jpg", "workspace"},
+		},
+		{
+			rawError: "create PDF staging folder: permission denied at /srv/secretuser/output and password=private-123",
+			wantCode: "storage_error",
+			wantStage: "failed",
+			secret: []string{"/srv/secretuser", "password=", "private-123"},
+		},
+		{
+			rawError: "lookup failed for customer-secret.example: no such host; credential=abc123",
+			wantCode: "network_error",
+			wantStage: "failed",
+			secret: []string{"customer-secret.example", "credential=", "abc123"},
+		},
+	} {
+		t.Run(fmt.Sprintf("classified-%d", i), func(t *testing.T) {
+			job := &webJob{id: strings.Repeat("a", 32), stage: "downloading"}
+			var output bytes.Buffer
+			previous := log.Writer()
+			log.SetOutput(&output)
+			// Restore immediately even if finishJob starts returning early.
+			func() {
+				defer log.SetOutput(previous)
+				s.finishJob(job, "", errors.New(tc.rawError))
+			}()
+			got := output.String()
+			if !strings.Contains(got, "job "+job.id) ||
+				!strings.Contains(got, "stage="+tc.wantStage) ||
+				!strings.Contains(got, "code="+tc.wantCode) {
+				t.Fatalf("log lacks safe correlation fields: %q", got)
+			}
+			for _, secret := range tc.secret {
+				if strings.Contains(got, secret) {
+					t.Fatalf("job log leaks %q: %q", secret, got)
+				}
+			}
+			if job.errorCode != tc.wantCode || job.errorText == "" {
+				t.Fatalf("user-visible safe classification lost: %+v", job)
+			}
+		})
+	}
+
+	t.Run("cancellation-logs-no-wrapped-details", func(t *testing.T) {
+		job := &webJob{id: strings.Repeat("b", 32), stage: "preparing"}
+		var output bytes.Buffer
+		previous := log.Writer()
+		log.SetOutput(&output)
+		func() {
+			defer log.SetOutput(previous)
+			s.finishJob(job, "", fmt.Errorf("secret source /mnt/private?token=avoid-me: %w", context.Canceled))
+		}()
+		got := output.String()
+		if job.stage != "cancelled" || job.errorCode != "job_cancelled" ||
+			!strings.Contains(got, "stage=cancelled") || !strings.Contains(got, "code=job_cancelled") {
+			t.Fatalf("cancelled status not safely logged: %q, %+v", got, job)
+		}
+		if strings.Contains(got, "avoid-me") || strings.Contains(got, "/mnt/private") {
+			t.Fatalf("cancelled error details leaked: %q", got)
+		}
+	})
 }
