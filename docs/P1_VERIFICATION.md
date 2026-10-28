@@ -21,7 +21,7 @@ access controls, authentication or publisher restrictions.
 | P1-C2 Access control | 401/403, throttling, network errors and unsafe redirect never select a lower variant | CI passed #22 |
 | P1-C3 Highest available resolution | Compare actual pixel dimensions of publisher-authorized candidate images without generating new URLs; record which chosen source was largest | **OPEN** |
 | P1-D1 Mixed geometry | Real PDF MediaBox ratios correspond to 4 ordered portrait/landscape/square PNG pages, including across chunk boundaries | CI passed #23 |
-| P1-D2 EXIF rotation | JPEG EXIF orientation 1/3/6/8, visual and page geometry in at least two PDF viewers | **OPEN** |
+| P1-D2 EXIF rotation | EXIF 1–8, little/big-endian TIFF, actual PDF geometry and input immutability | **CI passed #25; physical viewer QA OPEN** |
 | P1-D3 Visual fidelity | Compare legibility, margins, page color, crop, and embedded-image clarity on desktop and mobile | **OPEN** |
 | P1-E1 Complete authorized book | One entire publisher-authorized book, correct source page count, valid PDF, first/middle/last page opened | **OPEN** |
 | P1-E2 Target host | On actual Ubuntu/Docker, check 20-minute job timeout, disk/volume usage, restart cleanup, safe errors | **OPEN** |
@@ -77,6 +77,8 @@ is never grounds for fallback.
    corresponding gate has evidence.
 
 ## Release guardrails
+
+**JPEG orientation implementation limit:** For EXIF orientations 2–8, JPEGs are decoded and transformed into lossless PNG files inside a private PDF staging directory; source JPEG bytes remain unchanged. Rotated images above 25 million pixels return an error instead of risking excessive memory use. The CI test is not proof that real books appear correct in physical PDF viewers.
 
 - Keep the existing operator-customized LAN binding and Docker named volume.
   Do not overwrite the local Compose with the loopback-only repo example.
