@@ -27,6 +27,7 @@ func TestDescribeWebJobError(t *testing.T) {
 		{"rate limited", errors.New("image request returned 429 Too Many Requests"), "source_rate_limited"},
 		{"metadata", errors.New("invalid AnyFlip book configuration: empty page count"), "metadata_invalid"},
 		{"invalid image", errors.New("invalid image data: unsupported"), "image_invalid"},
+		{"oversized decoded image", errors.New("image dimensions exceed supported limit (12000 px per side, 40000000 total pixels)"), "image_invalid"},
 		{"storage", errors.New("create PDF staging folder: permission denied"), "storage_error"},
 		{"TLS", errors.New("x509: certificate signed by unknown authority"), "tls_error"},
 		{"DNS", errors.New("resolve AnyFlip hostname: lookup failed"), "network_error"},
