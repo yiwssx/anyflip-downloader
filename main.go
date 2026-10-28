@@ -33,6 +33,8 @@ type flipbook struct {
 	title     string
 	pageCount int
 	pageURLs  []string
+	// Publisher-declared alternatives for the corresponding page, if any.
+	pageFallbackURLs [][]string
 }
 
 type downloadOptions struct {
