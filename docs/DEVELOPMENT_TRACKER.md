@@ -52,7 +52,14 @@
 - [ ] ทดสอบ security และการใช้งานจริงก่อนเชื่อม public domain
 - **เกณฑ์ผ่าน:** HTTPS และสิทธิ์ผู้ใช้ปลอดภัย; ไม่สามารถเข้าถึงไฟล์ข้ามงาน; ระบบมี resource caps
 
-### P3-J2 — งานค้าง: Hard Volume Quota / Host Capacity\n- [ ] จำกัดขนาด **Volume จริงของ Ubuntu Host** ด้วยกลไก filesystem/host-supported quota; ห้ามถือว่า soft Web budget เป็น hard quota\n- [ ] ตรวจ aggregate usage ของ retained PDFs/images ทุกงาน, minimum-free-space และ concurrent admission โดยไม่แตะไฟล์อื่น\n- [ ] ทดสอบ low disk / restart / retention / PDF failure และการใช้งานบน Ubuntu Server จริง; คง LAN `10.10.1.100:8094`\n- **สถานะ:** OPEN — GitHub Issues ถูกปิดใช้งานสำหรับ Repository นี้ จึงติดตามใน Master Tracker โดยตรง\n\n### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
+### P3-J2 — Hard Volume Quota / Host Capacity
+
+- [x] **Code slice**: aggregate accounting of managed retained PDFs, image workspaces and PDF staging, with symlink-safe scans and atomic concurrent-job admission. PR pending CI; no physical host claim.
+- [ ] **Host hard cap**: Configure an actual Ubuntu filesystem/volume quota; a 4 GiB application soft ceiling is **not** a host hard quota.
+- [ ] **Operational acceptance**: Verify low disk, abrupt restart, retention, failed PDF conversion and real Ubuntu/Docker capacity using an authorized book. Preserve existing LAN `10.10.1.100:8094`.
+- **OPEN** until host quota and physical tests are documented. No public deployment approval. GitHub Issues are disabled; track here.
+
+### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
 - [ ] Batch Download / Queue / History / Retry failed tasks
 - [ ] Persistence (เช่น SQLite) หากมีการใช้งานหลายงานหรือจำเป็นต้องกลับมาดูประวัติ
