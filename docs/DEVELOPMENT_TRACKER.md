@@ -46,7 +46,7 @@
 - [x] เตรียม Multi-stage Docker image แบบ non-root, Compose + volumes ที่เหมาะสม (ยังต้อง Build/Run บน Docker host จริง)
 - [ ] Apache Reverse Proxy + HTTPS + security headers + health check
 - [ ] Authentication / Authorization, rate limiting, job ownership และการป้องกัน abuse/SSRF — P3-I เพิ่มการจำกัดการลอง Bearer token ผิดซ้ำแยกตาม TCP peer (5 ครั้ง/1 นาที → 429 พร้อม Retry-After, พัก 5 นาที), รองรับรายการติดตามสูงสุด 1,024 peers; **ผ่าน Go Build/Vet/Unit/Race และ Docker Compose CI (#36) แล้ว** และยังไม่มี multi-user/job ownership หรือ reverse-proxy public acceptance
-- [ ] จำกัด concurrent jobs, CPU/RAM, network, disk quota, timeout, max file size/page count — P3-H เพิ่มการตรวจเพดานขนาดภาพก่อนส่งเข้า pdfcpu (สูงสุด 40 ล้านพิกเซล และ 12,000 พิกเซล/ด้าน; รองรับ 8K UHD); ยังต้องตรวจภาระงานและ Disk Quota บนเครื่องจริง
+- [ ] จำกัด concurrent jobs, CPU/RAM, network, disk quota, timeout, max file size/page count — P3-H เพิ่มการตรวจเพดานขนาดภาพก่อนส่งเข้า pdfcpu (สูงสุด 40 ล้านพิกเซล และ 12,000 พิกเซล/ด้าน; รองรับ 8K UHD); P3-J1 เพิ่ม Web-only 512-page cap และ checkpointed 512 MiB job budget (image workspace + PDF staging), พร้อมล้าง workspace หากเกิน; รอ CI/Review, hard filesystem quota, global volume usage และการทดสอบเครื่องจริง
 - [ ] จัดเก็บไฟล์ชั่วคราวพร้อมกำหนด retention/auto cleanup และแยกข้อมูลผู้ใช้ — เพิ่ม cleanup หลัง restart พร้อมตรวจอายุและชื่อไฟล์ของระบบแล้ว; ยังไม่มี multi-user accounts และต้องทดสอบ Volume จริง
 - [ ] Logging/observability ที่ไม่เปิดเผยข้อมูลลับ, แนวทาง backup/rollback, ทดสอบ restart/recovery — P3-G (#30) ผ่าน CI ตรวจว่า Web job logs ไม่มี error ดิบ (URL/Token/Path); ยังรอการตรวจสอบ Logs/Restart บนเครื่องจริง
 - [ ] ทดสอบ security และการใช้งานจริงก่อนเชื่อม public domain
@@ -102,7 +102,7 @@
 | 2026-10-28 | P3-H: reject oversized decoded image dimensions before PDF import; safe Web error | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; target-host memory and disk quota gates OPEN | [PR #33](https://github.com/yiwssx/anyflip-downloader/pull/33) · [CI 40665058331](https://github.com/yiwssx/anyflip-downloader/actions/runs/40665058331) |
 | 2026-10-28 | P1-G: explicitly label CLI, GUI and PDF HTTP download as image-based (not source vector/text PDF) | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI passed; unrelated real-book viewer acceptance remains OPEN | [PR #34](https://github.com/yiwssx/anyflip-downloader/pull/34) · [CI 40665519907](https://github.com/yiwssx/anyflip-downloader/actions/runs/40665519907) |
 | 2026-10-28 | P3-I: bounded failed-token throttle for Web API | ✅ Merged; Go Build/Vet/Unit/Race and Docker Compose smoke passed on final PR head; target Ubuntu and public authorization gates OPEN | [PR #36](https://github.com/yiwssx/anyflip-downloader/pull/36) · [CI 40702293824](https://github.com/yiwssx/anyflip-downloader/actions/runs/40702293824) |
-| — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
+| 2026-10-28 | P3-J1: checkpointed per-Web-job page/storage budget and fail-closed PDF publishing | 🧪 [PR #38](https://github.com/yiwssx/anyflip-downloader/pull/38) in review; Go/Docker CI pending; hard volume quota and target-host capacity OPEN | [PR #38](https://github.com/yiwssx/anyflip-downloader/pull/38) |\n| — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### P1 acceptance evidence and remaining gates
 

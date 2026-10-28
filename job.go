@@ -24,6 +24,8 @@ type DownloadJobOptions struct {
 	RetryDelay         time.Duration
 	ChunkSize          uint
 	BestQuality        bool // inspect every publisher-listed candidate; default false
+	MaxPages           int // web-only page count guard; 0 keeps CLI behavior
+	MaxJobBytes        int64 // web-only checkpointed storage budget; 0 disables it
 	HTTPClient         *http.Client
 }
 
@@ -64,6 +66,9 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 	if err := validateDownloadSettings(opts.Threads, opts.Retries, opts.RetryDelay, opts.ChunkSize); err != nil {
 		return "", err
 	}
+	if opts.MaxPages < 0 || opts.MaxJobBytes < 0 {
+		return "", errors.New("job resource bounds must not be negative")
+	}
 	bookURL, err := url.Parse(opts.URL)
 	if err != nil {
 		return "", fmt.Errorf("invalid book URL: %w", err)
@@ -72,6 +77,9 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 	book, err := prepareDownloadContext(ctx, bookURL, opts.Title, opts.HTTPClient)
 	if err != nil {
 		return "", err
+	}
+	if opts.MaxPages > 0 && book.pageCount > opts.MaxPages {
+		return "", fmt.Errorf("%w: %d pages exceeds %d", errJobPageLimitExceeded, book.pageCount, opts.MaxPages)
 	}
 
 	outputFile := opts.OutputFile
@@ -88,26 +96,44 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 	if err != nil {
 		return "", err
 	}
-	// Failed jobs intentionally retain their isolated image workspace for
+	// Quota failures delete this job's exclusively owned files immediately;
+	// preserving an oversized failed workspace would defeat the storage guard.
+	defer func() {
+		if errors.Is(runErr, errJobStorageBudgetExceeded) {
+			_ = cleanup()
+		}
+	}()
+	// Failed jobs otherwise retain their isolated image workspace for
 	// diagnostics. Successful jobs remove it unless KeepImages was requested.
+	jobCtx, stopForBudget := context.WithCancelCause(ctx)
+	defer stopForBudget(nil)
 	emit(DownloadProgress{Stage: "downloading", Total: book.pageCount})
 	var pageReporter func(page, done int)
-	if report != nil {
+	if report != nil || opts.MaxJobBytes > 0 {
 		pageReporter = func(page, done int) {
+			if err := checkJobStorageBudget(opts.MaxJobBytes, workspace); err != nil {
+				stopForBudget(err)
+			}
 			emit(DownloadProgress{
 				Stage: "downloading", Page: page, Completed: done, Total: book.pageCount,
 			})
 		}
 	}
-	if err := book.downloadImagesContextWithProgress(ctx, opts.HTTPClient, workspace,
+	if err := book.downloadImagesContextWithProgress(jobCtx, opts.HTTPClient, workspace,
 		downloadOptions{threads: opts.Threads, retries: opts.Retries, retryDelay: opts.RetryDelay, bestQuality: opts.BestQuality}, pageReporter); err != nil {
+		if cause := context.Cause(jobCtx); cause != nil && !errors.Is(cause, context.Canceled) && !errors.Is(cause, context.DeadlineExceeded) {
+			return "", fmt.Errorf("image job budget check: %w", cause)
+		}
 		return "", fmt.Errorf("download images (workspace %s): %w", workspace, err)
 	}
+	if err := checkJobStorageBudget(opts.MaxJobBytes, workspace); err != nil {
+		return "", err
+	}
 	emit(DownloadProgress{Stage: "converting", Total: book.pageCount})
-	if err := createPDFVerifiedContext(ctx, outputFile, workspace,
+	if err := createPDFVerifiedWithBudget(jobCtx, outputFile, workspace,
 		book.pageCount, int(opts.ChunkSize), func(done int) {
 			emit(DownloadProgress{Stage: "converting", Completed: done, Total: book.pageCount})
-		}); err != nil {
+		}, opts.MaxJobBytes); err != nil {
 		return "", fmt.Errorf("convert downloaded images to PDF (workspace %s): %w", workspace, err)
 	}
 	if !opts.KeepImages {

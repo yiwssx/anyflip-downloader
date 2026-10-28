@@ -16,6 +16,10 @@ func describeWebJobError(err error) (code, message string) {
 		return "job_cancelled", "งานถูกยกเลิกแล้ว"
 	case errors.Is(err, context.DeadlineExceeded):
 		return "job_timeout", "งานใช้เวลาเกินกำหนด โปรดลองใหม่หรือลดจำนวนงานพร้อมกัน"
+	case errors.Is(err, errJobStorageBudgetExceeded):
+		return "storage_quota_exceeded", "งานใช้พื้นที่จัดเก็บเกินเพดานที่กำหนด กรุณาใช้เอกสารขนาดเล็กลง"
+	case errors.Is(err, errJobPageLimitExceeded):
+		return "page_limit_exceeded", "จำนวนหน้าหนังสือมากกว่าเพดานที่ระบบเว็บรองรับ"
 	}
 
 	reason := strings.ToLower(err.Error())

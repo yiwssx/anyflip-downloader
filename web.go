@@ -239,6 +239,7 @@ func (s *webServer) runJob(ctx context.Context, job *webJob, url, title string, 
 		URL: url, Title: title, OutputFile: output, TempDownloadFolder: workspace,
 		Threads: threads, Retries: 1, RetryDelay: time.Second, ChunkSize: 10,
 		BestQuality: bestQuality,
+		MaxPages: webMaxPages, MaxJobBytes: webMaxJobBytes,
 		HTTPClient: s.client,
 	}, func(event DownloadProgress) {
 		s.mu.Lock()
