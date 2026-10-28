@@ -99,7 +99,13 @@ func run() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Done: %s\n", output)
+	fmt.Println(completedPDFMessage(output))
+}
+
+// completedPDFMessage makes the generated artifact type explicit for CLI
+// operators: no text/vector PDF can be recovered from downloaded page images.
+func completedPDFMessage(output string) string {
+	return fmt.Sprintf("Done: %s (Image-based PDF; not the publisher's original text/vector PDF)", output)
 }
 
 func printUsage() {
