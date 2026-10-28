@@ -73,6 +73,11 @@ func TestWebHistoryBoundedAndSurvivesRetentionCleanup(t *testing.T) {
 	restarted,err:=newWebServer(testWebToken,root)
 	if err!=nil {t.Fatal(err)}
 	if len(restarted.history)!=webHistoryMaxEntries {t.Fatalf("restored length=%d",len(restarted.history))}
+	restarted.purgeOldJobs(time.Now().Add(8*24*time.Hour))
+	if len(restarted.history)!=0 {t.Fatal("expired history remained in memory")}
+	afterExpiry,err:=newWebServer(testWebToken,root)
+	if err!=nil {t.Fatal(err)}
+	if len(afterExpiry.history)!=0 {t.Fatal("expired history remained on disk")}
 }
 
 func (s *webServer) archiveFinishedJobLockedWithTestLock(job *webJob) {
