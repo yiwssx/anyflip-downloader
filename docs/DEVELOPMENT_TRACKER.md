@@ -1,6 +1,6 @@
 # AnyFlip Downloader — Online Web GUI Development Tracker
 
-**สถานะ:** 🟡 Download Core + Web GUI + Docker CI verified; **not deployed on the target Ubuntu/Apache HTTPS host**  
+**สถานะ:** 🟡 Download Core + Web GUI + Docker CI verified; **LAN-only self-hosted Web GUI operator-confirmed, public HTTPS/production not approved**  
 **อัปเดตครั้งแรก:** 2026-10-22  
 **เป้าหมาย:** Web GUI ผ่านเบราว์เซอร์ บน Ubuntu Server + Docker/Compose + Apache Reverse Proxy + HTTPS โดยคง CLI เดิมไว้
 
@@ -28,7 +28,7 @@
 
 ### P1 — คุณภาพภาพและการแปลง PDF
 - [ ] เลือกภาพคุณภาพสูงสุดที่เข้าถึงได้ **โดยได้รับอนุญาต** พร้อม fallback ที่ชัดเจน
-- [ ] รองรับ JPG/PNG/WebP ตามความสามารถตัวแปลง และตรวจการจัดเรียง/หมุน/ขนาดหน้า
+- [ ] รองรับ JPG/PNG/WebP ตามความสามารถตัวแปลง และตรวจการจัดเรียง/หมุน/ขนาดหน้า — เพิ่ม P1 binary format regression; รอผล CI และตรวจ geometry จริงก่อนปิด Gate
 - [ ] แสดงประเภทผลลัพธ์เป็น **Image-based PDF** อย่างชัดเจน
 - [ ] เพิ่ม test fixtures สำหรับหน้าขาด ภาพเสีย ชื่อต่างรูปแบบ จำนวนหน้ามาก
 - **เกณฑ์ผ่าน:** เอกสารทดสอบที่ได้รับอนุญาตรวมเป็น PDF ได้ครบ เรียงหน้าและเปิดอ่านได้
@@ -70,7 +70,7 @@
 
 > ต้องผ่าน P3 ก่อนเปิดให้บุคคลภายนอกใช้งานจริง แม้ P2 จะมีหน้าเว็บที่ทำงานได้แล้วก็ตาม
 
-## บันทึกความคืบหน้า (ตรวจสอบ ณ 2026-10-26)
+## บันทึกความคืบหน้า (ตรวจสอบ ณ 2026-10-28)
 
 | วันที่ | งาน | สถานะ | หลักฐาน |
 |---|---|---|---|
@@ -89,7 +89,7 @@
 | 2026-10-23 | P3-D: post-deployment HTTP/Compose smoke script | ✅ Merged; HTTP 200/401/404/400 smoke tests ผ่าน | [PR #14](https://github.com/yiwssx/anyflip-downloader/pull/14) |
 | 2026-10-23 | P3-E: GitHub Actions Docker build, Compose smoke, and restart | ✅ Merged; Go + Docker smoke ผ่านทั้ง PR และ main | [PR #15](https://github.com/yiwssx/anyflip-downloader/pull/15) · [Actions run](https://github.com/yiwssx/anyflip-downloader/actions/runs/39898711151) |
 | 2026-10-26 | Web GUI same-link diagnosis: canonical image URLs, redacted error codes, visible Job ID | ✅ Go 1.25 + GitHub CI passed; ⏳ user-hosted Docker/Apache E2E still required | [PR #17](https://github.com/yiwssx/anyflip-downloader/pull/17) |
-| — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
+| 2026-10-28 | P3-F: pdfcpu read-only volume HOME/config correction; LAN operator smoke | ✅ PR #18 merged; Go + Docker CI passed; operator reports Web GUI works; ⏳ complete-book output not independently verified | [PR #18](https://github.com/yiwssx/anyflip-downloader/pull/18) · [Actions run](https://github.com/yiwssx/anyflip-downloader/actions/runs/40433393217) |\n| 2026-10-28 | P1-B: actual mixed JPEG/PNG/WebP import, corruption fail-closed and source immutability | 🔄 Code submitted; CI + PDF validation pending; no claim of full P1 completion | Branch `test/p1-mixed-image-pdf-regressions` |\n| — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### Real verification evidence
 
@@ -98,7 +98,7 @@
 - Includes synthetic image-to-PDF integration tests via `pdfcpu`, page count/atomic output checks and cancellation.
 - GitHub Actions has confirmed **successful** Go Build/Vet/Unit/Race and Docker image/Compose runtime smoke on PR #15, including restart and post-restart checks: [run 39898711151](https://github.com/yiwssx/anyflip-downloader/actions/runs/39898711151). The equivalent post-merge `main` run 39898810788 also completed successfully.
 - Docker deployment config: Compose v2.40.3 static validation passed in sandbox; **real Docker image build, non-root container boot, API probes and restart** later passed on GitHub-hosted Actions runner. This does not establish deployment on the user's Ubuntu server.
-- End-to-end tests against live, publisher-authorized AnyFlip books, physical browser/mobile devices and production Docker/Apache/HTTPS have **not** been performed. P3-A supplies configuration templates, not proof of their deployment.
+- Operator feedback on 2026-10-28 confirms the self-hosted LAN Web GUI works after PR #18's writable pdfcpu configuration change. This is **not** proof of a complete authorized book, cross-device browser acceptance, public Apache/HTTPS deployment, or production security readiness. Preserve the existing host-specific LAN bind (`10.10.1.100:8094`); the stock Compose template intentionally remains loopback-only.\n- Full end-to-end production Docker/Apache/HTTPS and physical browser/mobile QA remain open. P3-A includes configuration templates, not proof of public deployment.
 
 ## ข้อกำหนดการติดตาม
 
