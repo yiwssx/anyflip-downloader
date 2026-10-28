@@ -156,6 +156,7 @@ func (s *webServer) createJob(w http.ResponseWriter, r *http.Request) {
 		URL     string `json:"url"`
 		Title   string `json:"title"`
 		Threads int    `json:"threads"`
+		BestQuality bool `json:"bestQuality"`
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 8192)
 	decoder := json.NewDecoder(r.Body)
@@ -208,12 +209,12 @@ func (s *webServer) createJob(w http.ResponseWriter, r *http.Request) {
 	s.mu.Unlock()
 	go func() {
 		defer s.jobsWG.Done()
-		s.runJob(ctx, job, body.URL, body.Title, body.Threads)
+		s.runJob(ctx, job, body.URL, body.Title, body.Threads, body.BestQuality)
 	}()
 	sendJSON(w, http.StatusAccepted, response)
 }
 
-func (s *webServer) runJob(ctx context.Context, job *webJob, url, title string, threads int) {
+func (s *webServer) runJob(ctx context.Context, job *webJob, url, title string, threads int, bestQuality bool) {
 	defer job.cancel()
 	select {
 	case s.sem <- struct{}{}:
@@ -227,6 +228,7 @@ func (s *webServer) runJob(ctx context.Context, job *webJob, url, title string, 
 	result, err := RunDownloadJob(ctx, DownloadJobOptions{
 		URL: url, Title: title, OutputFile: output, TempDownloadFolder: workspace,
 		Threads: threads, Retries: 1, RetryDelay: time.Second, ChunkSize: 10,
+		BestQuality: bestQuality,
 		HTTPClient: s.client,
 	}, func(event DownloadProgress) {
 		s.mu.Lock()
