@@ -27,7 +27,7 @@
 - **เกณฑ์ผ่าน:** CLI เดิมทำงาน, `go test ./...` และ build ผ่าน, Cancel ได้, output ครบและปลอดภัย
 
 ### P1 — คุณภาพภาพและการแปลง PDF
-- [ ] เลือกภาพคุณภาพสูงสุดที่เข้าถึงได้ **โดยได้รับอนุญาต** พร้อม fallback ที่ชัดเจน
+- [ ] เลือกภาพคุณภาพสูงสุดที่เข้าถึงได้ **โดยได้รับอนุญาต** พร้อม fallback ที่ชัดเจน — P1-C เพิ่ม fallback เฉพาะรายการที่ผู้เผยแพร่ประกาศใน config.js เมื่อภาพหลักตอบ 404/410; การพิสูจน์ภาพสูงสุด/ความคมชัดจริงยังค้าง
 - [ ] รองรับ JPG/PNG/WebP ตามความสามารถตัวแปลง และตรวจการจัดเรียง/หมุน/ขนาดหน้า — Binary format+corruption tests passed in PR #19, but page geometry/orientation still require dedicated verification
 - [ ] แสดงประเภทผลลัพธ์เป็น **Image-based PDF** อย่างชัดเจน
 - [ ] เพิ่ม test fixtures สำหรับหน้าขาด ภาพเสีย ชื่อต่างรูปแบบ จำนวนหน้ามาก
@@ -92,6 +92,7 @@
 | 2026-10-26 | Web GUI same-link diagnosis: canonical image URLs, redacted error codes, visible Job ID | ✅ Go 1.25 + GitHub CI passed; ⏳ user-hosted Docker/Apache E2E still required | [PR #17](https://github.com/yiwssx/anyflip-downloader/pull/17) |
 | 2026-10-28 | P3-F: pdfcpu read-only volume HOME/config correction; LAN operator smoke | ✅ PR #18 merged; Go + Docker CI passed; operator reports Web GUI works; ⏳ complete-book output not independently verified | [PR #18](https://github.com/yiwssx/anyflip-downloader/pull/18) · [Actions run](https://github.com/yiwssx/anyflip-downloader/actions/runs/40433393217) |
 | 2026-10-28 | P1-B: actual mixed JPEG/PNG/WebP import, corruption fail-closed and source immutability | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI all passed on final PR head; other P1 gates still open | [PR #19](https://github.com/yiwssx/anyflip-downloader/pull/19) · [CI 40631954574](https://github.com/yiwssx/anyflip-downloader/actions/runs/40631954574) |
+| 2026-10-28 | P1-C: publisher-advertised image fallback after 404/410 only | 🔄 PR prepared; Go/Race + Docker CI pending; resolution-quality proof and full authorized book remain open | Branch `feat/p1-explicit-image-fallback` |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### Real verification evidence
