@@ -27,9 +27,9 @@ func TestP1PublisherAlternativesPreservedAndBounded(t *testing.T) {
 	if book.pageCount != 2 || len(book.pageURLs) != 2 {
 		t.Fatalf("wrong page count or primary URL count: %+v", book)
 	}
-	if !strings.HasSuffix(book.pageURLs[0], "/files/large/p1.webp") ||
-		!strings.HasSuffix(book.pageFallbackURLs[0][0], "/files/mobile/p1.jpg") ||
-		len(book.pageFallbackURLs[0]) != 1 || len(book.pageFallbackURLs[1]) != 0 {
+	if len(book.pageFallbackURLs) != 2 || len(book.pageFallbackURLs[0]) != 1 || len(book.pageFallbackURLs[1]) != 0 ||
+		!strings.HasSuffix(book.pageURLs[0], "/files/large/p1.webp") ||
+		!strings.HasSuffix(book.pageFallbackURLs[0][0], "/files/mobile/p1.jpg") {
 		t.Fatalf("primary or fallback candidates wrong: %+v", book)
 	}
 }
@@ -183,5 +183,26 @@ func TestP1PublisherFallbackFullTwoPagePDF(t *testing.T) {
 	}
 	if count, err := api.PageCountFile(output); err != nil || count != 2 {
 		t.Fatalf("invalid final PDF: pages=%d error=%v", count, err)
+	}
+}
+
+func TestP1FallbackCannotRedirectToOtherBook(t *testing.T) {
+	book := imageBook(t, 1)
+	book.pageFallbackURLs = [][]string{{"https://online.anyflip.com/qrfai/tfvn/files/mobile/1.png"}}
+	var requests []string
+	client := imageTestClient(func(req *http.Request) (*http.Response, error) {
+		requests = append(requests, req.URL.Path)
+		if strings.Contains(req.URL.Path, "/files/large/") {
+			return responseBytes(req, http.StatusNotFound, nil), nil
+		}
+		resp := responseBytes(req, http.StatusFound, nil)
+		resp.Header.Set("Location", "https://online.anyflip.com/other/book/files/large/private.png")
+		return resp, nil
+	})
+	if err := book.downloadPageContext(context.Background(), client, 0, t.TempDir(), downloadOptions{retries: 0}); err == nil {
+		t.Fatal("redirect to another book should fail")
+	}
+	if len(requests) != 2 {
+		t.Fatalf("cross-book redirect was fetched: %v", requests)
 	}
 }
