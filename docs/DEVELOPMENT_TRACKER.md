@@ -27,7 +27,7 @@
 - **เกณฑ์ผ่าน:** CLI เดิมทำงาน, `go test ./...` และ build ผ่าน, Cancel ได้, output ครบและปลอดภัย
 
 ### P1 — คุณภาพภาพและการแปลง PDF
-- [ ] เลือกภาพคุณภาพสูงสุดที่เข้าถึงได้ **โดยได้รับอนุญาต** พร้อม fallback ที่ชัดเจน — P1-C มี 404/410-only fallback; P1-E เพิ่มโหมด opt-in เปรียบเทียบพิกเซลจากตัวเลือกใน metadata ที่เข้าถึงได้ และรักษาโหมดเดิมเป็นค่าเริ่มต้น; **รอ CI, งานทดสอบหนังสือจริง และการยืนยันคุณภาพ**
+- [ ] เลือกภาพคุณภาพสูงสุดที่เข้าถึงได้ **โดยได้รับอนุญาต** พร้อม fallback ที่ชัดเจน — P1-C มี 404/410-only fallback; P1-E (#27) ผ่าน CI สำหรับโหมด opt-in เปรียบเทียบจำนวนพิกเซลจากตัวเลือกใน metadata และยังคงค่าเริ่มต้นเดิม; **รอหนังสือจริงที่ได้รับอนุญาตและการตรวจด้วยโปรแกรมอ่าน PDF**
 - [ ] รองรับ JPG/PNG/WebP ตามความสามารถตัวแปลง และตรวจการจัดเรียง/หมุน/ขนาดหน้า — PR #19 ทดสอบ binary formats/corruption, PR #23 ทดสอบ MediaBox/สัดส่วน/ลำดับ และ PR #25 ตรวจ EXIF 1–8 ด้วย PDF จริงใน CI; รอ visual QA และหนังสือที่ได้รับอนุญาตจริงก่อนปิด Gate
 - [ ] แสดงประเภทผลลัพธ์เป็น **Image-based PDF** อย่างชัดเจน
 - [ ] เพิ่ม test fixtures สำหรับหน้าขาด ภาพเสีย ชื่อต่างรูปแบบ จำนวนหน้ามาก
@@ -95,7 +95,8 @@
 | 2026-10-28 | P1-C: publisher-advertised image fallback after 404/410 only | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; resolution-quality proof and full authorized book remain open | [PR #22](https://github.com/yiwssx/anyflip-downloader/pull/22) · [CI 40638593872](https://github.com/yiwssx/anyflip-downloader/actions/runs/40638593872) |
 | 2026-10-28 | P1-D: real PDF per-page MediaBox geometry, portrait/landscape order across PDF chunks | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; EXIF rotation and browser rendering still open | [PR #23](https://github.com/yiwssx/anyflip-downloader/pull/23) · [CI 40638773859](https://github.com/yiwssx/anyflip-downloader/actions/runs/40638773859) |
 | 2026-10-28 | P1-D2: JPEG EXIF orientation 1–8 in isolated PDF staging + MediaBox regression | ✅ Merged; Build/Vet/Unit/Race + Docker CI passed. Physical reader visual QA and full-book acceptance open | [PR #25](https://github.com/yiwssx/anyflip-downloader/pull/25) · [CI 40657393852](https://github.com/yiwssx/anyflip-downloader/actions/runs/40657393852) |
-| 2026-10-28 | P1-E: opt-in high-pixel-resolution selection from publisher-declared choices (CLI/Web) | 🔄 PR prepared; Go/Race/Docker CI pending; full authorized book and visual QA still OPEN | Branch `feat/p1-highest-advertised-resolution` |
+| 2026-10-28 | P1-E: opt-in high-pixel-resolution selection from publisher-declared choices (CLI/Web) | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; full authorized book and visual QA still OPEN | [PR #27](https://github.com/yiwssx/anyflip-downloader/pull/27) · [CI 40658697472](https://github.com/yiwssx/anyflip-downloader/actions/runs/40658697472) |
+| 2026-10-28 | P1-E Web QA regression: actual browser-form availability, authenticated opt-in job and PDF geometry | 🔄 CI pending; physical browser, LAN host and live book validation still OPEN | Branch `test/p1-web-quality-acceptance` |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### P1 acceptance evidence and remaining gates
