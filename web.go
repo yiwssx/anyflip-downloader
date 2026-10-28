@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/subtle"
 	"embed"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,6 +35,7 @@ type webJob struct {
 	created   time.Time
 	finished  time.Time
 	cancel    context.CancelFunc
+	spec      webJobSpec // in-memory only; never serialized in API output
 }
 
 type webJobResponse struct {
@@ -99,6 +98,9 @@ func (s *webServer) handler() http.Handler {
 		_, _ = w.Write(b)
 	})
 	mux.Handle("POST /api/jobs", s.authorize(http.HandlerFunc(s.createJob)))
+	mux.Handle("GET /api/jobs", s.authorize(http.HandlerFunc(s.listJobs)))
+	mux.Handle("POST /api/jobs/batch", s.authorize(http.HandlerFunc(s.createBatch)))
+	mux.Handle("POST /api/jobs/{id}/retry", s.authorize(http.HandlerFunc(s.retryJob)))
 	mux.Handle("GET /api/jobs/{id}", s.authorize(http.HandlerFunc(s.getJob)))
 	mux.Handle("POST /api/jobs/{id}/cancel", s.authorize(http.HandlerFunc(s.cancelJob)))
 	mux.Handle("GET /api/jobs/{id}/download", s.authorize(http.HandlerFunc(s.downloadJob)))
@@ -163,12 +165,7 @@ func (s *webServer) lookupJob(w http.ResponseWriter, r *http.Request) (*webJob, 
 }
 
 func (s *webServer) createJob(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		URL     string `json:"url"`
-		Title   string `json:"title"`
-		Threads int    `json:"threads"`
-		BestQuality bool `json:"bestQuality"`
-	}
+	var body webJobSpec
 	r.Body = http.MaxBytesReader(w, r.Body, 8192)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -176,53 +173,17 @@ func (s *webServer) createJob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	if _, err := validateBookURL(body.URL); err != nil {
-		http.Error(w, "invalid AnyFlip book URL", http.StatusBadRequest)
+	var extra json.RawMessage
+	if err := decoder.Decode(&extra); err != io.EOF {
+		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	if body.Threads == 0 {
-		body.Threads = 3
-	}
-	if body.Threads < 1 || body.Threads > 8 {
-		http.Error(w, "threads must be between 1 and 8", http.StatusBadRequest)
+	jobs, status, err := s.enqueueWebJobs([]webJobSpec{body})
+	if err != nil {
+		http.Error(w, err.Error(), status)
 		return
 	}
-	var random [16]byte
-	if _, err := rand.Read(random[:]); err != nil {
-		http.Error(w, "cannot create job", http.StatusInternalServerError)
-		return
-	}
-	id := hex.EncodeToString(random[:])
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
-	job := &webJob{id: id, stage: "queued", created: time.Now(), cancel: cancel}
-	s.mu.Lock()
-	if s.stopping {
-		s.mu.Unlock()
-		cancel()
-		http.Error(w, "server is shutting down", http.StatusServiceUnavailable)
-		return
-	}
-	pending := 0
-	for _, other := range s.jobs {
-		if other.stage != "completed" && other.stage != "failed" && other.stage != "cancelled" {
-			pending++
-		}
-	}
-	if pending >= 12 {
-		s.mu.Unlock()
-		cancel()
-		http.Error(w, "job queue is full", http.StatusTooManyRequests)
-		return
-	}
-	s.jobs[id] = job
-	s.jobsWG.Add(1)
-	response := s.snapshot(job)
-	s.mu.Unlock()
-	go func() {
-		defer s.jobsWG.Done()
-		s.runJob(ctx, job, body.URL, body.Title, body.Threads, body.BestQuality)
-	}()
-	sendJSON(w, http.StatusAccepted, response)
+	sendJSON(w, http.StatusAccepted, jobs[0])
 }
 
 func (s *webServer) runJob(ctx context.Context, job *webJob, url, title string, threads int, bestQuality bool) {
