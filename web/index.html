@@ -26,6 +26,11 @@
     .danger{background:#fff0f0;color:#a52b2b;border:1px solid #f3d0d0}
     .actions{display:flex;flex-wrap:wrap;gap:10px}
     .notice{background:#f4f8fd;color:#53677f;border-radius:10px;padding:13px 16px;font-size:13px;line-height:1.7;margin-top:20px}
+    textarea{width:100%;min-height:112px;resize:vertical;border:1px solid #cbd7e5;border-radius:10px;padding:12px;color:#152a47;font:inherit}
+    textarea:focus{outline:3px solid #bedaff;border-color:#2873bd}
+    .historyRow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #e6edf6;padding:12px 0}
+    .historyRow span{font-size:13px;color:#254566}
+    .historyRow button{height:36px;padding:0 12px}
     .progresshead{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:14px}
     .pill{background:#edf4ff;border-radius:22px;color:#1d5d9a;font-size:12px;font-weight:700;padding:6px 11px}
     .track{height:12px;border-radius:30px;background:#e7edf5;overflow:hidden}
@@ -73,6 +78,20 @@
     <p class="error" id="jobError" role="alert" hidden></p>
     <p class="sub" id="jobReference" aria-label="รหัสงานสำหรับตรวจสอบ" hidden></p>
   </section>
+  <section class="panel" aria-labelledby="batchTitle">
+    <h2 id="batchTitle">ดาวน์โหลดหลายรายการ</h2>
+    <p class="sub">วาง URL หนังสือที่ได้รับอนุญาต รายการละหนึ่งบรรทัด สูงสุด 8 รายการในครั้งเดียว ใช้ Access Token และการตั้งค่าจำนวนหน้าพร้อมกันจากแบบฟอร์มหลัก</p>
+    <label for="batchURLs">ลิงก์หนังสือ AnyFlip (หนึ่ง URL ต่อหนึ่งบรรทัด)</label>
+    <textarea id="batchURLs" placeholder="https://anyflip.com/publisher/book"></textarea>
+    <div class="actions"><button id="batchStartButton" type="button" class="secondary">เพิ่มรายการเข้าคิว</button></div>
+    <p class="error" id="batchError" role="alert" hidden></p>
+  </section>
+  <section class="panel" aria-labelledby="historyTitle">
+    <div class="progresshead"><h2 id="historyTitle">ประวัติงานชั่วคราว</h2><button type="button" class="secondary" id="refreshHistory">รีเฟรช</button></div>
+    <p class="sub">ข้อมูลอยู่ในหน่วยความจำของเซิร์ฟเวอร์และหมดอายุตามรอบเก็บรักษา ไม่ใช่ประวัติถาวร</p>
+    <div id="historyList" aria-live="polite"><p class="sub">กรอก Access Token แล้วกดรีเฟรชเพื่อดูงานล่าสุด</p></div>
+    <p class="error" id="historyError" role="alert" hidden></p>
+  </section>
   <footer>AnyFlip Downloader • Self-hosted Web GUI • เชื่อมต่อผ่าน HTTPS เมื่อเปิดใช้งานออนไลน์</footer>
 </main>
 <script>
@@ -106,9 +125,83 @@
       $('cancelButton').hidden=done;
       $('downloadButton').hidden=!j.downloadReady;
       $('startButton').disabled=!done;
-      if(done && poll){clearInterval(poll);poll=null;}
+      if(done && poll){clearInterval(poll);poll=null;loadHistory();}
     }catch(e){error($('jobError'),e.message);}
   }
+
+  function selectJob(id) {
+    currentJob=id;
+    $('jobReference').textContent='Job ID: '+id;
+    $('jobReference').hidden=false;
+    $('jobPanel').hidden=false;
+    $('cancelButton').hidden=false;
+    $('downloadButton').hidden=true;
+    if(poll)clearInterval(poll);
+    poll=setInterval(refresh,1100);
+    refresh();
+  }
+  async function loadHistory() {
+    if(!$('token').value.trim()) {
+      error($('historyError'),'กรุณากรอก Access Token ก่อนตรวจสอบประวัติ');
+      return;
+    }
+    try {
+      const res=await request('/api/jobs');
+      const history=await res.json();
+      const list=$('historyList');
+      list.replaceChildren();
+      if(!history.jobs.length) {
+        const empty=document.createElement('p');
+        empty.className='sub';empty.textContent='ยังไม่มีงานที่อยู่ในหน่วยความจำ';
+        list.appendChild(empty);
+      }
+      for(const job of history.jobs) {
+        const item=document.createElement('div');
+        item.className='historyRow';
+        const summary=document.createElement('span');
+        summary.textContent=job.id.slice(0,8)+' · '+(labels[job.stage]||job.stage)+' · '+(job.completed||0)+'/'+(job.total||0)+' หน้า';
+        const controls=document.createElement('div');controls.className='actions';
+        const open=document.createElement('button');
+        open.type='button';open.className='secondary';open.textContent='ดูสถานะ';
+        open.addEventListener('click',()=>selectJob(job.id));
+        controls.appendChild(open);
+        if(job.stage==='failed'||job.stage==='cancelled'){
+          const retry=document.createElement('button');
+          retry.type='button';retry.className='secondary';retry.textContent='ลองใหม่';
+          retry.addEventListener('click',async()=>{
+            retry.disabled=true;
+            try {
+              const res=await request('/api/jobs/'+job.id+'/retry',{method:'POST'});
+              const next=await res.json();selectJob(next.id);await loadHistory();
+            }catch(e){error($('historyError'),e.message)}
+            finally{retry.disabled=false}
+          });
+          controls.appendChild(retry);
+        }
+        item.appendChild(summary);item.appendChild(controls);list.appendChild(item);
+      }
+      error($('historyError'),'');
+    }catch(e){error($('historyError'),e.message)}
+  }
+  $('refreshHistory').addEventListener('click',loadHistory);
+  $('batchStartButton').addEventListener('click',async()=>{
+    error($('batchError'),'');
+    const button=$('batchStartButton');
+    button.disabled=true;
+    try {
+      const token=$('token').value.trim();
+      if(token.length<16)throw new Error('กรุณากรอก Access Token ก่อนเพิ่มรายการ');
+      sessionStorage.setItem('anyflip-access-token',token);
+      const urls=$('batchURLs').value.split(/\r?\n/).map(url=>url.trim()).filter(Boolean);
+      if(urls.length<1||urls.length>8)throw new Error('ต้องมีลิงก์ตั้งแต่ 1 ถึง 8 รายการ');
+      const jobs=urls.map(url=>({url,threads:Number($('threads').value),bestQuality:$('bestQuality').checked}));
+      const res=await request('/api/jobs/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jobs})});
+      const accepted=await res.json();
+      selectJob(accepted.jobs[0].id);
+      await loadHistory();
+    }catch(e){error($('batchError'),e.message)}
+    finally{button.disabled=false}
+  });
   $('jobForm').addEventListener('submit',async event=>{
     event.preventDefault();error($('formError'),'');
     if(currentJob && poll)return;
@@ -120,8 +213,7 @@
       const res=await request('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         url:$('bookURL').value.trim(),title:$('bookTitle').value.trim(),threads:Number($('threads').value),bestQuality:$('bestQuality').checked
       })});
-      const j=await res.json();currentJob=j.id;$('jobReference').textContent='Job ID: '+j.id;$('jobReference').hidden=false;$('jobPanel').hidden=false;$('cancelButton').hidden=false;$('downloadButton').hidden=true;
-      await refresh(); if(poll)clearInterval(poll); poll=setInterval(refresh,1100);
+      const j=await res.json();selectJob(j.id);await loadHistory();
     }catch(e){error($('formError'),e.message);$('startButton').disabled=false;}
   });
   $('cancelButton').addEventListener('click',async()=>{if(!currentJob)return;try{await request('/api/jobs/'+currentJob+'/cancel',{method:'POST'});await refresh();}catch(e){error($('jobError'),e.message)}});
