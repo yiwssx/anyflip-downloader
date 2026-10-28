@@ -46,7 +46,7 @@
 - [x] เตรียม Multi-stage Docker image แบบ non-root, Compose + volumes ที่เหมาะสม (ยังต้อง Build/Run บน Docker host จริง)
 - [ ] Apache Reverse Proxy + HTTPS + security headers + health check
 - [ ] Authentication / Authorization, rate limiting, job ownership และการป้องกัน abuse/SSRF — P3-I เพิ่มการจำกัดการลอง Bearer token ผิดซ้ำแยกตาม TCP peer (5 ครั้ง/1 นาที → 429 พร้อม Retry-After, พัก 5 นาที), รองรับรายการติดตามสูงสุด 1,024 peers; **ผ่าน Go Build/Vet/Unit/Race และ Docker Compose CI (#36) แล้ว** และยังไม่มี multi-user/job ownership หรือ reverse-proxy public acceptance
-- [ ] จำกัด concurrent jobs, CPU/RAM, network, disk quota, timeout, max file size/page count — P3-H เพิ่มการตรวจเพดานขนาดภาพก่อนส่งเข้า pdfcpu (สูงสุด 40 ล้านพิกเซล และ 12,000 พิกเซล/ด้าน; รองรับ 8K UHD); P3-J1 (#38) ผ่าน Go Build/Vet/Unit/Race + Docker CI สำหรับ Web-only 512-page cap และ checkpointed 512 MiB job budget (image workspace + PDF staging), พร้อมล้าง workspace เมื่อเกิน; ยังรอ P3-J2 hard filesystem quota, global retained-volume accounting, minimum-free-space และการทดสอบเครื่องจริง
+- [ ] จำกัด concurrent jobs, CPU/RAM, network, disk quota, timeout, max file size/page count — P3-H เพิ่มการตรวจเพดานขนาดภาพก่อนส่งเข้า pdfcpu (สูงสุด 40 ล้านพิกเซล และ 12,000 พิกเซล/ด้าน; รองรับ 8K UHD); P3-J1 (#38) ผ่าน Go Build/Vet/Unit/Race + Docker CI สำหรับ Web-only 512-page cap และ checkpointed 512 MiB job budget (image workspace + PDF staging), พร้อมล้าง workspace เมื่อเกิน; P3-J2 (#40) เพิ่ม global managed-volume accounting และ minimum-free-space guard แบบ soft limit แล้ว แต่ยังรอ **OS hard filesystem quota** และการทดสอบเครื่องจริง
 - [ ] จัดเก็บไฟล์ชั่วคราวพร้อมกำหนด retention/auto cleanup และแยกข้อมูลผู้ใช้ — เพิ่ม cleanup หลัง restart พร้อมตรวจอายุและชื่อไฟล์ของระบบแล้ว; ยังไม่มี multi-user accounts และต้องทดสอบ Volume จริง
 - [ ] Logging/observability ที่ไม่เปิดเผยข้อมูลลับ, แนวทาง backup/rollback, ทดสอบ restart/recovery — P3-G (#30) ผ่าน CI ตรวจว่า Web job logs ไม่มี error ดิบ (URL/Token/Path); ยังรอการตรวจสอบ Logs/Restart บนเครื่องจริง
 - [ ] ทดสอบ security และการใช้งานจริงก่อนเชื่อม public domain
@@ -62,7 +62,7 @@
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
 - [x] Batch Download / Queue / History / Retry failed tasks — [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42): authenticated atomic 8-item batch, last-50 temporary statuses, new-ID retry of failed/cancelled jobs; Go Build/Vet/Unit/Race/Govulncheck + Docker CI passed ([run 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203)). History is **memory-only**; durable history remains separately unchecked.
-- [ ] Persistence (เช่น SQLite) หากมีการใช้งานหลายงานหรือจำเป็นต้องกลับมาดูประวัติ
+- [x] **Persistent history metadata** — [PR #44](https://github.com/yiwssx/anyflip-downloader/pull/44): เก็บเฉพาะสถานะงานที่สิ้นสุดแล้ว (สูงสุด 50 รายการ/7 วัน) ใน JSON แบบ atomic 0600 บน named volume; ไม่มี source URL, token, title, file path หรือ retry settings; หลังรีสตาร์ตดูสถานะย้อนหลังได้ แต่ไม่สามารถดาวน์โหลด PDF/Retry งานเดิมได้ (PDF retention ยัง 1 ชั่วโมง) โดยไม่เพิ่ม SQLite หรือฐานข้อมูลภายนอก. Go Build/Vet/Unit/Race/Govulncheck + Docker CI gate ต้องผ่านที่ HEAD สุดท้าย
 - [ ] Benchmark และปรับ concurrency ตามสเปก Server จริง
 - [ ] พิจารณา Desktop packaging ในอนาคตโดยใช้ Core เดียวกัน
 
@@ -112,7 +112,8 @@
 | 2026-10-28 | P3-J1: checkpointed per-Web-job page/storage budget and fail-closed PDF publishing | ✅ Merged, Go Build/Vet/Unit/Race and Docker Compose smoke passed; **only soft job limit**, hard volume quota and target-host capacity still OPEN | [PR #38](https://github.com/yiwssx/anyflip-downloader/pull/38) · [CI 40704369464](https://github.com/yiwssx/anyflip-downloader/actions/runs/40704369464) |\n| 2026-10-28 | P3-J2 code admission: managed aggregate 4 GiB soft ceiling, nonroot free-space guard and concurrent reservations | ✅ Merged; PR/main Go+Docker CI passed; **hard host quota OPEN** | [PR #40](https://github.com/yiwssx/anyflip-downloader/pull/40) · [CI 40709563153](https://github.com/yiwssx/anyflip-downloader/actions/runs/40709563153) · [main 40709998946](https://github.com/yiwssx/anyflip-downloader/actions/runs/40709998946) |
 | 2026-10-28 | P5 CI hardening, remediation of 5 reachable Go vulnerabilities, manual release candidate packaging and acceptance checklist | ✅ Merged; Go/Docker/Govulncheck CI passed; no tag/release published | [PR #41](https://github.com/yiwssx/anyflip-downloader/pull/41) · [CI 40710618424](https://github.com/yiwssx/anyflip-downloader/actions/runs/40710618424) |
 | 2026-10-28 | P4 admin-only batch, transient job history and failed/cancelled retry | ✅ Merged; Go/Docker/Govulncheck CI passed; no persistent DB or multi-user identity | [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42) · [CI 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203) · [main 40712120907](https://github.com/yiwssx/anyflip-downloader/actions/runs/40712120907) |
-| — | P1/P2/P3 remaining real host/browser/authorized-book acceptance, P4 OCR/persistence/performance/desktop and P5 public release | ⏳ OPEN (not verified; do not mark complete) | Operator host/permission/production sign-off required |
+| 2026-10-28 | P4 terminal Web history: 50 redacted JSON records / seven-day metadata retention across restart, separate one-hour PDF cleanup; no persisted source URL/token/retry settings | 🟡 PR #44 code complete; final HEAD CI required before merge | [PR #44](https://github.com/yiwssx/anyflip-downloader/pull/44) |
+| — | P1/P2/P3 real host/browser/authorized-book acceptance; P4 OCR/target-host performance/desktop; P5 public release | ⏳ OPEN (not verified; do not mark complete) | Operator host/permission/production sign-off required |
 
 ### P1 acceptance evidence and remaining gates
 
@@ -135,7 +136,7 @@
 - All runtime work completed in this round (#40 capacity admission, #42 batch/history/retry) and CI/security/release-candidate guard (#41) are merged into `main`. The exact post-merge `main` CI run for #42 passed: [40712120907](https://github.com/yiwssx/anyflip-downloader/actions/runs/40712120907).
 - The 4 GiB managed-volume ceiling and 512 MiB job reservations are application-level checks, **not hard disk quotas**. A separate filesystem-level Ubuntu quota remains mandatory before multi-user or public service.
 - P1 live authorized-book visual QA, P2 browser/mobile testing and all target-host HTTPS/volume/restart/security gates are **OPEN**. LAN-only operation is separate from an approved public release.
-- P4 OCR, durable history (SQLite or equivalent), target-machine benchmarks and optional desktop packaging remain discretionary, independent features. Do not describe them as completed.
+- P4 safe durable **status-only history** is implemented in [PR #44](https://github.com/yiwssx/anyflip-downloader/pull/44) via bounded atomic JSON metadata (not SQLite). It does not retain URLs, tokens or retry specs, recover pending jobs, or extend PDF lifetime. OCR, target-machine benchmarks and optional desktop packaging remain independent, uncompleted features.
 - P5 candidate workflow is manual and intentionally does **not** publish any GitHub release. Acceptance checklist exists; full Release gate remains OPEN until operator authorization.
 
 ## ข้อกำหนดการติดตาม
