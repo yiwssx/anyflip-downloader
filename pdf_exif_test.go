@@ -114,7 +114,10 @@ func TestP1EXIFOrientationNormalizationPreservesSource(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				expectedR, expectedG, expectedB, expectedA := original.At(0, 0).RGBA()
+				// image.RGBA.Set converts YCbCr through color.RGBAModel;
+				// compare that exact 8-bit quantization, not the source
+				// YCbCr.RGBA 16-bit rounding.
+				expectedR, expectedG, expectedB, expectedA := color.RGBAModel.Convert(original.At(0, 0)).RGBA()
 				gotR, gotG, gotB, gotA := out.At(corners[orientation].X, corners[orientation].Y).RGBA()
 				if gotR != expectedR || gotG != expectedG || gotB != expectedB || gotA != expectedA {
 					t.Fatalf("orientation %d mapped corner to wrong pixel", orientation)
