@@ -66,28 +66,47 @@ func prepareDownloadContext(ctx context.Context, anyflipURL *url.URL, desiredTit
 	if err != nil {
 		return nil, fmt.Errorf("invalid AnyFlip book configuration: %w", err)
 	}
-	pageFileNames, err := getPageFileNames(configjs)
+	pageChoices, err := getPageImageChoices(configjs)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateBookPages(newFlipbook.pageCount, pageFileNames); err != nil {
+	var primaryNames []string
+	for _, choices := range pageChoices {
+		primaryNames = append(primaryNames, choices[0])
+	}
+	if err := validateBookPages(newFlipbook.pageCount, primaryNames); err != nil {
 		return nil, err
 	}
 
 	downloadURL, _ := url.Parse("https://online.anyflip.com/")
-	if len(pageFileNames) == 0 {
+	newFlipbook.pageFallbackURLs = make([][]string, newFlipbook.pageCount)
+	if len(pageChoices) == 0 {
 		for i := 1; i <= newFlipbook.pageCount; i++ {
 			downloadURL.Path = path.Join(canonicalURL.Path, "files", "mobile", strconv.Itoa(i)+".jpg")
 			newFlipbook.pageURLs = append(newFlipbook.pageURLs, downloadURL.String())
 		}
 	} else {
 		for i := 0; i < newFlipbook.pageCount; i++ {
-			imagePath, err := safePagePath(canonicalURL.Path, pageFileNames[i])
-			if err != nil {
-				return nil, fmt.Errorf("page %d: %w", i+1, err)
+			// Validate every alternate before creating the job; an unsafe
+			// secondary path must not become reachable after a 404.
+			seen := make(map[string]bool)
+			for choiceIndex, filename := range pageChoices[i] {
+				imagePath, err := safePagePath(canonicalURL.Path, filename)
+				if err != nil {
+					return nil, fmt.Errorf("page %d choice %d: %w", i+1, choiceIndex+1, err)
+				}
+				downloadURL.Path = imagePath
+				candidate := downloadURL.String()
+				if seen[candidate] {
+					continue
+				}
+				seen[candidate] = true
+				if choiceIndex == 0 {
+					newFlipbook.pageURLs = append(newFlipbook.pageURLs, candidate)
+				} else {
+					newFlipbook.pageFallbackURLs[i] = append(newFlipbook.pageFallbackURLs[i], candidate)
+				}
 			}
-			downloadURL.Path = imagePath
-			newFlipbook.pageURLs = append(newFlipbook.pageURLs, downloadURL.String())
 		}
 	}
 
