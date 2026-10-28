@@ -54,22 +54,22 @@
 
 ### P3-J2 — Hard Volume Quota / Host Capacity
 
-- [x] **Code slice**: aggregate accounting of managed retained PDFs, image workspaces and PDF staging, with symlink-safe scans and atomic concurrent-job admission. PR pending CI; no physical host claim.
+- [x] **Code slice**: aggregate accounting of managed retained PDFs, image workspaces and PDF staging, with symlink-safe scans and atomic concurrent-job admission. [PR #40](https://github.com/yiwssx/anyflip-downloader/pull/40) passed Go Build/Vet/Unit/Race and Docker Compose smoke; no physical host claim.
 - [ ] **Host hard cap**: Configure an actual Ubuntu filesystem/volume quota; a 4 GiB application soft ceiling is **not** a host hard quota.
 - [ ] **Operational acceptance**: Verify low disk, abrupt restart, retention, failed PDF conversion and real Ubuntu/Docker capacity using an authorized book. Preserve existing LAN `10.10.1.100:8094`.
 - **OPEN** until host quota and physical tests are documented. No public deployment approval. GitHub Issues are disabled; track here.
 
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
-- [ ] Batch Download / Queue / History / Retry failed tasks
+- [ ] Batch Download / Queue / History / Retry failed tasks — P4 code slice: authenticated atomic 8-item batch, temporary last-50 status history, new-ID retry of failed/cancelled jobs; CI/PR acceptance pending; persistent history is tracked separately
 - [ ] Persistence (เช่น SQLite) หากมีการใช้งานหลายงานหรือจำเป็นต้องกลับมาดูประวัติ
 - [ ] Benchmark และปรับ concurrency ตามสเปก Server จริง
 - [ ] พิจารณา Desktop packaging ในอนาคตโดยใช้ Core เดียวกัน
 
 ### P5 — เอกสาร / Release
 - [x] README/Runbook สำหรับ Web GUI, Docker, Apache, คำแนะนำการใช้และข้อจำกัด PDF จากภาพ (ตรวจเอกสารแล้ว ยังไม่ใช่ Production Release)
-- [ ] CI ทดสอบและ Build, Dependency/Security Checks, versioned release notes
-- [ ] คู่มือ Deploy/Upgrade/Rollback และ Checklist ตรวจรับก่อนปล่อยเวอร์ชัน
+- [x] CI ทดสอบและ Build, Dependency/Security Checks, versioned release notes — [PR #41](https://github.com/yiwssx/anyflip-downloader/pull/41) passed Go/Docker CI and reachable vulnerability scan after updating x/image/x/text; release candidate is manual and does not publish.
+- [x] คู่มือ Deploy/Upgrade/Rollback และ Checklist ตรวจรับก่อนปล่อยเวอร์ชัน — [docs/RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) and existing [WEB_DEPLOYMENT.md](WEB_DEPLOYMENT.md); actual physical host acceptance remains pending.
 
 ## ลำดับงานและเงื่อนไข
 
