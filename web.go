@@ -59,6 +59,7 @@ type webServer struct {
 	sem      chan struct{}
 	client   *http.Client // Optional controlled test transport; nil in production.
 	authThrottle *authThrottle
+	activeReservations int // running Web jobs with reserved volume headroom
 }
 
 func newWebServer(token, root string) (*webServer, error) {
@@ -233,6 +234,13 @@ func (s *webServer) runJob(ctx context.Context, job *webJob, url, title string, 
 		s.finishJob(job, "", ctx.Err())
 		return
 	}
+	// Admission is serialized against other running Web jobs. Do not create
+	// the image workspace or fetch source pages if the host is short on space.
+	if err := s.reserveWebCapacity(); err != nil {
+		s.finishJob(job, "", err)
+		return
+	}
+	defer s.releaseWebCapacity()
 	output := filepath.Join(s.root, job.id+".pdf")
 	workspace := filepath.Join(s.root, job.id+".images")
 	result, err := RunDownloadJob(ctx, DownloadJobOptions{
