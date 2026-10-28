@@ -61,7 +61,7 @@
 
 ### P3-J3 — Crash-Orphan PDF Staging Recovery
 
-- [x] **Code slice:** พัฒนา cleanup สำหรับโฟลเดอร์ `.anyflip-pdf-stage-*` ที่ค้างจากการปิดโปรเซสผิดปกติ โดยยืนยันชื่อที่ระบบสร้าง, ตรวจอายุของทุกไฟล์ภายใน, ไม่ตาม symlink และไม่ลบเมื่อมี Web job กำลังทำงาน; regression tests ครอบคลุม restart, active-job protection และไฟล์ที่ไม่เกี่ยวข้อง
+- [ ] **Code slice (PR #46, CI pending):** พัฒนา cleanup สำหรับโฟลเดอร์ `.anyflip-pdf-stage-*` ที่ค้างจากการปิดโปรเซสผิดปกติ โดยยืนยันชื่อที่ระบบสร้าง, ตรวจอายุของทุกไฟล์ภายใน, ไม่ตาม symlink และไม่ลบเมื่อมี Web job กำลังทำงาน; regression tests ครอบคลุม restart, active-job protection และไฟล์ที่ไม่เกี่ยวข้อง
 - [ ] **Physical acceptance:** ทดสอบการหยุด Docker ระหว่างประกอบ PDF และตรวจการคืนพื้นที่จริงหลังครบ retention พร้อม low-disk/host hard quota บน Ubuntu Server; ยังห้ามปิด P3 production gate
 - **สถานะ:** งานโค้ดเสร็จบน PR นี้; รอ Go/Docker CI เพื่อยืนยันก่อน Merge
 
