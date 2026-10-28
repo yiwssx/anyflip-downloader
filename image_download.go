@@ -187,22 +187,25 @@ func (fb *flipbook) downloadPageContext(ctx context.Context, client *http.Client
 	if err != nil {
 		return err
 	}
-	imageURL, err := url.Parse(cleanDownloadURL(fb.pageURLs[page]))
-	if err != nil {
-		return fmt.Errorf("invalid image URL: %w", err)
+
+	rawCandidates := []string{fb.pageURLs[page]}
+	if page < len(fb.pageFallbackURLs) {
+		rawCandidates = append(rawCandidates, fb.pageFallbackURLs[page]...)
 	}
-	expectedPrefix := path.Clean(bookURL.Path) + "/files/"
-	if imageURL.Scheme != "https" || imageURL.Hostname() != "online.anyflip.com" ||
-		imageURL.Port() != "" || imageURL.User != nil ||
-		!strings.HasPrefix(imageURL.Path, expectedPrefix) ||
-		imageURL.RawQuery != "" || imageURL.Fragment != "" {
-		return fmt.Errorf("image URL is not within the selected book")
+	if len(rawCandidates) > 8 {
+		return errors.New("too many image alternatives for page")
 	}
-	ext := strings.ToLower(path.Ext(imageURL.Path))
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" {
-		return fmt.Errorf("unsupported image extension %q", ext)
+	// Check *all* candidate origins and paths before any network access.
+	// Fallbacks must never enlarge the book's allowed network boundary.
+	candidates := make([]*url.URL, 0, len(rawCandidates))
+	for _, raw := range rawCandidates {
+		imageURL, err := validatePageImageURL(bookURL, raw)
+		if err != nil {
+			return err
+		}
+		candidates = append(candidates, imageURL)
 	}
-	filename := filepath.Join(folder, fmt.Sprintf("%04d%s", page, ext))
+
 	if client == nil {
 		client = newAnyFlipHTTPClient()
 	}
@@ -211,31 +214,69 @@ func (fb *flipbook) downloadPageContext(ctx context.Context, client *http.Client
 	if safeClient.Timeout <= 0 || safeClient.Timeout > 45*time.Second {
 		safeClient.Timeout = 45 * time.Second
 	}
+	for i, imageURL := range candidates {
+		filename := filepath.Join(folder, fmt.Sprintf("%04d%s", page, strings.ToLower(path.Ext(imageURL.Path))))
+		unavailable, err := downloadImageCandidate(ctx, &safeClient, bookURL, imageURL, filename, opts)
+		if err == nil {
+			return nil
+		}
+		if !unavailable || i == len(candidates)-1 {
+			return err
+		}
+		// Only a definitive 404/410 on the same authorized book may select
+		// a publisher-declared alternate. Auth, throttling, transient
+		// network failures and corrupt images must fail closed.
+	}
+	return errors.New("no available page image candidate")
+}
 
+func validatePageImageURL(bookURL *url.URL, raw string) (*url.URL, error) {
+	imageURL, err := url.Parse(cleanDownloadURL(raw))
+	if err != nil {
+		return nil, fmt.Errorf("invalid image URL: %w", err)
+	}
+	expectedPrefix := path.Clean(bookURL.Path) + "/files/"
+	if imageURL.Scheme != "https" || imageURL.Hostname() != "online.anyflip.com" ||
+		imageURL.Port() != "" || imageURL.User != nil ||
+		!strings.HasPrefix(imageURL.Path, expectedPrefix) ||
+		imageURL.RawQuery != "" || imageURL.Fragment != "" {
+		return nil, fmt.Errorf("image URL is not within the selected book")
+	}
+	ext := strings.ToLower(path.Ext(imageURL.Path))
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" {
+		return nil, fmt.Errorf("unsupported image extension %q", ext)
+	}
+	return imageURL, nil
+}
+
+// downloadImageCandidate returns unavailable=true *only* for HTTP 404/410.
+// Temporary HTTP/network errors retain their configured retries, and never
+// trigger a downgrade to a different file.
+func downloadImageCandidate(ctx context.Context, client *http.Client, bookURL, imageURL *url.URL, filename string, opts downloadOptions) (unavailable bool, resultErr error) {
 	var lastErr error
 	for attempt := 0; attempt <= opts.retries; attempt++ {
 		if err := ctx.Err(); err != nil {
-			return err
+			return false, err
 		}
 		if attempt > 0 {
 			timer := time.NewTimer(retryBackoff(opts.retryDelay, attempt))
 			select {
 			case <-ctx.Done():
 				timer.Stop()
-				return ctx.Err()
+				return false, ctx.Err()
 			case <-timer.C:
 			}
 		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, imageURL.String(), nil)
 		if err != nil {
-			return err
+			return false, err
 		}
 		req.Header.Set("Referer", bookURL.String())
 		req.Header.Set("User-Agent", "Mozilla/5.0")
-		resp, err := safeClient.Do(req)
+		resp, err := client.Do(req)
 		if err != nil {
 			if ctx.Err() != nil {
-				return ctx.Err()
+				return false, ctx.Err()
 			}
 			lastErr = err
 			continue
@@ -243,23 +284,26 @@ func (fb *flipbook) downloadPageContext(ctx context.Context, client *http.Client
 		if resp.StatusCode != http.StatusOK {
 			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("image request returned %s", resp.Status)
+			if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
+				return true, lastErr
+			}
 			if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode < 500 {
-				return lastErr
+				return false, lastErr
 			}
 			continue
 		}
 		lastErr = saveImageResponse(filename, resp)
 		if lastErr == nil {
-			return nil
+			return false, nil
 		}
 		if errors.Is(lastErr, os.ErrExist) {
-			return lastErr
+			return false, lastErr
 		}
 		if ctx.Err() != nil {
-			return ctx.Err()
+			return false, ctx.Err()
 		}
 	}
-	return fmt.Errorf("image download failed after %d attempts: %w", opts.retries+1, lastErr)
+	return false, fmt.Errorf("image download failed after %d attempts: %w", opts.retries+1, lastErr)
 }
 
 func saveImageResponse(filename string, resp *http.Response) (resultErr error) {
