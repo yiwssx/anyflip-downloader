@@ -68,7 +68,7 @@
     <div class="meta"><span id="pageCount">0 / 0 หน้า</span><span id="percent">0%</span></div>
     <div class="actions">
       <button type="button" class="danger" id="cancelButton">ยกเลิกงาน</button>
-      <button type="button" class="primary" id="downloadButton" hidden>ดาวน์โหลด PDF</button>
+      <button type="button" class="primary" id="downloadButton" hidden>ดาวน์โหลด Image-based PDF</button>
     </div>
     <p class="error" id="jobError" role="alert" hidden></p>
     <p class="sub" id="jobReference" aria-label="รหัสงานสำหรับตรวจสอบ" hidden></p>
@@ -96,7 +96,7 @@
       const j = await res.json(), total=j.total||0, completed=j.completed||0;
       const progress=total?Math.min(100,Math.round(completed*100/total)):0;
       $('jobState').textContent=labels[j.stage]||j.stage;
-      $('jobDescription').textContent=j.stage==='completed'?'สร้าง PDF สำเร็จแล้ว พร้อมดาวน์โหลด':j.stage==='failed'?'งานนี้ไม่สำเร็จ':j.stage==='cancelled'?'งานถูกยกเลิก':'ระบบกำลังดำเนินการ: '+(labels[j.stage]||j.stage);
+      $('jobDescription').textContent=j.stage==='completed'?'สร้าง Image-based PDF สำเร็จแล้ว พร้อมดาวน์โหลด':j.stage==='failed'?'งานนี้ไม่สำเร็จ':j.stage==='cancelled'?'งานถูกยกเลิก':'ระบบกำลังดำเนินการ: '+(labels[j.stage]||j.stage);
       $('progressFill').style.width=progress+'%';
       $('progressTrack').setAttribute('aria-valuenow',progress);
       $('pageCount').textContent=completed+' / '+total+' หน้า';
