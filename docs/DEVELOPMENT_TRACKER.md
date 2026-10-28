@@ -30,7 +30,7 @@
 - [ ] เลือกภาพคุณภาพสูงสุดที่เข้าถึงได้ **โดยได้รับอนุญาต** พร้อม fallback ที่ชัดเจน — P1-C มี 404/410-only fallback; P1-E (#27) ผ่าน CI สำหรับโหมด opt-in เปรียบเทียบจำนวนพิกเซลจากตัวเลือกใน metadata และยังคงค่าเริ่มต้นเดิม; **รอหนังสือจริงที่ได้รับอนุญาตและการตรวจด้วยโปรแกรมอ่าน PDF**
 - [ ] รองรับ JPG/PNG/WebP ตามความสามารถตัวแปลง และตรวจการจัดเรียง/หมุน/ขนาดหน้า — PR #19 ทดสอบ binary formats/corruption, PR #23 ทดสอบ MediaBox/สัดส่วน/ลำดับ และ PR #25 ตรวจ EXIF 1–8 ด้วย PDF จริงใน CI; รอ visual QA และหนังสือที่ได้รับอนุญาตจริงก่อนปิด Gate
 - [ ] แสดงประเภทผลลัพธ์เป็น **Image-based PDF** อย่างชัดเจน
-- [ ] เพิ่ม test fixtures สำหรับหน้าขาด ภาพเสีย ชื่อต่างรูปแบบ จำนวนหน้ามาก
+- [ ] เพิ่ม test fixtures สำหรับหน้าขาด ภาพเสีย ชื่อต่างรูปแบบ จำนวนหน้ามาก — P1-F เพิ่ม 129-page binary PDF fixture (รวมหน้าขาดและเสียช่วงท้าย); รอ CI และไม่อ้างว่าเป็นหนังสือจริง
 - **เกณฑ์ผ่าน:** เอกสารทดสอบที่ได้รับอนุญาตรวมเป็น PDF ได้ครบ เรียงหน้าและเปิดอ่านได้
 
 ### P2 — Web GUI MVP
@@ -97,7 +97,8 @@
 | 2026-10-28 | P1-D2: JPEG EXIF orientation 1–8 in isolated PDF staging + MediaBox regression | ✅ Merged; Build/Vet/Unit/Race + Docker CI passed. Physical reader visual QA and full-book acceptance open | [PR #25](https://github.com/yiwssx/anyflip-downloader/pull/25) · [CI 40657393852](https://github.com/yiwssx/anyflip-downloader/actions/runs/40657393852) |
 | 2026-10-28 | P1-E: opt-in high-pixel-resolution selection from publisher-declared choices (CLI/Web) | ✅ Merged; Go Build/Vet/Unit/Race + Docker CI passed; full authorized book and visual QA still OPEN | [PR #27](https://github.com/yiwssx/anyflip-downloader/pull/27) · [CI 40658697472](https://github.com/yiwssx/anyflip-downloader/actions/runs/40658697472) |
 | 2026-10-28 | P1-E Web QA regression: browser-form markup, authenticated opt-in job API and PDF geometry using mock-origin fixtures | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI passed; physical browser, LAN host and live book validation still OPEN | [PR #28](https://github.com/yiwssx/anyflip-downloader/pull/28) · [CI 40659004326](https://github.com/yiwssx/anyflip-downloader/actions/runs/40659004326) |
-| 2026-10-28 | P3-G: Web job log privacy — no raw source URL, credentials, workspace or transport details | 🔄 PR pending CI; only generated job IDs, stage and classified error code logged; server-side observability and public readiness remain OPEN | Branch `fix/p3-redacted-job-logs` |
+| 2026-10-28 | P3-G: Web job log privacy — no raw source URL, credentials, workspace or transport details | ✅ Merged; Go Build/Vet/Unit/Race and Docker CI passed; server-side observability and public readiness remain OPEN | [PR #30](https://github.com/yiwssx/anyflip-downloader/pull/30) · [CI 40662371036](https://github.com/yiwssx/anyflip-downloader/actions/runs/40662371036) |
+| 2026-10-28 | P1-F: synthetic 129-page complete PDF, chunk order, missing/late-corrupt page fail-closed | 🔄 CI pending; not evidence of a real authorized book or large-server benchmark | Branch `test/p1-129-page-pdf-integrity` |
 | — | P1/P3 remainder/P4–P5: live quality validation, runtime production checks, advanced features and release | ⏳ Open | No public web deployment claimed |
 
 ### P1 acceptance evidence and remaining gates
