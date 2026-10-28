@@ -300,6 +300,8 @@ func (s *webServer) downloadJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/pdf")
+	// Explicit machine-readable artifact type for API clients.
+	w.Header().Set("X-AnyFlip-Output-Type", "image-based-pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"anyflip-"+job.id+".pdf\"")
 	http.ServeFile(w, r, file)
 }
