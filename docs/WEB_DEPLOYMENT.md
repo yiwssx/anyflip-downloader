@@ -44,6 +44,8 @@ The Apache config proxies traffic only to `http://127.0.0.1:8094/`; do not confi
 
 Visit your own HTTPS domain in Chrome, Edge or Safari. Enter the strong administrator token, paste an authorized AnyFlip book URL, then start/monitor/cancel the job. The download button becomes active when the verified PDF is ready.
 
+The completed CLI message and Web GUI explicitly call the result **Image-based PDF**, not the original editable publisher PDF. Authenticated download responses use `Content-Type: application/pdf` plus `X-AnyFlip-Output-Type: image-based-pdf` for API clients; this custom header is informational and does not replace MIME type or document authenticity checks.
+
 Check authorization enforcement without leaking the real token:
 
 ```sh
