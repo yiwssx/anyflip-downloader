@@ -54,7 +54,7 @@ curl -i http://127.0.0.1:8094/api/jobs/00000000000000000000000000000000
 
 The Docker Compose deployment allows a 35-second stop grace period, while the Go HTTP server cancels running jobs and attempts to drain active requests on SIGTERM. Files from interrupted jobs are subject to retention cleanup after a restart.
 
-The app uses in-memory job state (maximum two active downloads, twelve pending jobs), a 20-minute per-job timeout and a one-hour terminal-job cleanup timer. This is an administrator-token MVP, **not a multi-tenant service**. Jobs in memory are not recovered across restarts; named-volume PDFs may remain if the server stops before the cleanup timer runs.
+The app uses in-memory job state (maximum two active downloads, twelve pending jobs), a 20-minute per-job timeout and a one-hour terminal-job cleanup timer. Uploaded/downloaded page image responses are limited to 32 MiB per page. For memory safety, the image header must also declare no more than 40 million decoded pixels or 12,000 pixels along either dimension; a typical 7680×4320 (8K UHD) image is inside this guard. A page exceeding these limits fails the job rather than silently downsampling. JPEGs requiring EXIF normalization additionally have a 25-million-pixel transformation limit. These bounds do not replace a validated job-level disk quota or production load testing. This is an administrator-token MVP, **not a multi-tenant service**. Jobs in memory are not recovered across restarts; named-volume PDFs may remain if the server stops before the cleanup timer runs.
 
 ## Post-deployment smoke test (safe)
 
