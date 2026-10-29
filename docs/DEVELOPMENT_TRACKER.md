@@ -65,6 +65,12 @@
 - [ ] **Physical acceptance:** ทดสอบการหยุด Docker ระหว่างประกอบ PDF และตรวจการคืนพื้นที่จริงหลังครบ retention พร้อม low-disk/host hard quota บน Ubuntu Server; ยังห้ามปิด P3 production gate
 - **สถานะ:** [PR #46](https://github.com/yiwssx/anyflip-downloader/pull/46) ผ่าน Go Build/Vet/Unit/Race/Govulncheck และ Docker Compose smoke ใน [CI 40722973213](https://github.com/yiwssx/anyflip-downloader/actions/runs/40722973213); ยังรอทดสอบ physical host
 
+### P3-K — Strict Browser CSP / Same-Origin Assets
+
+- [ ] **Code & CI (PR pending):** แยก JavaScript และ CSS ออกจาก HTML เป็นไฟล์ที่ฝังใน Go binary และเสิร์ฟบน origin เดียวกัน; ปรับ `Content-Security-Policy` ให้ไม่ใช้ `unsafe-inline`/`unsafe-eval`; เพิ่ม Go regression tests และ Node JavaScript syntax check
+- [ ] **Physical browser QA:** ตรวจการใช้งาน Desktop/Mobile ทุกขั้นตอน (สร้างงาน, ความคืบหน้า, Cancel, Batch, History, ดาวน์โหลด PDF) และตรวจ CSP console บน LAN host จริง
+- **OPEN:** ห้ามสรุปว่าพร้อม public HTTPS หรือปิด P3 จากการผ่าน CI ของโค้ดอย่างเดียว
+
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
 - [x] Batch Download / Queue / History / Retry failed tasks — [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42): authenticated atomic 8-item batch, last-50 temporary statuses, new-ID retry of failed/cancelled jobs; Go Build/Vet/Unit/Race/Govulncheck + Docker CI passed ([run 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203)). History is **memory-only**; durable history remains separately unchecked.
