@@ -79,6 +79,13 @@
 - [ ] **Physical browser QA:** ตรวจการใช้งาน Desktop/Mobile ทุกขั้นตอน (สร้างงาน, ความคืบหน้า, Cancel, Batch, History, ดาวน์โหลด PDF) และตรวจ CSP console บน LAN host จริง
 - **สถานะ:** โค้ดผ่าน Go Build/Vet/Unit/Race, Node JS syntax, Govulncheck และ Docker Compose smoke ใน [PR #47](https://github.com/yiwssx/anyflip-downloader/pull/47) · [CI #40817348188](https://github.com/yiwssx/anyflip-downloader/actions/runs/40817348188); **Browser/host/public HTTPS gate ยัง OPEN**
 
+### P3-L — Crash-Recovery CI and Host Acceptance Handoff
+
+- [x] **Code/CI gate:** Docker Compose smoke proved synthetic stale-stage cleanup after SIGKILL, preservation of fresh stage, healthy restart and read-only host preflight on an ephemeral CI runner; [PR #49](https://github.com/yiwssx/anyflip-downloader/pull/49) · [CI 40836826648](https://github.com/yiwssx/anyflip-downloader/actions/runs/40836826648). Real Ubuntu host has not been tested.
+- [x] **Operator handoff:** [HOST_ACCEPTANCE.md](HOST_ACCEPTANCE.md) documents local Compose preservation, filesystem quota inspection, controlled OS hard-quota proof, real authorized-book and physical browser evidence. No host migration or deployment is performed by this PR.
+- [ ] **Physical gates remain open:** Host-enforced hard quota, real low-space/restart recovery, authorized full-book review in two PDF viewers, actual browsers, and operator release approval.
+- **No public deployment approved.**
+
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
 - [x] Batch Download / Queue / History / Retry failed tasks — [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42): authenticated atomic 8-item batch, last-50 temporary statuses, new-ID retry of failed/cancelled jobs; Go Build/Vet/Unit/Race/Govulncheck + Docker CI passed ([run 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203)). History is **memory-only**; durable history remains separately unchecked.
@@ -136,6 +143,7 @@
 | 2026-10-28 | P3-J3 reclaim crash-orphan PDF staging dirs after one hour, only with no active Web job and safe filesystem entries | ✅ Go Build/Vet/Unit/Race/Govulncheck + Docker CI verified; host abrupt-restart acceptance OPEN | [PR #46](https://github.com/yiwssx/anyflip-downloader/pull/46) · [CI 40722973213](https://github.com/yiwssx/anyflip-downloader/actions/runs/40722973213) |
 | 2026-10-29 | P3-K same-origin compiled Web JS/CSS, deny-by-default CSP without unsafe-inline, Node syntax and HTTP regression tests | ✅ PR Go/Node/Docker/security CI passed; physical browser acceptance remains OPEN | [PR #47](https://github.com/yiwssx/anyflip-downloader/pull/47) · [CI 40817348188](https://github.com/yiwssx/anyflip-downloader/actions/runs/40817348188) |
 | 2026-10-29 | P2-E2E Chromium desktop/mobile workflows, synthetic API tests for job progress/download/cancel/batch/history/retry and path-filtered CI | ✅ Browser/Go/Docker PR CI passed; real LAN browser QA OPEN | [PR #48](https://github.com/yiwssx/anyflip-downloader/pull/48) · [Browser 40834513098](https://github.com/yiwssx/anyflip-downloader/actions/runs/40834513098) · [Go/Docker 40834513180](https://github.com/yiwssx/anyflip-downloader/actions/runs/40834513180) |
+| 2026-10-29 | P3-L synthetic Docker SIGKILL/stale-stage recovery + token-free read-only Ubuntu preflight and hard-quota handoff | ✅ CI code gate passed; real host hard quota, physical acceptance and public release OPEN | [PR #49](https://github.com/yiwssx/anyflip-downloader/pull/49) · [CI 40836826648](https://github.com/yiwssx/anyflip-downloader/actions/runs/40836826648) |
 | — | P1/P2/P3 real host/browser/authorized-book acceptance; P4 OCR/target-host performance/desktop; P5 public release | ⏳ OPEN (not verified; do not mark complete) | Operator host/permission/production sign-off required |
 
 ### P1 acceptance evidence and remaining gates

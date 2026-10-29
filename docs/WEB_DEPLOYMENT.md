@@ -98,6 +98,12 @@ The separate `.github/workflows/browser-e2e.yml` workflow runs for Web UI/handle
 
 This is a regression gate only; actual phone/desktop browser QA, user-hosted Docker acceptance, full authorized-book PDF content, low-disk/restart behavior and any public proxy remain separate tests. The browser workflow is intentionally path-filtered so changes solely to unrelated Go core files do not start an additional Chromium job. The existing Go/Docker workflow remains intact.
 
+## Host acceptance and real disk quotas
+
+For the **existing** operator-customized LAN deployment, follow [HOST_ACCEPTANCE.md](HOST_ACCEPTANCE.md). It includes a token-free **read-only** `scripts/verify-host-readiness.sh` preflight and the specific physical evidence needed before closing storage, restart, authorized-book and browser gates. The preflight uses an explicit no-credentials opt-in for LAN HTTP and will **not** configure a hard quota or change the named volume.
+
+GitHub CI separately tests synthetic stale PDF stage cleanup after forcibly killing only an ephemeral runner container. That CI evidence cannot substitute for an OS-enforced filesystem hard quota or operator-host recovery test.
+
 ## Post-deployment smoke test (safe)
 
 The repository includes `scripts/verify-web-deployment.sh`. It checks health,

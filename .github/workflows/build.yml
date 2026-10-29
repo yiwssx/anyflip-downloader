@@ -54,7 +54,9 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Check portable deployment script syntax
-      run: sh -n scripts/verify-web-deployment.sh
+      run: |
+        sh -n scripts/verify-web-deployment.sh
+        sh -n scripts/verify-host-readiness.sh
 
     - name: Build and run non-root container
       env:
@@ -91,6 +93,29 @@ jobs:
 
         check_ready
         BASE_URL=http://127.0.0.1:8094 sh scripts/verify-web-deployment.sh
+
+        # CI-only crash simulation on the disposable named volume.
+        # No real book content, operator host or mounted host volume is touched.
+        docker compose -f compose.web.yaml exec -T anyflip-web sh -ec '
+          cd /data/jobs
+          mkdir .anyflip-pdf-stage-ci20261029
+          printf "CI synthetic staged PDF" > .anyflip-pdf-stage-ci20261029/result.pdf
+          touch -t 202001010000 .anyflip-pdf-stage-ci20261029/result.pdf
+          touch -t 202001010000 .anyflip-pdf-stage-ci20261029
+          mkdir .anyflip-pdf-stage-fresh2026
+        '
+        container_id="$(docker compose -f compose.web.yaml ps -q anyflip-web)"
+        docker kill --signal=KILL "$container_id"
+        docker compose -f compose.web.yaml up --detach --no-deps anyflip-web
+        check_ready
+        docker compose -f compose.web.yaml exec -T anyflip-web sh -ec '
+          test ! -e /data/jobs/.anyflip-pdf-stage-ci20261029
+          test -d /data/jobs/.anyflip-pdf-stage-fresh2026
+        '
+        echo "PASS: crash-orphan PDF stage reclaimed without deleting fresh stage"
+
+        # A read-only, token-free host preflight against the CI runner only.
+        BASE_URL=http://127.0.0.1:8094 sh scripts/verify-host-readiness.sh
 
         # Verify API/health remain available after a real container restart.
         docker compose -f compose.web.yaml restart anyflip-web
