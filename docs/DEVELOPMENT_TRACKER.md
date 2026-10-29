@@ -44,9 +44,10 @@
 
 ### P2-E2E — Automated Browser Regression (CI)
 
-- [ ] **CI gate (PR pending):** ทดสอบหน้า Web GUI ด้วย Chromium Desktop (1365×900) และ Mobile (390×844) บน Go server จริง โดยจำลอง API เพื่อทดสอบฟอร์ม, progress, ดาวน์โหลด PDF, Batch, Cancel, History และ Retry โดยไม่ดึงเอกสารจริงจากผู้เผยแพร่
-- [ ] **CI verification:** `node --test tests/browser-e2e.mjs` ผ่านบน branch/PR นี้และหลัง Merge; Workflow `browser-e2e.yml` จำกัดการ trigger เฉพาะไฟล์ Web และชุดทดสอบที่เกี่ยวข้อง เพื่อลดการทดสอบซ้ำที่ไม่จำเป็น
+- [x] **CI gate:** ทดสอบหน้า Web GUI ด้วย Chromium Desktop (1365×900) และ Mobile (390×844) บน Go server จริง โดยจำลอง API เพื่อทดสอบฟอร์ม, progress, ดาวน์โหลด PDF, Batch, Cancel, History และ Retry โดยไม่ดึงเอกสารจริงจากผู้เผยแพร่
+- [x] **CI verification:** `node --test tests/browser-e2e.mjs` ผ่านบน branch/PR นี้และหลัง Merge; Workflow `browser-e2e.yml` จำกัดการ trigger เฉพาะไฟล์ Web และชุดทดสอบที่เกี่ยวข้อง เพื่อลดการทดสอบซ้ำที่ไม่จำเป็น
 - [ ] **Physical acceptance:** เปิดและทดสอบด้วย Browser Desktop/Mobile จริงที่เครื่องผู้ใช้ผ่าน LAN, ตรวจการเรนเดอร์ภาษาไทย/ไฟล์ PDF ที่ได้รับอนุญาต โดยไม่เก็บ token, URL ส่วนตัว หรือหน้าเอกสารไว้ใน public CI
+- **ผลทดสอบ:** [PR #48](https://github.com/yiwssx/anyflip-downloader/pull/48) ผ่าน [Browser CI #40834513098](https://github.com/yiwssx/anyflip-downloader/actions/runs/40834513098) และ [Go/Docker CI #40834513180](https://github.com/yiwssx/anyflip-downloader/actions/runs/40834513180); ส่วน Physical acceptance ยัง OPEN
 - **ข้อจำกัด:** Mocked Browser E2E ไม่ยืนยันการเข้าถึง AnyFlip จริง, ความถูกต้องของหนังสือทั้งเล่ม, ประสิทธิภาพ Ubuntu Host, Hard Volume Quota หรือความพร้อมเปิด Public HTTPS
 
 ### P3 — Server / Docker / Security (ต้องผ่านก่อนเปิดใช้งานออนไลน์)
@@ -134,6 +135,7 @@
 | 2026-10-28 | P4 terminal Web history: 50 redacted JSON records / seven-day metadata retention across restart, separate one-hour PDF cleanup; no persisted source URL/token/retry settings | ✅ Merged to `main`; PR final-head [40716753587](https://github.com/yiwssx/anyflip-downloader/actions/runs/40716753587) and post-merge main [40716907611](https://github.com/yiwssx/anyflip-downloader/actions/runs/40716907611) Go/Docker/security CI all green | [PR #44](https://github.com/yiwssx/anyflip-downloader/pull/44) |
 | 2026-10-28 | P3-J3 reclaim crash-orphan PDF staging dirs after one hour, only with no active Web job and safe filesystem entries | ✅ Go Build/Vet/Unit/Race/Govulncheck + Docker CI verified; host abrupt-restart acceptance OPEN | [PR #46](https://github.com/yiwssx/anyflip-downloader/pull/46) · [CI 40722973213](https://github.com/yiwssx/anyflip-downloader/actions/runs/40722973213) |
 | 2026-10-29 | P3-K same-origin compiled Web JS/CSS, deny-by-default CSP without unsafe-inline, Node syntax and HTTP regression tests | ✅ PR Go/Node/Docker/security CI passed; physical browser acceptance remains OPEN | [PR #47](https://github.com/yiwssx/anyflip-downloader/pull/47) · [CI 40817348188](https://github.com/yiwssx/anyflip-downloader/actions/runs/40817348188) |
+| 2026-10-29 | P2-E2E Chromium desktop/mobile workflows, synthetic API tests for job progress/download/cancel/batch/history/retry and path-filtered CI | ✅ Browser/Go/Docker PR CI passed; real LAN browser QA OPEN | [PR #48](https://github.com/yiwssx/anyflip-downloader/pull/48) · [Browser 40834513098](https://github.com/yiwssx/anyflip-downloader/actions/runs/40834513098) · [Go/Docker 40834513180](https://github.com/yiwssx/anyflip-downloader/actions/runs/40834513180) |
 | — | P1/P2/P3 real host/browser/authorized-book acceptance; P4 OCR/target-host performance/desktop; P5 public release | ⏳ OPEN (not verified; do not mark complete) | Operator host/permission/production sign-off required |
 
 ### P1 acceptance evidence and remaining gates
