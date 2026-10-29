@@ -1,0 +1,79 @@
+name: Browser E2E (changed Web surfaces)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'web.go'
+      - 'web_csp_test.go'
+      - 'tests/browser-e2e.mjs'
+      - '.github/workflows/browser-e2e.yml'
+      - 'go.mod'
+      - 'go.sum'
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'web.go'
+      - 'web_csp_test.go'
+      - 'tests/browser-e2e.mjs'
+      - '.github/workflows/browser-e2e.yml'
+      - 'go.mod'
+      - 'go.sum'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    name: Chromium desktop/mobile smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ANYFLIP_WEB_TOKEN: ci-browser-token-for-synthetic-tests-only
+      BROWSER_TEST_BASE_URL: http://127.0.0.1:8094
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright Chromium
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.64.1
+          npx playwright install --with-deps chromium
+
+      - name: Compile and run local isolated Web GUI for browser checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          go build -trimpath -o "$RUNNER_TEMP/anyflip-browser-e2e" .
+          export ANYFLIP_JOB_DIR
+          ANYFLIP_JOB_DIR="$(mktemp -d "$RUNNER_TEMP/anyflip-browser-XXXXXXXX")"
+          "$RUNNER_TEMP/anyflip-browser-e2e" -web -listen 127.0.0.1:8094 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            rm -rf -- "$ANYFLIP_JOB_DIR"
+          }
+          trap cleanup EXIT
+          healthy=0
+          for i in {1..30}; do
+            if curl --silent --fail --max-time 2 "$BROWSER_TEST_BASE_URL/healthz" >/dev/null; then
+              healthy=1
+              break
+            fi
+            sleep 1
+          done
+          if [[ "$healthy" != 1 ]]; then
+            echo 'Local Web GUI did not start' >&2
+            exit 1
+          fi
+          node --check tests/browser-e2e.mjs
+          node --test tests/browser-e2e.mjs

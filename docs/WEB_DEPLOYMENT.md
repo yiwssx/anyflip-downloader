@@ -92,6 +92,12 @@ Authenticated **GET `/api/jobs`** returns at most 50 current in-memory job statu
 
 **Important:** The current API is an administrator-only service with a shared token; it is not multi-user and provides no per-person job ownership. Recent terminal job status is persisted in a small 0600 atomic JSON metadata file (`.anyflip-history.json`) in the job volume: at most 50 records, expiring after seven days, survives normal container restarts. Only job ID, terminal stage, page counts, classified safe errors and finish time are stored; source URLs, titles, tokens, file paths and retry settings are never persisted. PDF/image artifacts still expire after one hour; archived history does not allow PDF download, cancellation or retry after restart. Running jobs do not resume after restart. This is a single-admin metadata history, **not** a database or an audited multi-user history. Separate user accounts are not implemented. Do not expose this API to untrusted users or call it a persistent queue.
 
+## Automated browser checks (CI-only, synthetic APIs)
+
+The separate `.github/workflows/browser-e2e.yml` workflow runs for Web UI/handler/test changes and can be dispatched manually. It builds and starts the **same Go Web GUI** on the GitHub runner's loopback interface and executes `tests/browser-e2e.mjs` in pinned Playwright Chromium (desktop and mobile viewports). API responses are **synthetic route fixtures**; no AnyFlip book is fetched, no publisher credentials are passed to CI, and no user-hosted LAN endpoint is probed. Tests exercise the browser form, progress, image-based PDF download, two-item batch queue, cancel, history/retry, expected Content Security Policy and JavaScript errors.
+
+This is a regression gate only; actual phone/desktop browser QA, user-hosted Docker acceptance, full authorized-book PDF content, low-disk/restart behavior and any public proxy remain separate tests. The browser workflow is intentionally path-filtered so changes solely to unrelated Go core files do not start an additional Chromium job. The existing Go/Docker workflow remains intact.
+
 ## Post-deployment smoke test (safe)
 
 The repository includes `scripts/verify-web-deployment.sh`. It checks health,
