@@ -79,6 +79,13 @@
 - [ ] **Physical browser QA:** ตรวจการใช้งาน Desktop/Mobile ทุกขั้นตอน (สร้างงาน, ความคืบหน้า, Cancel, Batch, History, ดาวน์โหลด PDF) และตรวจ CSP console บน LAN host จริง
 - **สถานะ:** โค้ดผ่าน Go Build/Vet/Unit/Race, Node JS syntax, Govulncheck และ Docker Compose smoke ใน [PR #47](https://github.com/yiwssx/anyflip-downloader/pull/47) · [CI #40817348188](https://github.com/yiwssx/anyflip-downloader/actions/runs/40817348188); **Browser/host/public HTTPS gate ยัง OPEN**
 
+### P3-L — Crash-Recovery CI and Host Acceptance Handoff
+
+- [ ] **Code/CI gate:** GitHub Docker smoke must prove synthetic stale staging cleanup after actual SIGKILL, freshness preservation, restart and HTTP checks; a token-free read-only host preflight validates only runtime hardening and LAN checks.
+- [x] **Operator handoff:** [HOST_ACCEPTANCE.md](HOST_ACCEPTANCE.md) documents local Compose preservation, filesystem quota inspection, controlled OS hard-quota proof, real authorized-book and physical browser evidence. No host migration or deployment is performed by this PR.
+- [ ] **Physical gates remain open:** Host-enforced hard quota, real low-space/restart recovery, authorized full-book review in two PDF viewers, actual browsers, and operator release approval.
+- **No public deployment approved.**
+
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
 - [x] Batch Download / Queue / History / Retry failed tasks — [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42): authenticated atomic 8-item batch, last-50 temporary statuses, new-ID retry of failed/cancelled jobs; Go Build/Vet/Unit/Race/Govulncheck + Docker CI passed ([run 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203)). History is **memory-only**; durable history remains separately unchecked.
