@@ -42,6 +42,13 @@
 - [x] Loading, error, retry guidance, accessibility พื้นฐาน; คง CLI ทำงานต่อได้
 - **เกณฑ์ผ่าน:** ทดสอบ end-to-end บนมือถือและ Desktop ผ่านทั้งกรณีสำเร็จ ล้มเหลว และ Cancel
 
+### P2-E2E — Automated Browser Regression (CI)
+
+- [ ] **CI gate (PR pending):** ทดสอบหน้า Web GUI ด้วย Chromium Desktop (1365×900) และ Mobile (390×844) บน Go server จริง โดยจำลอง API เพื่อทดสอบฟอร์ม, progress, ดาวน์โหลด PDF, Batch, Cancel, History และ Retry โดยไม่ดึงเอกสารจริงจากผู้เผยแพร่
+- [ ] **CI verification:** `node --test tests/browser-e2e.mjs` ผ่านบน branch/PR นี้และหลัง Merge; Workflow `browser-e2e.yml` จำกัดการ trigger เฉพาะไฟล์ Web และชุดทดสอบที่เกี่ยวข้อง เพื่อลดการทดสอบซ้ำที่ไม่จำเป็น
+- [ ] **Physical acceptance:** เปิดและทดสอบด้วย Browser Desktop/Mobile จริงที่เครื่องผู้ใช้ผ่าน LAN, ตรวจการเรนเดอร์ภาษาไทย/ไฟล์ PDF ที่ได้รับอนุญาต โดยไม่เก็บ token, URL ส่วนตัว หรือหน้าเอกสารไว้ใน public CI
+- **ข้อจำกัด:** Mocked Browser E2E ไม่ยืนยันการเข้าถึง AnyFlip จริง, ความถูกต้องของหนังสือทั้งเล่ม, ประสิทธิภาพ Ubuntu Host, Hard Volume Quota หรือความพร้อมเปิด Public HTTPS
+
 ### P3 — Server / Docker / Security (ต้องผ่านก่อนเปิดใช้งานออนไลน์)
 - [x] เตรียม Multi-stage Docker image แบบ non-root, Compose + volumes ที่เหมาะสม (ยังต้อง Build/Run บน Docker host จริง)
 - [ ] Apache Reverse Proxy + HTTPS + security headers + health check
