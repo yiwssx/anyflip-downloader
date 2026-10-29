@@ -67,9 +67,9 @@
 
 ### P3-K — Strict Browser CSP / Same-Origin Assets
 
-- [ ] **Code & CI (PR pending):** แยก JavaScript และ CSS ออกจาก HTML เป็นไฟล์ที่ฝังใน Go binary และเสิร์ฟบน origin เดียวกัน; ปรับ `Content-Security-Policy` ให้ไม่ใช้ `unsafe-inline`/`unsafe-eval`; เพิ่ม Go regression tests และ Node JavaScript syntax check
+- [x] **Code & CI:** แยก JavaScript และ CSS ออกจาก HTML เป็นไฟล์ที่ฝังใน Go binary และเสิร์ฟบน origin เดียวกัน; ปรับ `Content-Security-Policy` ให้ไม่ใช้ `unsafe-inline`/`unsafe-eval`; เพิ่ม Go regression tests และ Node JavaScript syntax check
 - [ ] **Physical browser QA:** ตรวจการใช้งาน Desktop/Mobile ทุกขั้นตอน (สร้างงาน, ความคืบหน้า, Cancel, Batch, History, ดาวน์โหลด PDF) และตรวจ CSP console บน LAN host จริง
-- **OPEN:** ห้ามสรุปว่าพร้อม public HTTPS หรือปิด P3 จากการผ่าน CI ของโค้ดอย่างเดียว
+- **สถานะ:** โค้ดผ่าน Go Build/Vet/Unit/Race, Node JS syntax, Govulncheck และ Docker Compose smoke ใน [PR #47](https://github.com/yiwssx/anyflip-downloader/pull/47) · [CI #40817348188](https://github.com/yiwssx/anyflip-downloader/actions/runs/40817348188); **Browser/host/public HTTPS gate ยัง OPEN**
 
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
 - [ ] OCR ไทย/อังกฤษ เป็น **Searchable PDF** (ไม่อ้างว่าเป็น PDF ต้นฉบับ)
@@ -126,6 +126,7 @@
 | 2026-10-28 | P4 admin-only batch, transient job history and failed/cancelled retry | ✅ Merged; Go/Docker/Govulncheck CI passed; no persistent DB or multi-user identity | [PR #42](https://github.com/yiwssx/anyflip-downloader/pull/42) · [CI 40711947203](https://github.com/yiwssx/anyflip-downloader/actions/runs/40711947203) · [main 40712120907](https://github.com/yiwssx/anyflip-downloader/actions/runs/40712120907) |
 | 2026-10-28 | P4 terminal Web history: 50 redacted JSON records / seven-day metadata retention across restart, separate one-hour PDF cleanup; no persisted source URL/token/retry settings | ✅ Merged to `main`; PR final-head [40716753587](https://github.com/yiwssx/anyflip-downloader/actions/runs/40716753587) and post-merge main [40716907611](https://github.com/yiwssx/anyflip-downloader/actions/runs/40716907611) Go/Docker/security CI all green | [PR #44](https://github.com/yiwssx/anyflip-downloader/pull/44) |
 | 2026-10-28 | P3-J3 reclaim crash-orphan PDF staging dirs after one hour, only with no active Web job and safe filesystem entries | ✅ Go Build/Vet/Unit/Race/Govulncheck + Docker CI verified; host abrupt-restart acceptance OPEN | [PR #46](https://github.com/yiwssx/anyflip-downloader/pull/46) · [CI 40722973213](https://github.com/yiwssx/anyflip-downloader/actions/runs/40722973213) |
+| 2026-10-29 | P3-K same-origin compiled Web JS/CSS, deny-by-default CSP without unsafe-inline, Node syntax and HTTP regression tests | ✅ PR Go/Node/Docker/security CI passed; physical browser acceptance remains OPEN | [PR #47](https://github.com/yiwssx/anyflip-downloader/pull/47) · [CI 40817348188](https://github.com/yiwssx/anyflip-downloader/actions/runs/40817348188) |
 | — | P1/P2/P3 real host/browser/authorized-book acceptance; P4 OCR/target-host performance/desktop; P5 public release | ⏳ OPEN (not verified; do not mark complete) | Operator host/permission/production sign-off required |
 
 ### P1 acceptance evidence and remaining gates
