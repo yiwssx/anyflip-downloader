@@ -31,6 +31,9 @@ jobs:
     - name: Verify dependency module hashes
       run: go mod verify
 
+    - name: Check embedded Web JavaScript syntax
+      run: node --check web/app.js
+
     - name: Vet
       run: go vet ./...
 

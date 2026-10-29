@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html
+//go:embed web/index.html web/style.css web/app.js
 var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -94,13 +94,13 @@ func (s *webServer) handler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
-		b, err := webUI.ReadFile("web/index.html")
-		if err != nil {
-			http.Error(w, "web UI unavailable", 500)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write(b)
+		serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
+	})
+	mux.HandleFunc("GET /style.css", func(w http.ResponseWriter, _ *http.Request) {
+		serveEmbeddedWebAsset(w, "web/style.css", "text/css; charset=utf-8")
+	})
+	mux.HandleFunc("GET /app.js", func(w http.ResponseWriter, _ *http.Request) {
+		serveEmbeddedWebAsset(w, "web/app.js", "text/javascript; charset=utf-8")
 	})
 	mux.Handle("POST /api/jobs", s.authorize(http.HandlerFunc(s.createJob)))
 	mux.Handle("GET /api/jobs", s.authorize(http.HandlerFunc(s.listJobs)))
@@ -114,9 +114,22 @@ func (s *webServer) handler() http.Handler {
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'")
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; form-action 'self'; img-src 'self' data:; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'")
 		mux.ServeHTTP(w, r)
 	})
+}
+
+// serveEmbeddedWebAsset serves only constant application-owned paths. It
+// does not take filenames from requests, expose disk paths or read a writable
+// host directory; all UI resources are compiled into the same Go binary.
+func serveEmbeddedWebAsset(w http.ResponseWriter, name, contentType string) {
+	data, err := webUI.ReadFile(name)
+	if err != nil {
+		http.Error(w, "web UI unavailable", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", contentType)
+	_, _ = w.Write(data)
 }
 
 func (s *webServer) authorize(next http.Handler) http.Handler {
