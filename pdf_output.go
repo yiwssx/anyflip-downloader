@@ -119,6 +119,14 @@ func createPDFVerifiedWithBudget(ctx context.Context, outputFile, imageDir strin
 	if err != nil {
 		return err
 	}
+	// Decode WebP in private staging so lossy BT.601 pages retain their
+	// intended color range; never modify source images on disk.
+	pages, err = preparePDFPageWebP(ctx, pages, stageDir, func() error {
+		return checkJobStorageBudget(maxBytes, imageDir, stageDir)
+	})
+	if err != nil {
+		return err
+	}
 	if err := checkJobStorageBudget(maxBytes, imageDir, stageDir); err != nil {
 		return err
 	}
