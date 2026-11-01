@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -254,7 +255,7 @@ func TestWebBestQualityOptInUsesLargestPublisherListedImage(t *testing.T) {
 	s.mu.Lock()
 	output := s.jobs[created.ID].file
 	s.mu.Unlock()
-	dims, err := api.PageDimsFile(output)
+	dims, err := api.PageDimsFile(context.Background(), output)
 	if err != nil || len(dims) != 1 {
 		t.Fatalf("PDF missing or corrupt: dimensions=%v err=%v", dims, err)
 	}
