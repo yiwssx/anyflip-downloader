@@ -123,6 +123,29 @@ You can also combine this comand with any of the above for example:
 docker run --rm -v "$(pwd)":/data anyflip-downloader -title <your book title> <url to book>
 ```
 
+### Resume an interrupted CLI download (opt-in)
+
+For downloads started with this version, use a dedicated directory and the
+same book URL to resume after an interruption. An authenticated local manifest
+binds the folder to the publisher's page map and quality setting; completed
+page images are published atomically. Files from older versions without this
+manifest cannot be resumed automatically.
+
+```sh
+anyflip-downloader -temp-download-folder ./book-pages -keep-download-folder https://anyflip.com/publisher/book
+# If interrupted, run with the SAME folder and SAME quality option:
+anyflip-downloader -resume -temp-download-folder ./book-pages https://anyflip.com/publisher/book
+```
+
+The first invocation needs a folder that does not yet exist. Resume accepts
+only a previously created private folder. Existing valid pages are skipped,
+and missing pages are downloaded. A changed book, an untrusted/corrupt page,
+or mismatched quality settings cause an explicit error without overwriting
+existing data. Resumed folders are preserved even after successful conversion;
+remove them yourself when you no longer need the images. The PDF output path
+must not already exist. This opt-in feature is **CLI-only**: browser jobs still
+use isolated new workspaces, job Retry, and the existing storage quota.
+
 ### Safe temporary workspaces and parameter limits
 
 Each run creates a new temporary directory (under the system temporary directory by default).
