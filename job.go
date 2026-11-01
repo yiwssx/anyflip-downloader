@@ -24,6 +24,7 @@ type DownloadJobOptions struct {
 	RetryDelay         time.Duration
 	ChunkSize          uint
 	BestQuality        bool // inspect every publisher-listed candidate; default false
+	Resume             bool // CLI only; requires a previous matching app-owned workspace
 	MaxPages           int // web-only page count guard; 0 keeps CLI behavior
 	MaxJobBytes        int64 // web-only checkpointed storage budget; 0 disables it
 	HTTPClient         *http.Client
@@ -69,6 +70,9 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 	if opts.MaxPages < 0 || opts.MaxJobBytes < 0 {
 		return "", errors.New("job resource bounds must not be negative")
 	}
+	if opts.Resume && (opts.TempDownloadFolder == "" || opts.MaxPages > 0 || opts.MaxJobBytes > 0) {
+		return "", errors.New("CLI resume requires an explicit -temp-download-folder and cannot be enabled for bounded Web jobs")
+	}
 	bookURL, err := url.Parse(opts.URL)
 	if err != nil {
 		return "", fmt.Errorf("invalid book URL: %w", err)
@@ -92,7 +96,25 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 		return "", fmt.Errorf("inspect output PDF: %w", err)
 	}
 
-	workspace, cleanup, err := createDownloadWorkspace(opts.TempDownloadFolder)
+	var workspace string
+	var cleanup func() error
+	if opts.Resume {
+		workspace, err = openResumeWorkspace(opts.TempDownloadFolder)
+		if err != nil {
+			return "", err
+		}
+		// A resumed directory is never recursively removed, even on success.
+		cleanup = func() error { return nil }
+		err = verifyResumeManifest(workspace, book, opts.BestQuality)
+	} else {
+		workspace, cleanup, err = createDownloadWorkspace(opts.TempDownloadFolder)
+		if err == nil {
+			err = writeResumeManifest(workspace, book, opts.BestQuality)
+			if err != nil {
+				_ = cleanup()
+			}
+		}
+	}
 	if err != nil {
 		return "", err
 	}
@@ -120,7 +142,7 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 		}
 	}
 	if err := book.downloadImagesContextWithProgress(jobCtx, opts.HTTPClient, workspace,
-		downloadOptions{threads: opts.Threads, retries: opts.Retries, retryDelay: opts.RetryDelay, bestQuality: opts.BestQuality}, pageReporter); err != nil {
+		downloadOptions{threads: opts.Threads, retries: opts.Retries, retryDelay: opts.RetryDelay, bestQuality: opts.BestQuality, resume: opts.Resume}, pageReporter); err != nil {
 		if cause := context.Cause(jobCtx); cause != nil && !errors.Is(cause, context.Canceled) && !errors.Is(cause, context.DeadlineExceeded) {
 			return "", fmt.Errorf("image job budget check: %w", cause)
 		}
@@ -136,7 +158,7 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 		}, opts.MaxJobBytes); err != nil {
 		return "", fmt.Errorf("convert downloaded images to PDF (workspace %s): %w", workspace, err)
 	}
-	if !opts.KeepImages {
+	if !opts.KeepImages && !opts.Resume {
 		if err := cleanup(); err != nil {
 			// Retained files are not a failed conversion; do not misrepresent
 			// an already-published, validated PDF as missing.
