@@ -60,7 +60,7 @@ func TestRunDownloadJobFullPDFAndProgress(t *testing.T) {
 	if result != output {
 		t.Fatalf("output file = %q; expected %q", result, output)
 	}
-	if pageCount, err := api.PageCountFile(output); err != nil || pageCount != 2 {
+	if pageCount, err := api.PageCountFile(context.Background(), output); err != nil || pageCount != 2 {
 		t.Fatalf("PDF page count = %d, error %v", pageCount, err)
 	}
 	if _, err := os.Stat(workspace); !os.IsNotExist(err) {
