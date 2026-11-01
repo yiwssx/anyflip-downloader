@@ -18,7 +18,8 @@ Release-candidate workflow is explicitly manual and uploads nonpublic CI artifac
 
 - [ ] Publisher-authorized real-book complete PDF page-count/quality, crop, Thai legibility and mixed-orientation checks on at least two PDF viewers
 - [ ] Physical browser QA on desktop and mobile, including start, cancel, failure and download flows
-- [ ] Target Ubuntu Docker disk/volume quota is **actually** enforced; test low space, simultaneous downloads, restart cleanup and failure rollback on the physical host ([host acceptance guide](HOST_ACCEPTANCE.md))
+- [x] Operator-confirmed LAN migration into a separate size-bounded ext4 filesystem: active Docker named volume reports **5.8 GiB** at `/data/jobs`, matching the 6 GiB loopback image; systemd mount dependency, container health and HTTP 200 were observed. **Scoped LAN infrastructure task closed 2026-11-01.** See [host acceptance guide](HOST_ACCEPTANCE.md).
+- [ ] Controlled ENOSPC/low-space, simultaneous downloads, real interruption/retention, mount-loss fail-closed behavior, and recovery/rollback drill remain **unverified release gates**. This checkbox is not satisfied by `df` capacity or healthy startup alone.
 - [ ] Run token-free `scripts/verify-host-readiness.sh` from the actual Ubuntu deployment directory; inspect logs privately for redaction. Optional `scripts/verify-web-deployment.sh` authenticated probes require loopback/HTTPS, never plain LAN HTTP.
 - [ ] Review LAN port `10.10.1.100:8094` and token handling. Do not enable public access without an independently reviewed HTTPS proxy, access control, trusted-client rate limiting, firewall and monitoring
 - [ ] Obtain explicit operator approval to publish a specific version and record approval date, commit SHA, CI run IDs and redacted acceptance evidence
