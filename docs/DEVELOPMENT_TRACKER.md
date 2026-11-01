@@ -1,6 +1,6 @@
 # AnyFlip Downloader — Online Web GUI Development Tracker
 
-**สถานะ:** 🟡 Download Core + Web GUI + Docker CI verified; **LAN-only self-hosted Web GUI operator-confirmed, public HTTPS/production not approved**  
+**สถานะ:** 🟡 Download Core + Web GUI + Docker CI verified; **LAN-only storage/quota cutover CLOSED by operator on 2026-11-01; public HTTPS/production not approved**  
 **อัปเดตครั้งแรก:** 2026-10-22  
 **เป้าหมาย:** Web GUI ผ่านเบราว์เซอร์ บน Ubuntu Server + Docker/Compose + Apache Reverse Proxy + HTTPS โดยคง CLI เดิมไว้
 
@@ -54,18 +54,20 @@
 - [x] เตรียม Multi-stage Docker image แบบ non-root, Compose + volumes ที่เหมาะสม (ยังต้อง Build/Run บน Docker host จริง)
 - [ ] Apache Reverse Proxy + HTTPS + security headers + health check
 - [ ] Authentication / Authorization, rate limiting, job ownership และการป้องกัน abuse/SSRF — P3-I เพิ่มการจำกัดการลอง Bearer token ผิดซ้ำแยกตาม TCP peer (5 ครั้ง/1 นาที → 429 พร้อม Retry-After, พัก 5 นาที), รองรับรายการติดตามสูงสุด 1,024 peers; **ผ่าน Go Build/Vet/Unit/Race และ Docker Compose CI (#36) แล้ว** และยังไม่มี multi-user/job ownership หรือ reverse-proxy public acceptance
-- [ ] จำกัด concurrent jobs, CPU/RAM, network, disk quota, timeout, max file size/page count — P3-H เพิ่มการตรวจเพดานขนาดภาพก่อนส่งเข้า pdfcpu (สูงสุด 40 ล้านพิกเซล และ 12,000 พิกเซล/ด้าน; รองรับ 8K UHD); P3-J1 (#38) ผ่าน Go Build/Vet/Unit/Race + Docker CI สำหรับ Web-only 512-page cap และ checkpointed 512 MiB job budget (image workspace + PDF staging), พร้อมล้าง workspace เมื่อเกิน; P3-J2 (#40) เพิ่ม global managed-volume accounting และ minimum-free-space guard แบบ soft limit แล้ว แต่ยังรอ **OS hard filesystem quota** และการทดสอบเครื่องจริง
+- [ ] จำกัด concurrent jobs, CPU/RAM, network, disk quota, timeout, max file size/page count — P3-H เพิ่มการตรวจเพดานขนาดภาพก่อนส่งเข้า pdfcpu (สูงสุด 40 ล้านพิกเซล และ 12,000 พิกเซล/ด้าน; รองรับ 8K UHD); P3-J1 (#38) ผ่าน Go Build/Vet/Unit/Race + Docker CI สำหรับ Web-only 512-page cap และ checkpointed 512 MiB job budget (image workspace + PDF staging), พร้อมล้าง workspace เมื่อเกิน; P3-J2 (#40) เพิ่ม global managed-volume accounting และ minimum-free-space guard แบบ soft limit; Ubuntu operator verified a separate loopback ext4 6 GiB filesystem for `/data/jobs` and safe systemd startup. Controlled ENOSPC/low-disk behavior and public production gates remain deferred.
 - [ ] จัดเก็บไฟล์ชั่วคราวพร้อมกำหนด retention/auto cleanup และแยกข้อมูลผู้ใช้ — เพิ่ม cleanup หลัง restart พร้อมตรวจอายุและชื่อไฟล์ของระบบแล้ว; ยังไม่มี multi-user accounts และต้องทดสอบ Volume จริง
 - [ ] Logging/observability ที่ไม่เปิดเผยข้อมูลลับ, แนวทาง backup/rollback, ทดสอบ restart/recovery — P3-G (#30) ผ่าน CI ตรวจว่า Web job logs ไม่มี error ดิบ (URL/Token/Path); ยังรอการตรวจสอบ Logs/Restart บนเครื่องจริง
 - [ ] ทดสอบ security และการใช้งานจริงก่อนเชื่อม public domain
 - **เกณฑ์ผ่าน:** HTTPS และสิทธิ์ผู้ใช้ปลอดภัย; ไม่สามารถเข้าถึงไฟล์ข้ามงาน; ระบบมี resource caps
 
-### P3-J2 — Hard Volume Quota / Host Capacity
+### P3-J2 — Hard Volume Quota / Host Capacity (LAN cutover closed)
 
-- [x] **Code slice**: aggregate accounting of managed retained PDFs, image workspaces and PDF staging, with symlink-safe scans and atomic concurrent-job admission. [PR #40](https://github.com/yiwssx/anyflip-downloader/pull/40) passed Go Build/Vet/Unit/Race and Docker Compose smoke; no physical host claim.
-- [ ] **Host hard cap**: Configure an actual Ubuntu filesystem/volume quota; a 4 GiB application soft ceiling is **not** a host hard quota.
-- [ ] **Operational acceptance**: Verify low disk, abrupt restart, retention, failed PDF conversion and real Ubuntu/Docker capacity using an authorized book. Preserve existing LAN `10.10.1.100:8094`.
-- **OPEN** until host quota and physical tests are documented. No public deployment approval. GitHub Issues are disabled; track here.
+- [x] **Code slice:** aggregate accounting of managed retained PDFs, image workspaces and PDF staging, symlink-safe scans and atomic job admission. [PR #40](https://github.com/yiwssx/anyflip-downloader/pull/40) passed Go Build/Vet/Unit/Race and Docker Compose CI.
+- [x] **Host bounded filesystem / migration:** operator installed a 6 GiB ext4 loopback image under `/var/lib/anyflip-quota/jobs-6g.ext4`, registered `/mnt/anyflip-quota-stage`, and moved the active Docker data path to the `anyflip-downloader_anyflip_quota_jobs` named volume. Inside the container `df -h /data/jobs` reported **5.8 GiB**, `/dev/loop0` (rather than the 914 GiB root filesystem). Previous `anyflip-downloader_anyflip_jobs` volume was retained for rollback. Reported `QUOTA_CUTOVER_PASS`.
+- [x] **Startup / LAN acceptance:** operator-provided logs show `anyflip-quota.service` enabled/active, mount unit `mnt-anyflip\\x2dquota\\x2dstage.mount` loaded/active with `Where=/mnt/anyflip-quota-stage`, `Requires/BindsTo/After` for the same unit, Docker restart policy `no`, container `healthy`, and HTTP `200` at `10.10.1.100:8094`. A later inspection after a service restart again showed the mount, 5.8 GiB filesystem, healthy container and HTTP 200. This is evidence of working startup configuration, **not a controlled simulated mount failure or a proven full reboot sequence**.
+- [x] **Operator workflow closure (2026-11-01):** close the **LAN storage migration and bounded-capacity configuration task** to continue other development. No additional migration/deployment is required for this closure.
+- [ ] **Deferred independent production acceptance (NOT closed):** controlled ENOSPC/low-disk test and behavior at the hard boundary, abnormal stop during a real conversion, complete authorized-book visual PDF QA in two readers, physical browsers, and any future public HTTPS/security approval. Do not test filesystem exhaustion on a shared live production host.
+- **Status:** **CLOSED for LAN storage infrastructure only**; application soft limit remains 4 GiB and **a 6 GiB filesystem capacity is not evidence that a controlled fill-to-limit test passed**. See [HOST_ACCEPTANCE.md](HOST_ACCEPTANCE.md).
 
 ### P3-J3 — Crash-Orphan PDF Staging Recovery
 
@@ -83,7 +85,7 @@
 
 - [x] **Code/CI gate:** Docker Compose smoke proved synthetic stale-stage cleanup after SIGKILL, preservation of fresh stage, healthy restart and read-only host preflight on an ephemeral CI runner; [PR #49](https://github.com/yiwssx/anyflip-downloader/pull/49) · [CI 40836826648](https://github.com/yiwssx/anyflip-downloader/actions/runs/40836826648). Real Ubuntu host has not been tested.
 - [x] **Operator handoff:** [HOST_ACCEPTANCE.md](HOST_ACCEPTANCE.md) documents local Compose preservation, filesystem quota inspection, controlled OS hard-quota proof, real authorized-book and physical browser evidence. No host migration or deployment is performed by this PR.
-- [ ] **Physical gates remain open:** Host-enforced hard quota, real low-space/restart recovery, authorized full-book review in two PDF viewers, actual browsers, and operator release approval.
+- [ ] **Deferred release gates:** Host bounded ext4 filesystem cutover and service startup were operator-verified and closed as an infrastructure task; controlled ENOSPC, real interruption/retention tests, authorized full-book review in two PDF viewers, physical browser acceptance, and public release approval remain OPEN.
 - **No public deployment approved.**
 
 ### P4 — ความสามารถเพิ่มเติม (หลัง MVP)
@@ -144,6 +146,7 @@
 | 2026-10-29 | P3-K same-origin compiled Web JS/CSS, deny-by-default CSP without unsafe-inline, Node syntax and HTTP regression tests | ✅ PR Go/Node/Docker/security CI passed; physical browser acceptance remains OPEN | [PR #47](https://github.com/yiwssx/anyflip-downloader/pull/47) · [CI 40817348188](https://github.com/yiwssx/anyflip-downloader/actions/runs/40817348188) |
 | 2026-10-29 | P2-E2E Chromium desktop/mobile workflows, synthetic API tests for job progress/download/cancel/batch/history/retry and path-filtered CI | ✅ Browser/Go/Docker PR CI passed; real LAN browser QA OPEN | [PR #48](https://github.com/yiwssx/anyflip-downloader/pull/48) · [Browser 40834513098](https://github.com/yiwssx/anyflip-downloader/actions/runs/40834513098) · [Go/Docker 40834513180](https://github.com/yiwssx/anyflip-downloader/actions/runs/40834513180) |
 | 2026-10-29 | P3-L synthetic Docker SIGKILL/stale-stage recovery + token-free read-only Ubuntu preflight and hard-quota handoff | ✅ CI code gate passed; real host hard quota, physical acceptance and public release OPEN | [PR #49](https://github.com/yiwssx/anyflip-downloader/pull/49) · [CI 40836826648](https://github.com/yiwssx/anyflip-downloader/actions/runs/40836826648) |
+| 2026-11-01 | P3-J2 LAN hard-storage filesystem cutover with operator-confirmed 5.8 GiB ext4 `/data/jobs`, named volume, systemd mount dependency, and HTTP 200 | ✅ CLOSED (LAN storage work only); controlled ENOSPC and public production acceptance deferred | Operator-provided terminal verification (private); [HOST_ACCEPTANCE.md](HOST_ACCEPTANCE.md) |
 | — | P1/P2/P3 real host/browser/authorized-book acceptance; P4 OCR/target-host performance/desktop; P5 public release | ⏳ OPEN (not verified; do not mark complete) | Operator host/permission/production sign-off required |
 
 ### P1 acceptance evidence and remaining gates
@@ -165,8 +168,8 @@
 ### Code-only handoff (2026-10-28)
 
 - Verified runtime work (#40 capacity admission, #42 batch/temporary history/retry, #44 redacted durable history metadata) and CI/security/release-candidate guard (#41) are merged into `main`. The exact post-merge `main` CI run for #42 passed: [40712120907](https://github.com/yiwssx/anyflip-downloader/actions/runs/40712120907).
-- The 4 GiB managed-volume ceiling and 512 MiB job reservations are application-level checks, **not hard disk quotas**. A separate filesystem-level Ubuntu quota remains mandatory before multi-user or public service.
-- P1 live authorized-book visual QA, P2 browser/mobile testing and all target-host HTTPS/volume/restart/security gates are **OPEN**. LAN-only operation is separate from an approved public release.
+- The 4 GiB managed-volume ceiling and 512 MiB job reservations are application-level checks, **not hard disk quotas**. The operator subsequently configured a distinct approximately 6 GiB ext4 filesystem for LAN deployment and verified container-visible capacity; controlled ENOSPC enforcement, multi-user isolation and public security approval remain unverified.
+- P1 live authorized-book visual QA, P2 browser/mobile testing and remaining target-host HTTPS/controlled-ENOSPC/recovery/security release gates are **OPEN**. P3-J2 LAN storage migration has been closed separately. LAN-only operation is separate from an approved public release.
 - P4 safe durable **status-only history** is merged as [PR #44](https://github.com/yiwssx/anyflip-downloader/pull/44) via bounded atomic JSON metadata (not SQLite), with successful PR/main Go/Docker/security CI. It does not retain URLs, tokens or retry specs, recover pending jobs, or extend PDF lifetime. OCR, target-machine benchmarks and optional desktop packaging remain independent, uncompleted features.
 - P5 candidate workflow is manual and intentionally does **not** publish any GitHub release. Acceptance checklist exists; full Release gate remains OPEN until operator authorization.
 
