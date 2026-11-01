@@ -239,10 +239,10 @@ func TestP1BestQualityJobCreatesVerifiedPDF(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := api.ValidateFile(output, nil); err != nil {
+	if err := api.ValidateFile(context.Background(), output, nil, nil); err != nil {
 		t.Fatal(err)
 	}
-	dims, err := api.PageDimsFile(output)
+	dims, err := api.PageDimsFile(context.Background(), output)
 	if err != nil || len(dims) != 2 {
 		t.Fatalf("unexpected PDF page dimensions: %v %v", dims, err)
 	}
