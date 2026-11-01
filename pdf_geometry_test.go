@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"bytes"
 	"crypto/sha256"
 	"image"
@@ -61,10 +62,10 @@ func TestP1MixedPageGeometryAndOrientation(t *testing.T) {
 	if err := createPDFVerified(output, dir, len(sources), 3); err != nil {
 		t.Fatalf("convert mixed geometry PDF: %v", err)
 	}
-	if err := api.ValidateFile(output, nil); err != nil {
+	if err := api.ValidateFile(context.Background(), output, nil, nil); err != nil {
 		t.Fatalf("invalid converted PDF: %v", err)
 	}
-	dims, err := api.PageDimsFile(output)
+	dims, err := api.PageDimsFile(context.Background(), output)
 	if err != nil {
 		t.Fatal(err)
 	}
