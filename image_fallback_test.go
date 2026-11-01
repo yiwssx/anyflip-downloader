@@ -181,7 +181,7 @@ func TestP1PublisherFallbackFullTwoPagePDF(t *testing.T) {
 	if missing.Load() != 1 {
 		t.Fatalf("primary page should be tried once, got %d", missing.Load())
 	}
-	if count, err := api.PageCountFile(output); err != nil || count != 2 {
+	if count, err := api.PageCountFile(context.Background(), output); err != nil || count != 2 {
 		t.Fatalf("invalid final PDF: pages=%d error=%v", count, err)
 	}
 }
