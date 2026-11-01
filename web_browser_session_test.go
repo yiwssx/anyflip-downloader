@@ -75,6 +75,9 @@ func TestTrustedNetworkBrowserSessionAndAPI(t *testing.T) {
 	if got := makeRequest("POST", "/api/jobs", cookie, "http://anyflip.test", "same-origin", "").Code; got != http.StatusBadRequest {
 		t.Fatalf("authorized browser POST returned %d, want 400 for absent JSON", got)
 	}
+	if got := makeRequest("GET", "/api/jobs", nil, "", "", testWebToken).Code; got != http.StatusOK {
+		t.Fatalf("existing administrator Bearer token was rejected: %d", got)
+	}
 	if got := makeRequest("POST", "/api/jobs", cookie, "https://attacker.example", "cross-site", "").Code; got != http.StatusUnauthorized {
 		t.Fatalf("cross-origin cookie POST returned %d", got)
 	}
@@ -92,9 +95,6 @@ func TestTrustedNetworkBrowserSessionAndAPI(t *testing.T) {
 	bad.Value = cookie.Value[:len(cookie.Value)-1] + replacement
 	if got := makeRequest("GET", "/api/jobs", &bad, "", "", "").Code; got != http.StatusUnauthorized {
 		t.Fatalf("tampered browser cookie returned %d", got)
-	}
-	if got := makeRequest("GET", "/api/jobs", nil, "", "", testWebToken).Code; got != http.StatusOK {
-		t.Fatalf("existing administrator Bearer token was rejected: %d", got)
 	}
 
 	disabled, err := newWebServer(testWebToken, t.TempDir())
