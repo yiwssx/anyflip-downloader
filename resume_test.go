@@ -70,7 +70,7 @@ func TestRunDownloadJobResumeInterruptedCLI(t *testing.T) {
         t.Fatalf("resume unexpectedly re-fetched completed page: p1=%d p2=%d", pageOneRequests.Load(), pageTwoRequests.Load())
     }
     if completed != 2 { t.Fatalf("resume progress=%d expected 2 completed pages", completed) }
-    if n, err := api.PageCountFile(output); err != nil || n != 2 {
+    if n, err := api.PageCountFile(context.Background(), output); err != nil || n != 2 {
         t.Fatalf("resumed PDF count=%d err=%v", n, err)
     }
     if _, err := os.Stat(folder); err != nil { t.Fatalf("resume must preserve workspace: %v", err) }
