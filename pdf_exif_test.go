@@ -161,10 +161,10 @@ func TestP1EXIFRotatedPDFMediaBox(t *testing.T) {
 	if err := createPDFVerified(output, root, 3, 2); err != nil {
 		t.Fatalf("EXIF-aware PDF conversion failed: %v", err)
 	}
-	if err := api.ValidateFile(output, nil); err != nil {
+	if err := api.ValidateFile(context.Background(), output, nil, nil); err != nil {
 		t.Fatal(err)
 	}
-	dims, err := api.PageDimsFile(output)
+	dims, err := api.PageDimsFile(context.Background(), output)
 	if err != nil || len(dims) != 3 {
 		t.Fatalf("PDF page dimensions: %v %v", dims, err)
 	}
