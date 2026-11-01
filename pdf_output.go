@@ -136,7 +136,7 @@ func createPDFVerifiedWithBudget(ctx context.Context, outputFile, imageDir strin
 			return err
 		}
 		end := min(i+chunkSize, len(pages))
-		if err := api.ImportImagesFile(pages[i:end], stagingFile, configuration, nil); err != nil {
+		if err := api.ImportImagesFile(ctx, pages[i:end], stagingFile, configuration, nil); err != nil {
 			return fmt.Errorf("PDF conversion failed at pages %d-%d: %w", i+1, end, err)
 		}
 		if err := checkJobStorageBudget(maxBytes, imageDir, stageDir); err != nil {
