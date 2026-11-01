@@ -45,6 +45,7 @@ type downloadOptions struct {
 	retryDelay time.Duration
 	bestQuality bool
 	resume bool
+	atomicPages bool
 }
 
 func init() {
