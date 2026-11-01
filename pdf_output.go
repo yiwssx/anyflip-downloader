@@ -146,7 +146,7 @@ func createPDFVerifiedWithBudget(ctx context.Context, outputFile, imageDir strin
 			onProgress(end)
 		}
 	}
-	actualPages, err := api.PageCountFile(stagingFile)
+	actualPages, err := api.PageCountFile(ctx, stagingFile)
 	if err != nil {
 		return fmt.Errorf("generated PDF is invalid: %w", err)
 	}
