@@ -331,7 +331,11 @@ func downloadImageCandidate(ctx context.Context, client *http.Client, bookURL, i
 			}
 			continue
 		}
-		lastErr = saveImageResponseAtomically(filename, resp)
+		if opts.atomicPages {
+			lastErr = saveImageResponseAtomically(filename, resp)
+		} else {
+			lastErr = saveImageResponse(filename, resp)
+		}
 		if lastErr == nil {
 			return false, nil
 		}
