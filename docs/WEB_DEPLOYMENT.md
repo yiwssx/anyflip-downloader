@@ -1,6 +1,6 @@
 # Deploy AnyFlip Downloader Web GUI on Ubuntu Server
 
-This is a **self-hosted deployment recipe**. A working **LAN-only** Web GUI was operator-confirmed on 2026-10-28 after the pdfcpu HOME/config volume fix (PR #18); this is not confirmation of any configured public domain, Apache HTTPS service, or approved production release. It retains the existing CLI while adding an authenticated browser interface. Output is an **image-based PDF**, not a recovered original text/vector PDF. Use it only for books you are authorized to download or reproduce.
+This is a **self-hosted deployment recipe**. A working **LAN-only** Web GUI was operator-confirmed on 2026-10-28 after the pdfcpu HOME/config volume fix (PR #18); this is not confirmation of any configured public domain, Apache HTTPS service, or approved production release. It retains the existing CLI and supports optional passwordless trusted-network browser sessions, while preserving Bearer-token API access. Output is an **image-based PDF**, not a recovered original text/vector PDF. Use it only for books you are authorized to download or reproduce.
 
 ## Requirements
 
@@ -29,7 +29,17 @@ curl --fail --silent --show-error http://127.0.0.1:8094/healthz
 
 The Compose file binds **127.0.0.1:8094** on the host, routes it to port 8080 in a Docker container and keeps temporary/finished PDFs in the `anyflip_jobs` named volume. The image runs with UID 10001, no extra Linux capabilities and a read-only root filesystem. The application is **not** exposed directly on a public host network interface.
 
-To obtain the token later from your local `.env`, consult that file privately on the server; **never** post it in GitHub, logs, chat messages or URLs.
+The token remains a **server-side API secret only**, not a user login credential. Never post it in GitHub, logs, chat messages or URLs.
+
+## Tokenless Web GUI: trusted-network mode
+
+`compose.web.yaml` now opts in to `ANYFLIP_BROWSER_ACCESS=trusted-network`. Users browsing the site receive a signed cookie automatically; JavaScript never sees the administrator Bearer token. Cookies are short-lived (12 hours), `HttpOnly`, `SameSite=Strict`, and used only with same-origin API requests. The API still rejects requests without a valid cookie or Bearer token. `GET /healthz` remains public.
+
+**This is NOT individual authentication.** Any network client able to reach a trusted-network deployment can obtain a browser session by visiting `/`. This mode is acceptable only when the administrator has restricted access at the network perimeter (private LAN, firewall, VPN or an authenticated reverse proxy). Do not expose it to the public internet; a server-issued cookie does not replace an identity/login provider. The existing shared job history and cancellation capabilities are available to all trusted-network visitors.
+
+For an existing host with a customized `compose.web.yaml` (including `10.10.1.100:8094`, quota overlay and systemd unit), **do not overwrite the host files**. Add only `ANYFLIP_BROWSER_ACCESS: trusted-network` to the existing `anyflip-web.environment`, preserving the original `ANYFLIP_WEB_TOKEN`, volume, ports, quotas and service files. Set `ANYFLIP_BROWSER_COOKIE_SECURE: "true"` only when browsers always access the service through HTTPS (including TLS-terminating reverse proxies); use `false` for the existing plain-HTTP LAN endpoint. Then rebuild using the operator's existing quota-aware Compose/systemd workflow. A plain `docker compose -f compose.web.yaml up` is **not** a safe replacement for the host's custom workflow.
+
+Without the explicit `trusted-network` mode, the server continues to require a Bearer token for API calls and does **not** issue browser sessions. This fail-closed default applies to direct non-Compose launches. Do not copy a server token into the page or implement a token-returning endpoint to bypass it.
 
 ## Apache HTTPS reverse proxy
 
@@ -42,7 +52,7 @@ The Apache config proxies traffic only to `http://127.0.0.1:8094/`; do not confi
 
 ## Web use and checks
 
-Visit your own HTTPS domain in Chrome, Edge or Safari. Enter the strong administrator token, paste an authorized AnyFlip book URL, then start/monitor/cancel the job. The download button becomes active when the verified PDF is ready.
+From an administrator-approved trusted network, open the Web GUI in Chrome, Edge or Safari. The server issues a 12-hour signed, HttpOnly, SameSite=Strict browser cookie automatically. Paste an authorized AnyFlip book URL, then start/monitor/cancel the job: **users do not need to enter or receive an Access Token**. The download button becomes active when the verified PDF is ready.
 
 The completed CLI message and Web GUI explicitly call the result **Image-based PDF**, not the original editable publisher PDF. Authenticated download responses use `Content-Type: application/pdf` plus `X-AnyFlip-Output-Type: image-based-pdf` for API clients; this custom header is informational and does not replace MIME type or document authenticity checks.
 
@@ -60,9 +70,9 @@ The Web API also throttles repeated **failed** Bearer-token checks from the same
 
 ### Browser Content Security Policy (P3-K code gate)
 
-The Web GUI now serves its compiled-in JavaScript at `/app.js` and stylesheet at `/style.css` on the **same origin** as the page. Its HTTP `Content-Security-Policy` does not permit `'unsafe-inline'` or `'unsafe-eval'`. It limits scripts, styles and API connections to the application origin, disallows unexpected default resources and page embedding, and blocks external form submission. The UI files are part of the Go executable and are never loaded from a writable host folder or third-party CDN. The existing token-authenticated API endpoints, Docker Compose configuration and LAN port binding are unchanged.
+The Web GUI now serves its compiled-in JavaScript at `/app.js` and stylesheet at `/style.css` on the **same origin** as the page. Its HTTP `Content-Security-Policy` does not permit `'unsafe-inline'` or `'unsafe-eval'`. It limits scripts, styles and API connections to the application origin, disallows unexpected default resources and page embedding, and blocks external form submission. The UI files are part of the Go executable and are never loaded from a writable host folder or third-party CDN. The existing Bearer-token API remains available for scripts; the default Compose enables trusted-network browser cookies. The port binding is unchanged.
 
-Browser acceptance is **still required** on the actual desktop and mobile browsers, especially the submit, polling, cancel, PDF download, batch queue and history flows. Inspect the browser developer console for CSP violations. If a reverse proxy adds its own CSP header, check that both policies permit `/app.js` and `/style.css`; do not weaken to `unsafe-inline`. This change does **not** encrypt tokens on the existing plain-HTTP LAN link, create multi-user authorization, approve HTTPS/public access or substitute for operational security review.
+Browser acceptance is **still required** on the actual desktop and mobile browsers, especially the automatic session, submit, polling, cancel, PDF download, batch queue and history flows. Inspect the browser developer console for CSP violations. If a reverse proxy adds its own CSP header, check that both policies permit `/app.js` and `/style.css`; do not weaken to `unsafe-inline`. The token is no longer sent through the browser at all. HTTP LAN traffic and browser cookies remain unencrypted in transit; use a trusted LAN or HTTPS. This is not per-user authentication and does not authorize public exposure.
 
 ### Web volume capacity admission (P3-J2 code gate)
 
@@ -82,15 +92,15 @@ The Web GUI enforces an application-level **512-page limit and a 512 MiB per-job
 
 **This is a checkpointed soft budget, not a filesystem/Docker-volume hard quota.** A concurrent image request (up to 32 MiB per page), multiple workers, JPEG orientation preprocessing and a PDF import chunk can temporarily grow beyond this per-job cap before the next check; completed/failed other jobs still consume the same named volume. Do not claim that these checks prevent a full disk or guarantee a global storage ceiling. For production, separately configure host filesystem/volume quotas, minimum-free-space monitoring, retention tests and capacity verification on the actual Ubuntu server. Existing `10.10.1.100:8094` LAN bindings remain operator-controlled; this code does not change port mappings or enable public access.
 
-The app uses in-memory job state (maximum two active downloads, twelve pending jobs), a 20-minute per-job timeout and a one-hour terminal-job cleanup timer. Uploaded/downloaded page image responses are limited to 32 MiB per page. For memory safety, the image header must also declare no more than 40 million decoded pixels or 12,000 pixels along either dimension; a typical 7680×4320 (8K UHD) image is inside this guard. A page exceeding these limits fails the job rather than silently downsampling. JPEGs requiring EXIF normalization additionally have a 25-million-pixel transformation limit. These bounds do not replace a validated job-level disk quota or production load testing. This is an administrator-token MVP, **not a multi-tenant service**. Jobs in memory are not recovered across restarts; named-volume PDFs may remain if the server stops before the cleanup timer runs.
+The app uses in-memory job state (maximum two active downloads, twelve pending jobs), a 20-minute per-job timeout and a one-hour terminal-job cleanup timer. Uploaded/downloaded page image responses are limited to 32 MiB per page. For memory safety, the image header must also declare no more than 40 million decoded pixels or 12,000 pixels along either dimension; a typical 7680×4320 (8K UHD) image is inside this guard. A page exceeding these limits fails the job rather than silently downsampling. JPEGs requiring EXIF normalization additionally have a 25-million-pixel transformation limit. These bounds do not replace a validated job-level disk quota or production load testing. This is a single shared-queue service with optional trusted-network browser access, **not a multi-tenant service**. Jobs in memory are not recovered across restarts; named-volume PDFs may remain if the server stops before the cleanup timer runs.
 
 ## Operator batch queue and temporary history (P4)
 
-The same administrator token grants access to the authenticated **POST `/api/jobs/batch`** endpoint (JSON `{"jobs":[{"url":"https://anyflip.com/authorized/book","threads":3,"bestQuality":false}]}`), capped at eight URLs per request and the shared 12-active-or-queued job limit. The server validates every member and checks queue space before scheduling any of them. Jobs receive separate unpredictable IDs, temporary folders, cancellation contexts and PDF files. No publisher permissions or network allowlist are bypassed.
+Browser sessions in trusted-network mode, or the administrator Bearer token for scripts, grant access to **POST `/api/jobs/batch`** (JSON `{"jobs":[{"url":"https://anyflip.com/authorized/book","threads":3,"bestQuality":false}]}`), capped at eight URLs per request and the shared 12-active-or-queued job limit. The server validates every member and checks queue space before scheduling any of them. Jobs receive separate unpredictable IDs, temporary folders, cancellation contexts and PDF files. No publisher permissions or network allowlist are bypassed.
 
 Authenticated **GET `/api/jobs`** returns at most 50 current in-memory job statuses, without original URLs, titles, tokens or server paths. Authenticated **POST `/api/jobs/{id}/retry`** schedules a *new job ID* with the prior failed/cancelled job's internal settings; running or completed jobs cannot be retried. The Thai Web interface has a batch URL field, status selector and manual retry controls.
 
-**Important:** The current API is an administrator-only service with a shared token; it is not multi-user and provides no per-person job ownership. Recent terminal job status is persisted in a small 0600 atomic JSON metadata file (`.anyflip-history.json`) in the job volume: at most 50 records, expiring after seven days, survives normal container restarts. Only job ID, terminal stage, page counts, classified safe errors and finish time are stored; source URLs, titles, tokens, file paths and retry settings are never persisted. PDF/image artifacts still expire after one hour; archived history does not allow PDF download, cancellation or retry after restart. Running jobs do not resume after restart. This is a single-admin metadata history, **not** a database or an audited multi-user history. Separate user accounts are not implemented. Do not expose this API to untrusted users or call it a persistent queue.
+**Important:** This service has no per-person job ownership: in trusted-network mode anyone allowed through the deployment perimeter can view shared history, retry/cancel jobs and download existing files; Bearer-token API access is still supported. Recent terminal job status is persisted in a small 0600 atomic JSON metadata file (`.anyflip-history.json`) in the job volume: at most 50 records, expiring after seven days, survives normal container restarts. Only job ID, terminal stage, page counts, classified safe errors and finish time are stored; source URLs, titles, tokens, file paths and retry settings are never persisted. PDF/image artifacts still expire after one hour; archived history does not allow PDF download, cancellation or retry after restart. Running jobs do not resume after restart. This is a single-admin metadata history, **not** a database or an audited multi-user history. Separate user accounts are not implemented. Do not expose this API to untrusted users or call it a persistent queue.
 
 ## Automated browser checks (CI-only, synthetic APIs)
 
@@ -136,8 +146,8 @@ check, authorized real-book test or Docker restart/recovery test.
 CLI and Web GUI share the same Go download engine. If the same authorized
 AnyFlip reader URL works locally but fails in a deployed Web GUI:
 
-1. Confirm that the Web UI accepts your administrator token and creates a Job ID.
-   A 401 from `/api/jobs` indicates incorrect Web authentication; it is not
+1. Confirm that the trusted-network Web UI creates a Job ID without asking for an administrator token.
+   A 401 from `/api/jobs` indicates a missing/expired browser session or invalid API Bearer token; it is not
    a book/download permission issue.
 2. Check the Job ID and displayed error code (`network_error`,
    `source_access_denied`, `metadata_invalid`, `storage_error`,
