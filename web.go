@@ -57,6 +57,8 @@ type webServer struct {
 	stopping bool
 	root     string
 	token    string
+	browserAccess bool // Opt-in: perimeter-protected browser access, not personal authentication.
+	browserCookieSecure bool // Set behind HTTPS-terminating reverse proxies.
 	sem      chan struct{}
 	client   *http.Client // Optional controlled test transport; nil in production.
 	authThrottle *authThrottle
@@ -93,6 +95,12 @@ func (s *webServer) handler() http.Handler {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
+		}
+		if s.browserAccess {
+			if err := s.issueBrowserSession(w, r); err != nil {
+				http.Error(w, "browser session unavailable", http.StatusInternalServerError)
+				return
+			}
 		}
 		serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
 	})
@@ -134,6 +142,10 @@ func serveEmbeddedWebAsset(w http.ResponseWriter, name, contentType string) {
 
 func (s *webServer) authorize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.validBrowserSession(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if wait := s.authThrottle.retryAfter(r.RemoteAddr); wait > 0 {
 			seconds := int((wait + time.Second - 1) / time.Second)
 			w.Header().Set("Retry-After", strconv.Itoa(seconds))
@@ -326,6 +338,21 @@ func runWeb(addr string) error {
 	server, err := newWebServer(token, root)
 	if err != nil {
 		return err
+	}
+	switch mode := os.Getenv("ANYFLIP_BROWSER_ACCESS"); mode {
+	case "", "token-only":
+		// The API remains Bearer-token-only by default.
+	case "trusted-network":
+		server.browserAccess = true
+	default:
+		return fmt.Errorf("unsupported ANYFLIP_BROWSER_ACCESS mode %q", mode)
+	}
+	if value := os.Getenv("ANYFLIP_BROWSER_COOKIE_SECURE"); value != "" {
+		secure, err := strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("invalid ANYFLIP_BROWSER_COOKIE_SECURE: %w", err)
+		}
+		server.browserCookieSecure = secure
 	}
 	return serveWebUntilSignal(addr, server)
 }

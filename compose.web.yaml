@@ -8,6 +8,11 @@ services:
     command: ["-web", "-listen", "0.0.0.0:8080"]
     environment:
       ANYFLIP_WEB_TOKEN: ${ANYFLIP_WEB_TOKEN:?Generate a strong token and set it in .env}
+      # Opt-in for credential-free browser sessions on an operator-restricted LAN.
+      # NOT individual authentication. Never expose this service to the public.
+      ANYFLIP_BROWSER_ACCESS: trusted-network
+      # Set true if TLS terminates at a reverse proxy; leave false for HTTP LAN.
+      ANYFLIP_BROWSER_COOKIE_SECURE: ${ANYFLIP_BROWSER_COOKIE_SECURE:-false}
       ANYFLIP_JOB_DIR: /data/jobs
       # Allow pdfcpu to initialize its config without writing to read-only root.
       HOME: /data/jobs

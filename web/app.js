@@ -2,13 +2,10 @@
   const $ = id => document.getElementById(id);
   const labels = {queued:'อยู่ในคิว',preparing:'เตรียมข้อมูล',downloading:'ดาวน์โหลดภาพ',converting:'สร้าง PDF',completed:'สำเร็จ',failed:'ไม่สำเร็จ',cancelled:'ยกเลิกแล้ว'};
   let currentJob = null, poll = null;
-  $('token').value = sessionStorage.getItem('anyflip-access-token') || '';
   function error(el,msg){el.textContent=msg;el.hidden=!msg}
   async function request(path, opts={}) {
-    const token = $('token').value.trim();
-    const headers = {...opts.headers,Authorization:'Bearer '+token};
-    const res = await fetch(path,{...opts,headers,cache:'no-store'});
-    if(!res.ok){const text=await res.text();if(res.status===401)throw new Error('Access Token ไม่ถูกต้อง');throw new Error(res.status===429?'ขณะนี้คิวงานเต็ม กรุณาลองใหม่อีกครั้ง':text.trim()||'เกิดข้อผิดพลาด ('+res.status+')')}
+    const res = await fetch(path,{...opts,credentials:'same-origin',cache:'no-store'});
+    if(!res.ok){const text=await res.text();if(res.status===401)throw new Error('ไม่สามารถยืนยันเซสชันเว็บได้ กรุณารีเฟรชหน้าเว็บหรือติดต่อผู้ดูแลระบบ');throw new Error(res.status===429?'ขณะนี้คิวงานเต็ม กรุณาลองใหม่อีกครั้ง':text.trim()||'เกิดข้อผิดพลาด ('+res.status+')')}
     return res;
   }
   async function refresh(){
@@ -44,10 +41,6 @@
     refresh();
   }
   async function loadHistory() {
-    if(!$('token').value.trim()) {
-      error($('historyError'),'กรุณากรอก Access Token ก่อนตรวจสอบประวัติ');
-      return;
-    }
     try {
       const res=await request('/api/jobs');
       const history=await res.json();
@@ -92,9 +85,6 @@
     const button=$('batchStartButton');
     button.disabled=true;
     try {
-      const token=$('token').value.trim();
-      if(token.length<16)throw new Error('กรุณากรอก Access Token ก่อนเพิ่มรายการ');
-      sessionStorage.setItem('anyflip-access-token',token);
       const urls=$('batchURLs').value.split(/\r?\n/).map(url=>url.trim()).filter(Boolean);
       if(urls.length<1||urls.length>8)throw new Error('ต้องมีลิงก์ตั้งแต่ 1 ถึง 8 รายการ');
       const jobs=urls.map(url=>({url,threads:Number($('threads').value),bestQuality:$('bestQuality').checked}));
@@ -110,9 +100,6 @@
     if(currentJob && poll)return;
     $('startButton').disabled=true;
     try{
-      const token=$('token').value.trim();
-      if(token.length<16)throw new Error('กรุณากรอก Access Token ที่ผู้ดูแลระบบกำหนด');
-      sessionStorage.setItem('anyflip-access-token',token);
       const res=await request('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         url:$('bookURL').value.trim(),title:$('bookTitle').value.trim(),threads:Number($('threads').value),bestQuality:$('bestQuality').checked
       })});
@@ -130,4 +117,7 @@
       setTimeout(()=>URL.revokeObjectURL(url),10000);
     }catch(e){error($('jobError'),e.message)}finally{$('downloadButton').disabled=false;}
   });
+  // Erase credentials retained by older Web GUI versions on this origin.
+  sessionStorage.removeItem('anyflip-access-token');
+  loadHistory();
 })();
