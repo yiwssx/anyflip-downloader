@@ -1,6 +1,22 @@
 # P3 — Ubuntu LAN host acceptance and safe handoff
 
-**Status: OPERATOR PHYSICAL ACCEPTANCE REQUIRED.** GitHub CI cannot certify the existing Ubuntu host, a disk hard quota, authorized content, browser/device fidelity, public HTTPS or multi-user security. This runbook does not change the running server.
+**Status: LAN storage infrastructure cutover closed by operator (2026-11-01); remaining physical release acceptance required.** GitHub CI cannot certify controlled ENOSPC behavior, authorized content, browser/device fidelity, public HTTPS or multi-user security. This runbook does not change the running server.
+
+## Operator-confirmed LAN storage cutover — 2026-11-01
+
+This is a **record of terminal evidence provided by the operator**, not a remote action by GitHub CI or an independent audit. The original Compose and volume were preserved for rollback while a host-local `compose.quota.yaml` and `anyflip-quota.service` were configured outside the repository.
+
+| Item | Operator-reported evidence |
+| --- | --- |
+| Deployed source revision | `b5333b9` |
+| Bounded storage | 6 GiB ext4 loopback image; inside container `/data/jobs` reported `/dev/loop0`, approx. **5.8 GiB** |
+| Active named volume | `anyflip-downloader_anyflip_quota_jobs`; original `anyflip-downloader_anyflip_jobs` retained |
+| Mount | `/mnt/anyflip-quota-stage`, ext4, UUID `57833a9b-e768-4755-ab7c-89cbe3f0b549`, mounted and active |
+| Startup ordering | `anyflip-quota.service` enabled and active, mount `Requires`/`BindsTo`/`After` resolved; Docker restart policy `no` |
+| LAN | `10.10.1.100:8094`, container healthy and HTTP 200; token-free `HOST_PREFLIGHT_PASS` |
+| Cutover result | `QUOTA_CUTOVER_PASS`, backup retained; operator declared this scoped work closed |
+
+**Scope of closure:** LAN data-path migration and size-bounded filesystem are complete. A container-visible filesystem size is not an actual fill-to-limit/ENOSPC behavior test; abrupt mount loss, controlled full host reboot proof, rollback rehearsal, authorized-book checks and public security acceptance are separate deferred milestones. Do not erase the legacy volume or backup automatically. Do not run bare `docker compose -f compose.web.yaml up` in place of the operator's quota-aware systemd workflow.
 
 ## 1. Inspect the existing deployment
 
@@ -61,12 +77,14 @@ On the target Ubuntu host, after backup and confirming no valuable job is runnin
 
 | Evidence | Status |
 | --- | --- |
-| Deployed commit SHA, container/Compose identity | Pending |
-| Token-free read-only host preflight | Pending |
-| OS-enforced disk hard quota with controlled proof | Pending |
-| Interruption, restart, low-space, retention, rollback | Pending |
+| Deployed commit SHA, container/Compose identity | Verified by operator: b5333b9, active quota named volume |
+| Token-free read-only host preflight | Operator reported HOST_PREFLIGHT_PASS |
+| Dedicated size-bounded ext4 filesystem | Operator verified 5.8 GiB /data/jobs; LAN cutover CLOSED |
+| Controlled ENOSPC / full-disk behavior proof | Deferred, NOT VERIFIED |
+| systemd/mount and container startup health | Operator verified active/healthy, HTTP 200 |
+| Interruption during real conversion, low-space, retention, rollback drill | Deferred, NOT VERIFIED |
 | Complete authorized book, page counts and two viewers | Pending |
 | Desktop/mobile browser/token/CSP walkthrough | Pending |
 | Operator signature, date and release decision | Pending |
 
-**Release decision: NOT APPROVED** until all above items have evidence and operator authorization. OCR, desktop packaging and tuning to host specs remain separate optional milestones.
+**Public release decision: NOT APPROVED.** Operator closure applies only to LAN storage infrastructure, not the remaining physical release acceptance. OCR, desktop packaging and tuning to host specs remain separate optional milestones.
