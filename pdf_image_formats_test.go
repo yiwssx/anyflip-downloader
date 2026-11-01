@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"image"
@@ -70,10 +71,10 @@ func TestP1MixedJPEGPNGWebPCreatesValidPDFWithoutChangingSources(t *testing.T) {
 	if err := createPDFVerified(out, dir, 3, 2); err != nil {
 		t.Fatalf("mixed JPG/PNG/WebP PDF import failed: %v", err)
 	}
-	if err := api.ValidateFile(out, nil); err != nil {
+	if err := api.ValidateFile(context.Background(), out, nil, nil); err != nil {
 		t.Fatalf("generated PDF failed structural validation: %v", err)
 	}
-	count, err := api.PageCountFile(out)
+	count, err := api.PageCountFile(context.Background(), out)
 	if err != nil || count != 3 {
 		t.Fatalf("generated PDF pages=%d, err=%v; want 3 pages", count, err)
 	}

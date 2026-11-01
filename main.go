@@ -166,7 +166,7 @@ func createPDF(outputFile string, imageDir string, chunkSize int) error {
 		end := min(i+chunkSize, len(imagePaths))
 
 		imagePathChunk := imagePaths[i:end]
-		if err := api.ImportImagesFile(imagePathChunk, outputFile, impConf, nil); err != nil {
+		if err := api.ImportImagesFile(context.Background(), imagePathChunk, outputFile, impConf, nil); err != nil {
 			return fmt.Errorf("cannot import image pages %d-%d: %w", i+1, end, err)
 		}
 		bar.Add(min(chunkSize, len(imagePaths)-i))

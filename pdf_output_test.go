@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"bytes"
 	"image"
 	"image/color"
@@ -139,7 +140,7 @@ func TestCreatePDFVerifiedWithRealImages(t *testing.T) {
 	if err := createPDFVerified(output, dir, 2, 1); err != nil {
 		t.Fatal(err)
 	}
-	count, err := api.PageCountFile(output)
+	count, err := api.PageCountFile(context.Background(), output)
 	if err != nil || count != 2 {
 		t.Fatalf("generated PDF page count = %d, error = %v", count, err)
 	}
