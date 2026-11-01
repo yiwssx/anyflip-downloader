@@ -108,7 +108,7 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 		err = verifyResumeManifest(workspace, book, opts.BestQuality)
 	} else {
 		workspace, cleanup, err = createDownloadWorkspace(opts.TempDownloadFolder)
-		if err == nil {
+		if err == nil && opts.MaxPages == 0 && opts.MaxJobBytes == 0 {
 			err = writeResumeManifest(workspace, book, opts.BestQuality)
 			if err != nil {
 				_ = cleanup()
@@ -142,7 +142,7 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 		}
 	}
 	if err := book.downloadImagesContextWithProgress(jobCtx, opts.HTTPClient, workspace,
-		downloadOptions{threads: opts.Threads, retries: opts.Retries, retryDelay: opts.RetryDelay, bestQuality: opts.BestQuality, resume: opts.Resume}, pageReporter); err != nil {
+		downloadOptions{threads: opts.Threads, retries: opts.Retries, retryDelay: opts.RetryDelay, bestQuality: opts.BestQuality, resume: opts.Resume, atomicPages: opts.MaxPages == 0 && opts.MaxJobBytes == 0}, pageReporter); err != nil {
 		if cause := context.Cause(jobCtx); cause != nil && !errors.Is(cause, context.Canceled) && !errors.Is(cause, context.DeadlineExceeded) {
 			return "", fmt.Errorf("image job budget check: %w", cause)
 		}
