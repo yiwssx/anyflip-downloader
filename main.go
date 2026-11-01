@@ -44,6 +44,7 @@ type downloadOptions struct {
 	retries    int
 	retryDelay time.Duration
 	bestQuality bool
+	resume bool
 }
 
 func init() {
