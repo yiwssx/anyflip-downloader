@@ -70,8 +70,8 @@ On the target Ubuntu host, after backup and confirming no valuable job is runnin
 ## 5. Authorized book and browser checks
 
 - Process one *publisher-authorized complete book*; verify source and PDF page counts, first/middle/last pages, Thai legibility, image clarity, crop and orientation in **two independent PDF viewers**. Privately record counts and SHA-256, not access tokens, internal paths or copyrighted source pages in GitHub.
-- Check desktop and mobile browsers: automatic cookie session without a token input, create, progress, cancel, failure, batch, retry, history after restart, PDF download and CSP console warnings. GitHub Chromium E2E uses mock API responses and does not replace these physical checks.
-- Prefer private HTTPS or an administrator-controlled LAN/VPN. The Web GUI never asks for a Bearer token; any trusted-network visitor can obtain a session, so perimeter restrictions and CSRF protections are essential.
+- Check desktop and mobile browsers: authentication, create, progress, cancel, failure, batch, retry, history after restart, PDF download and CSP console warnings. GitHub Chromium E2E uses mock API responses and does not replace these physical checks.
+- Prefer SSH tunneling or a private HTTPS endpoint for authenticated access. A Bearer token sent over ordinary LAN HTTP is not encrypted.
 
 ## 6. Physical acceptance record
 
@@ -84,7 +84,7 @@ On the target Ubuntu host, after backup and confirming no valuable job is runnin
 | systemd/mount and container startup health | Operator verified active/healthy, HTTP 200 |
 | Interruption during real conversion, low-space, retention, rollback drill | Deferred, NOT VERIFIED |
 | Complete authorized book, page counts and two viewers | Pending |
-| Desktop/mobile tokenless-session/CSP walkthrough | Pending |
+| Desktop/mobile browser/token/CSP walkthrough | Pending |
 | Operator signature, date and release decision | Pending |
 
 **Public release decision: NOT APPROVED.** Operator closure applies only to LAN storage infrastructure, not the remaining physical release acceptance. OCR, desktop packaging and tuning to host specs remain separate optional milestones.

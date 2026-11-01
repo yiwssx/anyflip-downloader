@@ -6,7 +6,6 @@ on:
     paths:
       - 'web/**'
       - 'web.go'
-      - 'web_browser_session*.go'
       - 'web_csp_test.go'
       - 'tests/browser-e2e.mjs'
       - '.github/workflows/browser-e2e.yml'
@@ -17,7 +16,6 @@ on:
     paths:
       - 'web/**'
       - 'web.go'
-      - 'web_browser_session*.go'
       - 'web_csp_test.go'
       - 'tests/browser-e2e.mjs'
       - '.github/workflows/browser-e2e.yml'
@@ -35,7 +33,6 @@ jobs:
     timeout-minutes: 20
     env:
       ANYFLIP_WEB_TOKEN: ci-browser-token-for-synthetic-tests-only
-      ANYFLIP_BROWSER_ACCESS: trusted-network
       BROWSER_TEST_BASE_URL: http://127.0.0.1:8094
     steps:
       - uses: actions/checkout@v4

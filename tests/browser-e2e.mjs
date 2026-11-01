@@ -1,4 +1,4 @@
-// Browser-level regression coverage for trusted-network browser sessions.
+// Browser-level regression coverage for the compiled, authenticated Go Web GUI.
 // API routes are intercepted with synthetic responses: no publisher book is fetched.
 // Run only against an isolated local CI instance, never against the operator's LAN host.
 import assert from 'node:assert/strict';
@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import { chromium } from 'playwright';
 
 const baseURL = process.env.BROWSER_TEST_BASE_URL || 'http://127.0.0.1:8094';
+const token = process.env.ANYFLIP_WEB_TOKEN || 'ci-browser-test-token-strong-only';
 
 const ids = {
   desktop: 'a'.repeat(32),
@@ -52,7 +53,7 @@ test('desktop: CSP, create, progress and image-based PDF download', { timeout: 4
       const path = new URL(request.url()).pathname;
       if (path === '/api/jobs' && request.method() === 'POST') {
         creates++;
-        assert.equal(request.headers().authorization, undefined, 'browser must not send an administrator Bearer token');
+        assert.equal(request.headers().authorization, 'Bearer ' + token);
         const data = request.postDataJSON();
         assert.equal(data.url, 'https://anyflip.com/demo/authorized');
         assert.equal(data.bestQuality, true);
@@ -84,9 +85,7 @@ test('desktop: CSP, create, progress and image-based PDF download', { timeout: 4
     assert.ok(await page.locator('#jobForm').isVisible());
     assert.ok(await page.locator('#batchURLs').isVisible());
 
-    assert.equal(await page.locator('#token').count(), 0, 'browser must not ask for an access token');
-    const session = (await page.context().cookies()).find(c => c.name === 'anyflip_browser_session');
-    assert.ok(session?.httpOnly && session?.sameSite === 'Strict', 'expected an HttpOnly strict browser session');
+    await page.locator('#token').fill(token);
     await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
     await page.locator('#bestQuality').check();
     await page.locator('#startButton').click();
@@ -121,7 +120,7 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
       if (path === '/api/jobs/batch' && request.method() === 'POST') {
         const jobs = request.postDataJSON().jobs;
         assert.equal(jobs.length, 2);
-        assert.equal(request.headers().authorization, undefined, 'browser must not send an administrator Bearer token');
+        assert.equal(request.headers().authorization, 'Bearer ' + token);
         batches++;
         return respond(route, 202, { jobs: [snapshot(ids.batchA, 'queued'), snapshot(ids.batchB, 'queued')] });
       }
@@ -154,7 +153,7 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
     await page.goto(baseURL + '/', { waitUntil: 'networkidle' });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     assert.equal(overflow, false, 'Mobile UI has horizontal overflow');
-    assert.equal(await page.locator('#token').count(), 0);
+    await page.locator('#token').fill(token);
     await page.locator('#batchURLs').fill(
       'https://anyflip.com/demo/authorized-a\nhttps://anyflip.com/demo/authorized-b',
     );
