@@ -85,7 +85,11 @@ func TestTrustedNetworkBrowserSessionAndAPI(t *testing.T) {
 		t.Fatalf("cross-site cookie GET returned %d", got)
 	}
 	bad := *cookie
-	bad.Value = cookie.Value[:len(cookie.Value)-1] + "0"
+	replacement := "0"
+	if strings.HasSuffix(cookie.Value, "0") {
+		replacement = "1"
+	}
+	bad.Value = cookie.Value[:len(cookie.Value)-1] + replacement
 	if got := makeRequest("GET", "/api/jobs", &bad, "", "", "").Code; got != http.StatusUnauthorized {
 		t.Fatalf("tampered browser cookie returned %d", got)
 	}
