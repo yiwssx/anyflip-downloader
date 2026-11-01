@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"bytes"
 	"crypto/sha256"
 	"fmt"
@@ -72,14 +73,14 @@ func TestP1Large129PagePDFIntegrityAcrossChunks(t *testing.T) {
 	if err := createPDFVerified(output, imageDir, p1LargeFixturePages, 24); err != nil {
 		t.Fatal(err)
 	}
-	if err := api.ValidateFile(output, nil); err != nil {
+	if err := api.ValidateFile(context.Background(), output, nil, nil); err != nil {
 		t.Fatalf("large image-based PDF failed validation: %v", err)
 	}
-	pages, err := api.PageCountFile(output)
+	pages, err := api.PageCountFile(context.Background(), output)
 	if err != nil || pages != p1LargeFixturePages {
 		t.Fatalf("actual PDF pages=%d, error=%v; expected %d", pages, err, p1LargeFixturePages)
 	}
-	dims, err := api.PageDimsFile(output)
+	dims, err := api.PageDimsFile(context.Background(), output)
 	if err != nil || len(dims) != p1LargeFixturePages {
 		t.Fatalf("PDF page dimension records=%d, error=%v", len(dims), err)
 	}
