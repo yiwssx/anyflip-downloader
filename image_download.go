@@ -198,6 +198,15 @@ func (fb *flipbook) downloadPageContext(ctx context.Context, client *http.Client
 	if opts.retries < 0 || opts.retries > 10 || opts.retryDelay < 0 || opts.retryDelay > time.Minute {
 		return errors.New("invalid page retry settings")
 	}
+	if opts.resume {
+		completed, err := checkExistingResumePage(fb, folder, page)
+		if err != nil {
+			return err
+		}
+		if completed {
+			return nil
+		}
+	}
 	if opts.bestQuality {
 		return fb.downloadPageBestQualityContext(ctx, client, page, folder, opts)
 	}
@@ -322,7 +331,11 @@ func downloadImageCandidate(ctx context.Context, client *http.Client, bookURL, i
 			}
 			continue
 		}
-		lastErr = saveImageResponse(filename, resp)
+		if opts.atomicPages {
+			lastErr = saveImageResponseAtomically(filename, resp)
+		} else {
+			lastErr = saveImageResponse(filename, resp)
+		}
 		if lastErr == nil {
 			return false, nil
 		}
@@ -334,6 +347,35 @@ func downloadImageCandidate(ctx context.Context, client *http.Client, bookURL, i
 		}
 	}
 	return false, fmt.Errorf("image download failed after %d attempts: %w", opts.retries+1, lastErr)
+}
+
+// saveImageResponseAtomically keeps incomplete download bytes out of the
+// final page filename. A killed process may leave a hidden staging file, but
+// resume will only consider fully published final images.
+func saveImageResponseAtomically(filename string, resp *http.Response) error {
+	stage, err := os.CreateTemp(filepath.Dir(filename), ".anyflip-page-")
+	if err != nil {
+		_ = resp.Body.Close()
+		return err
+	}
+	stageName := stage.Name()
+	if err := stage.Close(); err != nil {
+		_ = os.Remove(stageName)
+		_ = resp.Body.Close()
+		return err
+	}
+	if err := os.Remove(stageName); err != nil {
+		_ = resp.Body.Close()
+		return err
+	}
+	defer os.Remove(stageName)
+	if err := saveImageResponse(stageName, resp); err != nil {
+		return err
+	}
+	if err := os.Link(stageName, filename); err != nil {
+		return fmt.Errorf("publish complete page without overwrite: %w", err)
+	}
+	return nil
 }
 
 func saveImageResponse(filename string, resp *http.Response) (resultErr error) {
