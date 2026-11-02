@@ -120,11 +120,11 @@ func TestGoogleOAuthStatePKCESessionAndJobIsolation(t *testing.T){
  if got:=makeReq("POST","/auth/logout","localhost:8094","http://evil.test",session).Code;got!=403{t.Fatalf("CSRF logout accepted: %d",got)}
  if got:=makeReq("POST","/auth/logout","localhost:8094","http://localhost:8094",session).Code;got!=204{t.Fatalf("logout failed: %d",got)}
  if got:=makeReq("GET","/auth/me","localhost:8094","",session).Code;got!=401{t.Fatalf("revoked session accepted: %d",got)}
- // Keep the legacy service Bearer API untouched until host cutover.
+ // SSO mode must never allow bypass via the legacy machine API token.
  req:=httptest.NewRequest("GET","http://localhost:8094/api/jobs",nil)
  req.Header.Set("Authorization","Bearer "+testWebToken)
  w:=httptest.NewRecorder();handler.ServeHTTP(w,req)
- if w.Code!=200{t.Fatalf("legacy service token rejected: %d",w.Code)}
+ if w.Code!=401{t.Fatalf("legacy Bearer bypassed Google login: %d",w.Code)}
  if !validStoredJobOwner(googleOwner("https://accounts.google.com","sub")){t.Fatal("Google owner invalid for history")}
 }
 func TestGoogleRejectsPlainHTTPNonlocalConfig(t *testing.T){
