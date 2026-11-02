@@ -42,5 +42,35 @@ docker compose "${args[@]}" config --quiet
 # This command starts ONLY the independent tunnel; no AnyFlip app rebuild/restart and no orphan cleanup.
 docker compose "${args[@]}" up -d --pull always --no-deps anyflip-tunnel
 docker compose "${args[@]}" ps
-printf '\nConnector launched. Validate Cloudflare Tunnel status and HTTPS using:\n'
-printf '  bash scripts/verify-tunnel-ingress.sh\n'
+
+# Container started is not proof that the Cloudflare connector is connected.
+# Preserve the independent connector for inspection if public readiness fails.
+# Never change any existing application, proxy or DNS configuration here.
+readiness_url="https://anyflip.rcat.dpdns.org/healthz"
+attempts="${RCAT_TUNNEL_WAIT_ATTEMPTS:-15}"
+if [[ ! "$attempts" =~ ^[1-9][0-9]?$ ]]; then
+  echo "ERROR: RCAT_TUNNEL_WAIT_ATTEMPTS must be 1-99." >&2
+  exit 2
+fi
+printf 'Checking live HTTPS readiness at %s (authentication is a separate acceptance test)\n' "$readiness_url"
+for ((i=1; i<=attempts; i++)); do
+  if ! docker compose "${args[@]}" ps --status running -q anyflip-tunnel | grep -q .; then
+    echo "ERROR: Tunnel container stopped before it became available." >&2
+    echo "Inspect privately: docker compose --project-name $project --env-file $env_file -f compose.tunnel.yaml logs --tail=40 anyflip-tunnel" >&2
+    exit 1
+  fi
+  if curl --fail --silent --show-error --connect-timeout 3 --max-time 8 "$readiness_url" -o /dev/null 2>/dev/null; then
+    printf 'PASS: live TLS-verified HTTPS health check returned 2xx (attempt %s/%s).\n' "$i" "$attempts"
+    printf 'Next: verify real Google login or token authentication before publishing the alternate URL.\n'
+    exit 0
+  fi
+  if (( i < attempts )); then
+    printf 'Connector/ingress not ready (%s/%s); retrying...\n' "$i" "$attempts"
+    sleep 4
+  fi
+done
+
+echo "NOT READY: Tunnel container was started, but $readiness_url did not pass HTTPS health." >&2
+echo "The connector remains running for diagnosis; no production services were restarted." >&2
+echo "Check Cloudflare Tunnel status and local network egress, then run: bash scripts/verify-tunnel-ingress.sh" >&2
+exit 1
