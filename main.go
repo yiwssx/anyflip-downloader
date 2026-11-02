@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
+	"strings"
 	"log"
 	"net/url"
 	"os"
@@ -19,6 +21,7 @@ import (
 
 var title string
 var webMode bool
+var hashPasswordMode bool
 var webListen string
 var tempDownloadFolder string
 var insecure bool
@@ -51,6 +54,7 @@ type downloadOptions struct {
 func init() {
 	flag.Usage = printUsage
 	flag.BoolVar(&webMode, "web", false, "Start the authenticated Web GUI server")
+	flag.BoolVar(&hashPasswordMode, "hash-password", false, "Read a new account password from stdin and print its Argon2id hash")
 	flag.StringVar(&webListen, "listen", "127.0.0.1:8080", "Web GUI listen address")
 	flag.StringVar(&tempDownloadFolder, "temp-download-folder", "", "Specifies the name of the temporary download folder")
 	flag.StringVar(&title, "title", "", "Specifies the name of the generated PDF document (uses book title if not specified)")
@@ -66,6 +70,14 @@ func init() {
 
 func main() {
 	flag.Parse()
+	if hashPasswordMode {
+		input, err := io.ReadAll(io.LimitReader(os.Stdin, 129))
+		if err != nil { log.Fatal("cannot read password from stdin") }
+		hash, err := hashAccountPassword(strings.TrimSuffix(string(input), "\n"))
+		if err != nil { log.Fatal(err) }
+		fmt.Println(hash)
+		return
+	}
 	if webMode {
 		if err := runWeb(webListen); err != nil {
 			log.Fatal(err)
