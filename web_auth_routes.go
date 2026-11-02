@@ -9,6 +9,7 @@ import (
  "encoding/hex"
  "encoding/json"
  "io"
+ "log"
  "net/http"
  "net/url"
  "strconv"
@@ -61,6 +62,23 @@ func (s *webServer) authorizeAccounts(next http.Handler) http.Handler {
   next.ServeHTTP(w,r.WithContext(context.WithValue(r.Context(),principalContextKey{},accountPrincipal{Username:user.Username,Role:user.Role})))
  })
 }
+// Require an intent audit record before security-sensitive state changes.
+// State persistence and file-based audit are separate durability domains; the
+// follow-up outcome is best-effort, and any IO failure is logged server-side.
+func (s *webServer) requireAuthAudit(w http.ResponseWriter,event,actor,target string) bool {
+ if err:=s.auth.audit.record(event,actor,target,"intent");err!=nil {
+  log.Printf("authentication audit unavailable (event=%s)",event)
+  http.Error(w,"authentication audit unavailable",http.StatusServiceUnavailable)
+  return false
+ }
+ return true
+}
+func (s *webServer) authAuditResult(event,actor,target,result string) {
+ if err:=s.auth.audit.record(event,actor,target,result);err!=nil {
+  log.Printf("authentication audit result could not be written (event=%s)",event)
+ }
+}
+
 func (s *webServer) authLogin(w http.ResponseWriter,r *http.Request) {
  if !sameOriginSessionRequest(r) {http.Error(w,"forbidden origin",http.StatusForbidden);return}
  if s.auth.secureCookie && r.TLS==nil && !strings.HasPrefix(r.Header.Get("Origin"),"https://") {
@@ -85,12 +103,15 @@ func (s *webServer) authLogin(w http.ResponseWriter,r *http.Request) {
  user,ok:=s.auth.authenticate(body.Username,body.Password)
  if !ok {
   s.auth.loginThrottle.recordFailure(r.RemoteAddr)
+  s.authAuditResult("login",body.Username,"","denied")
   http.Error(w,"invalid username or password",http.StatusUnauthorized);return
  }
- s.auth.loginThrottle.recordSuccess(r.RemoteAddr)
+ if !s.requireAuthAudit(w,"login",body.Username,""){return}
  value,err:=s.auth.newSession(user);if err!=nil{http.Error(w,"session unavailable",http.StatusServiceUnavailable);return}
+ s.auth.loginThrottle.recordSuccess(r.RemoteAddr)
  s.auth.revoke(r)
  s.auth.setCookie(w,r,value)
+ s.authAuditResult("login",body.Username,"","ok")
  sendJSON(w,http.StatusOK,struct{Username string `json:"username"`;Role string `json:"role"`}{user.Username,user.Role})
 }
 func (s *webServer) authMe(w http.ResponseWriter,r *http.Request) {
@@ -100,7 +121,10 @@ func (s *webServer) authMe(w http.ResponseWriter,r *http.Request) {
 }
 func (s *webServer) authLogout(w http.ResponseWriter,r *http.Request) {
  if !sameOriginSessionRequest(r){http.Error(w,"forbidden origin",http.StatusForbidden);return}
+ actor:="unknown"
+ if user,ok:=s.auth.userForSession(r);ok{actor=user.Username}
  s.auth.revoke(r);s.auth.clearCookie(w,r)
+ s.authAuditResult("logout",actor,"","ok")
  w.WriteHeader(http.StatusNoContent)
 }
 func (s *webServer) authAddUser(w http.ResponseWriter,r *http.Request) {
@@ -112,9 +136,13 @@ func (s *webServer) authAddUser(w http.ResponseWriter,r *http.Request) {
  if err:=decoder.Decode(&body);err!=nil{http.Error(w,"invalid request",http.StatusBadRequest);return}
  var extra json.RawMessage
  if err:=decoder.Decode(&extra);err!=io.EOF{http.Error(w,"invalid request",http.StatusBadRequest);return}
+ actor:=requestPrincipal(r).Username
+ if !s.requireAuthAudit(w,"create_user",actor,body.Username){return}
  if err:=s.auth.addUser(body.Username,body.Password,body.Role);err!=nil {
+  s.authAuditResult("create_user",actor,body.Username,"failed")
   http.Error(w,"invalid account or username already exists",http.StatusBadRequest);return
  }
+ s.authAuditResult("create_user",actor,body.Username,"ok")
  sendJSON(w,http.StatusCreated,struct{Username string `json:"username"`;Role string `json:"role"`}{body.Username,body.Role})
 }
 func (s *webServer) authListUsers(w http.ResponseWriter,r *http.Request) {
@@ -181,13 +209,16 @@ func (s *webServer) authChangePassword(w http.ResponseWriter,r *http.Request) {
  if !decodeAccountMutation(w,r,1024,&body){return}
  if !claimAccountHashSlot(w,s.auth){return}
  defer func(){<-s.auth.loginGate}()
+ if !s.requireAuthAudit(w,"change_password",p.Username,p.Username){return}
  err:=s.auth.changeOwnPassword(p.Username,body.CurrentPassword,body.NewPassword)
  if err!=nil{
+  s.authAuditResult("change_password",p.Username,p.Username,"failed")
   if errors.Is(err,errBadCurrentPassword){s.auth.passwordThrottle.recordFailure(peer)}
   respondAccountMutationError(w,err)
   return
  }
  s.auth.passwordThrottle.recordSuccess(peer)
+ s.authAuditResult("change_password",p.Username,p.Username,"ok")
  s.auth.clearCookie(w,r)
  w.WriteHeader(http.StatusNoContent)
 }
@@ -200,9 +231,13 @@ func (s *webServer) authResetPassword(w http.ResponseWriter,r *http.Request) {
  if !decodeAccountMutation(w,r,1024,&body){return}
  if !claimAccountHashSlot(w,s.auth){return}
  defer func(){<-s.auth.loginGate}()
- if err:=s.auth.resetAccountPassword(requestPrincipal(r).Username,target,body.Password);err!=nil{
+ actor:=requestPrincipal(r).Username
+ if !s.requireAuthAudit(w,"reset_password",actor,target){return}
+ if err:=s.auth.resetAccountPassword(actor,target,body.Password);err!=nil{
+  s.authAuditResult("reset_password",actor,target,"failed")
   respondAccountMutationError(w,err);return
  }
+ s.authAuditResult("reset_password",actor,target,"ok")
  w.WriteHeader(http.StatusNoContent)
 }
 func (s *webServer) authUpdateUserStatus(w http.ResponseWriter,r *http.Request) {
@@ -213,9 +248,15 @@ func (s *webServer) authUpdateUserStatus(w http.ResponseWriter,r *http.Request) 
  var body struct{Disabled *bool `json:"disabled"`}
  if !decodeAccountMutation(w,r,1024,&body){return}
  if body.Disabled==nil{http.Error(w,"disabled field required",http.StatusBadRequest);return}
- if err:=s.auth.setAccountDisabled(requestPrincipal(r).Username,target,*body.Disabled);err!=nil{
+ actor:=requestPrincipal(r).Username
+ event:="enable_user"
+ if *body.Disabled{event="suspend_user"}
+ if !s.requireAuthAudit(w,event,actor,target){return}
+ if err:=s.auth.setAccountDisabled(actor,target,*body.Disabled);err!=nil{
+  s.authAuditResult(event,actor,target,"failed")
   respondAccountMutationError(w,err);return
  }
+ s.authAuditResult(event,actor,target,"ok")
  if *body.Disabled {
   // Suspend outstanding jobs owned by this user without deleting their files
   // or archived history. This locks against concurrent queue admission.

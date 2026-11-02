@@ -45,6 +45,7 @@ type accountAuth struct {
  users map[string]accountUser
  sessions map[string]accountSession // keyed by SHA-256 of random cookie value
  root string
+ audit *authAudit
  secureCookie bool
  loginThrottle *authThrottle
  passwordThrottle *authThrottle // Per-account throttle for current-password verification.
@@ -77,13 +78,18 @@ func verifyAccountPassword(hash,password string) bool {
 }
 func loadAccountAuth(root, bootstrapUsername, bootstrapHash string, secure bool) (*accountAuth,error) {
  a:=&accountAuth{root:root,secureCookie:secure,users:map[string]accountUser{},sessions:map[string]accountSession{},loginThrottle:newAuthThrottle(),passwordThrottle:newAuthThrottle(),loginGate:make(chan struct{},2)}
+ var err error
+ a.audit,err=newAuthAudit(root)
+ if err!=nil{return nil,fmt.Errorf("initialize account audit: %w",err)}
  path:=filepath.Join(root,accountsFile)
  info,err:=os.Lstat(path)
  if errors.Is(err,os.ErrNotExist) {
   user:=accountUser{Username:bootstrapUsername,Role:"admin",PasswordHash:bootstrapHash}
   if !validAccountUser(user) {return nil,errors.New("first account startup requires valid ANYFLIP_AUTH_BOOTSTRAP_USERNAME and ANYFLIP_AUTH_BOOTSTRAP_HASH")}
   a.users[user.Username]=user
+  if err:=a.audit.record("create_user","_service",bootstrapUsername,"intent");err!=nil{return nil,fmt.Errorf("audit first admin: %w",err)}
   if err:=a.saveUsersLocked();err!=nil{return nil,fmt.Errorf("initialize accounts: %w",err)}
+  _=a.audit.record("create_user","_service",bootstrapUsername,"ok")
   return a,nil
  }
  if err!=nil{return nil,fmt.Errorf("read account store: %w",err)}
