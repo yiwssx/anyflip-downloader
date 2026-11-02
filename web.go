@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html web/style.css web/app.js web/google.html web/google.js
+//go:embed web/index.html web/style.css web/app.js web/google.html web/google.js web/favicon.svg web/logo.svg
 var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -102,6 +102,12 @@ func (s *webServer) handler() http.Handler {
 		} else {
 			serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
 		}
+	})
+	mux.HandleFunc("GET /favicon.svg", func(w http.ResponseWriter, _ *http.Request) {
+		serveEmbeddedWebAsset(w, "web/favicon.svg", "image/svg+xml")
+	})
+	mux.HandleFunc("GET /logo.svg", func(w http.ResponseWriter, _ *http.Request) {
+		serveEmbeddedWebAsset(w, "web/logo.svg", "image/svg+xml")
 	})
 	mux.HandleFunc("GET /style.css", func(w http.ResponseWriter, _ *http.Request) {
 		serveEmbeddedWebAsset(w, "web/style.css", "text/css; charset=utf-8")

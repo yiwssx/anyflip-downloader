@@ -1,4 +1,9 @@
-# anyflip-downloader
+# RCAT AnyFlip Downloader
+
+<img src="web/logo.svg" alt="RCAT AnyFlip Downloader logo" width="112" height="112">
+
+**Institutional branding:** The Web GUI and Google Workspace sign-in both use the supplied RCAT AnyFlip Downloader artwork in their header and browser favicon. Assets live at `web/logo.svg` and `web/favicon.svg`, are served by the Go Web server at `/logo.svg` and `/favicon.svg`, and are fully self-contained (no external image requests). These SVG containers embed resized copies of the provided raster artwork, preserving its appearance; **they are not traced, independently editable vector paths**.
+
 
 [![build](https://github.com/yiwssx/anyflip-downloader/actions/workflows/build.yml/badge.svg)](https://github.com/yiwssx/anyflip-downloader/actions/workflows/build.yml)
 
