@@ -57,6 +57,10 @@ jobs:
       run: |
         sh -n scripts/verify-web-deployment.sh
         sh -n scripts/verify-host-readiness.sh
+        bash -n scripts/start-tunnel-ingress.sh
+        bash -n scripts/verify-tunnel-ingress.sh
+        # Validate isolated tunnel Compose configuration without starting its connector.
+        RCAT_ANYFLIP_TUNNEL_TOKEN=ci-synthetic-no-privileges docker compose -f compose.tunnel.yaml config --quiet
 
     - name: Build and run non-root container
       env:
