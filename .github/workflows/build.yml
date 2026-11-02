@@ -59,6 +59,8 @@ jobs:
         sh -n scripts/verify-host-readiness.sh
         bash -n scripts/start-tunnel-ingress.sh
         bash -n scripts/verify-tunnel-ingress.sh
+        bash -n scripts/test-tunnel-ingress.sh
+        bash scripts/test-tunnel-ingress.sh
         # Validate isolated tunnel Compose configuration without starting its connector.
         RCAT_ANYFLIP_TUNNEL_TOKEN=ci-synthetic-no-privileges docker compose -f compose.tunnel.yaml config --quiet
 
