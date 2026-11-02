@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html web/style.css web/app.js
+//go:embed web/index.html web/style.css web/app.js web/account.html web/account.js
 var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -36,10 +36,12 @@ type webJob struct {
 	finished  time.Time
 	cancel    context.CancelFunc
 	spec      webJobSpec // in-memory only; never serialized in API output
+	owner     string // account username; empty for legacy jobs
 }
 
 type webJobResponse struct {
 	ID            string `json:"id"`
+	Owner         string `json:"owner,omitempty"`
 	Stage         string `json:"stage"`
 	Completed     int    `json:"completed"`
 	Total         int    `json:"total"`
@@ -57,6 +59,7 @@ type webServer struct {
 	stopping bool
 	root     string
 	token    string
+	auth     *accountAuth // nil for backward-compatible token-only mode
 	sem      chan struct{}
 	client   *http.Client // Optional controlled test transport; nil in production.
 	authThrottle *authThrottle
@@ -94,14 +97,29 @@ func (s *webServer) handler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
-		serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
+		if s.auth != nil {
+			serveEmbeddedWebAsset(w, "web/account.html", "text/html; charset=utf-8")
+		} else {
+			serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
+		}
 	})
 	mux.HandleFunc("GET /style.css", func(w http.ResponseWriter, _ *http.Request) {
 		serveEmbeddedWebAsset(w, "web/style.css", "text/css; charset=utf-8")
 	})
 	mux.HandleFunc("GET /app.js", func(w http.ResponseWriter, _ *http.Request) {
-		serveEmbeddedWebAsset(w, "web/app.js", "text/javascript; charset=utf-8")
+		if s.auth != nil {
+			serveEmbeddedWebAsset(w, "web/account.js", "text/javascript; charset=utf-8")
+		} else {
+			serveEmbeddedWebAsset(w, "web/app.js", "text/javascript; charset=utf-8")
+		}
 	})
+	if s.auth != nil {
+		mux.HandleFunc("POST /auth/login", s.authLogin)
+		mux.HandleFunc("POST /auth/logout", s.authLogout)
+		mux.HandleFunc("GET /auth/me", s.authMe)
+		mux.Handle("POST /auth/users", s.authorize(http.HandlerFunc(s.authAddUser)))
+		mux.Handle("GET /auth/users", s.authorize(http.HandlerFunc(s.authListUsers)))
+	}
 	mux.Handle("POST /api/jobs", s.authorize(http.HandlerFunc(s.createJob)))
 	mux.Handle("GET /api/jobs", s.authorize(http.HandlerFunc(s.listJobs)))
 	mux.Handle("POST /api/jobs/batch", s.authorize(http.HandlerFunc(s.createBatch)))
@@ -133,6 +151,7 @@ func serveEmbeddedWebAsset(w http.ResponseWriter, name, contentType string) {
 }
 
 func (s *webServer) authorize(next http.Handler) http.Handler {
+	if s.auth != nil { return s.authorizeAccounts(next) }
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if wait := s.authThrottle.retryAfter(r.RemoteAddr); wait > 0 {
 			seconds := int((wait + time.Second - 1) / time.Second)
@@ -154,7 +173,7 @@ func (s *webServer) authorize(next http.Handler) http.Handler {
 
 func (s *webServer) snapshot(job *webJob) webJobResponse {
 	return webJobResponse{
-		ID: job.id, Stage: job.stage, Completed: job.completed, Total: job.total,
+		ID: job.id, Owner: job.owner, Stage: job.stage, Completed: job.completed, Total: job.total,
 		Error: job.errorText, ErrorCode: job.errorCode,
 		DownloadReady: job.stage == "completed",
 	}
@@ -175,7 +194,7 @@ func (s *webServer) lookupJob(w http.ResponseWriter, r *http.Request) (*webJob, 
 	s.mu.Lock()
 	job, ok := s.jobs[id]
 	s.mu.Unlock()
-	if !ok {
+	if !ok || (s.auth != nil && !mayAccessOwner(r, job.owner)) {
 		http.NotFound(w, r)
 		return nil, false
 	}
@@ -196,7 +215,7 @@ func (s *webServer) createJob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	jobs, status, err := s.enqueueWebJobs([]webJobSpec{body})
+	jobs, status, err := s.enqueueWebJobsForOwner([]webJobSpec{body}, principalOwner(r))
 	if err != nil {
 		http.Error(w, err.Error(), status)
 		return
@@ -276,7 +295,7 @@ func (s *webServer) getJob(w http.ResponseWriter, r *http.Request) {
 		value, ok = s.archivedSnapshotLocked(id)
 	}
 	s.mu.Unlock()
-	if !ok {
+	if !ok || (s.auth != nil && !mayAccessOwner(r, value.Owner)) {
 		http.NotFound(w, r)
 		return
 	}
@@ -326,6 +345,15 @@ func runWeb(addr string) error {
 	server, err := newWebServer(token, root)
 	if err != nil {
 		return err
+	}
+	if mode := os.Getenv("ANYFLIP_AUTH_MODE"); mode == "accounts" {
+		secure, err := strconv.ParseBool(os.Getenv("ANYFLIP_AUTH_COOKIE_SECURE"))
+		if os.Getenv("ANYFLIP_AUTH_COOKIE_SECURE") == "" { secure = false; err = nil }
+		if err != nil { return fmt.Errorf("invalid ANYFLIP_AUTH_COOKIE_SECURE: %w", err) }
+		server.auth, err = loadAccountAuth(server.root, os.Getenv("ANYFLIP_AUTH_BOOTSTRAP_USERNAME"), os.Getenv("ANYFLIP_AUTH_BOOTSTRAP_HASH"), secure)
+		if err != nil { return err }
+	} else if mode != "" && mode != "token" {
+		return fmt.Errorf("unsupported ANYFLIP_AUTH_MODE %q", mode)
 	}
 	return serveWebUntilSignal(addr, server)
 }
