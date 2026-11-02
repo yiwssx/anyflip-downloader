@@ -14,30 +14,16 @@
 </header>
 <main>
   <section class="panel" id="loginPanel" aria-labelledby="loginTitle">
-    <h2 id="loginTitle">เข้าสู่ระบบ AnyFlip Downloader</h2>
-    <p class="sub">เข้าสู่ระบบด้วยบัญชีผู้ใช้ ไม่ต้องกรอก Access Token</p>
-    <form id="loginForm">
-      <div class="field"><label for="username">ชื่อผู้ใช้</label><input id="username" name="username" autocomplete="username" required maxlength="32"></div>
-      <div class="field"><label for="password">รหัสผ่าน</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
-      <div class="actions"><button class="primary" id="loginButton" type="submit">เข้าสู่ระบบ</button></div>
-      <p class="error" role="alert" id="loginError" hidden></p>
-    </form>
+    <h2 id="loginTitle">เข้าสู่ระบบด้วย Google</h2>
+    <p class="sub">เฉพาะบัญชี Google Workspace ของวิทยาลัยที่ลงท้ายด้วย <strong>@rcat.ac.th</strong> เท่านั้น</p>
+    <div class="actions"><a class="primary" id="googleSignIn" href="/auth/google">Sign in with Google</a></div>
+    <p id="loginError" role="alert" class="error" hidden></p>
   </section>
   <div id="workArea" hidden>
     <section class="panel">
-      <div class="progresshead"><strong id="signedInUser"></strong><button type="button" class="secondary" id="logoutButton">ออกจากระบบ</button></div>
+      <div class="progresshead"><strong id="signedInUser"></strong><button id="logoutButton" type="button" class="secondary">ออกจากระบบ</button></div>
       <p id="logoutError" class="error" role="alert" hidden></p>
     </section>
-  <section class="panel" id="passwordPanel" aria-labelledby="passwordTitle">
-    <h2 id="passwordTitle">เปลี่ยนรหัสผ่านของฉัน</h2>
-    <p class="sub">หลังเปลี่ยนรหัสผ่าน ระบบจะออกจากระบบทุกอุปกรณ์เพื่อความปลอดภัย</p>
-    <form id="changePasswordForm">
-      <div class="field"><label for="currentPassword">รหัสผ่านปัจจุบัน</label><input id="currentPassword" type="password" autocomplete="current-password" required></div>
-      <div class="field"><label for="changedPassword">รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)</label><input id="changedPassword" type="password" autocomplete="new-password" minlength="12" required></div>
-      <div class="actions"><button id="changePasswordButton" type="submit" class="secondary">เปลี่ยนรหัสผ่าน</button></div>
-      <p class="error" id="changePasswordError" role="alert" hidden></p>
-    </form>
-  </section>
   <section class="panel" aria-labelledby="newJobTitle">
     <h2 id="newJobTitle">สร้างงานดาวน์โหลด</h2>
     <p class="sub">วางลิงก์หนังสือจาก AnyFlip เพื่อตรวจสอบหน้าเอกสารและรวมเป็น PDF โดยประมวลผลบนเซิร์ฟเวอร์</p>
@@ -78,34 +64,8 @@
   <section class="panel" aria-labelledby="historyTitle">
     <div class="progresshead"><h2 id="historyTitle">ประวัติงานล่าสุด</h2><button type="button" class="secondary" id="refreshHistory">รีเฟรช</button></div>
     <p class="sub">เก็บสถานะงานสูงสุด 50 รายการนานไม่เกิน 7 วัน แม้รีสตาร์ตเซิร์ฟเวอร์ โดยไม่เก็บลิงก์ต้นทางหรือ Token; ไฟล์ PDF ยังหมดอายุภายใน 1 ชั่วโมง และงานที่กู้ประวัติจะไม่สามารถดาวน์โหลดหรือลองใหม่จากข้อมูลเดิมได้</p>
-    <div id="historyList" aria-live="polite"><p class="sub">กำลังโหลดประวัติงาน</p></div>
+    <div id="historyList" aria-live="polite"><p class="sub">กำลังโหลดประวัติ</p></div>
     <p class="error" id="historyError" role="alert" hidden></p>
-  </section>
-  <section class="panel" id="adminPanel" hidden>
-    <h2>จัดการบัญชีผู้ใช้</h2>
-    <p class="sub">สร้างบัญชีใหม่สำหรับผู้ใช้งาน โดยผู้ดูแลระบบเป็นผู้กำหนดสิทธิ์</p>
-    <form id="createUserForm">
-      <div class="field"><label for="newUsername">ชื่อผู้ใช้ใหม่</label><input id="newUsername" required minlength="3" maxlength="32" pattern="[a-z][a-z0-9_.-]{2,31}" autocomplete="off"></div>
-      <div class="field"><label for="newPassword">รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)</label><input id="newPassword" type="password" required minlength="12" autocomplete="new-password"></div>
-      <div class="field"><label for="newRole">สิทธิ์</label><select id="newRole"><option value="user">ผู้ใช้ทั่วไป (User)</option><option value="admin">ผู้ดูแล (Admin)</option></select></div>
-      <div class="actions"><button type="submit" class="secondary" id="createUserButton">สร้างบัญชี</button></div>
-      <p class="error" id="createUserError" role="alert" hidden></p>
-      <p id="createUserSuccess" class="sub" hidden></p>
-    </form>
-    <div class="divider"></div>
-    <h3>บัญชีที่มีอยู่</h3>
-    <div class="actions"><button id="refreshUsers" type="button" class="secondary">รีเฟรชรายชื่อ</button></div>
-    <div id="usersList" aria-live="polite"></div>
-    <p class="error" id="userActionError" role="alert" hidden></p>
-    <h3>รีเซ็ตรหัสผ่านผู้ใช้</h3>
-    <p class="sub">Admin รีเซ็ตรหัสผ่านผู้อื่นได้ แต่เปลี่ยนรหัสผ่านตนเองต้องยืนยันรหัสผ่านปัจจุบันด้านบน</p>
-    <form id="resetPasswordForm">
-      <div class="field"><label for="resetUsername">บัญชีเป้าหมาย</label><select id="resetUsername" required></select></div>
-      <div class="field"><label for="resetPassword">รหัสผ่านใหม่</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="12" required></div>
-      <div class="actions"><button type="submit" id="resetPasswordButton" class="secondary">รีเซ็ตรหัสผ่าน</button></div>
-      <p class="error" id="resetPasswordError" role="alert" hidden></p>
-      <p class="sub" id="resetPasswordSuccess" hidden></p>
-    </form>
   </section>
   </div>
   <footer>AnyFlip Downloader • Self-hosted Web GUI • เชื่อมต่อผ่าน HTTPS เมื่อเปิดใช้งานออนไลน์</footer>
