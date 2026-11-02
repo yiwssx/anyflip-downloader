@@ -84,7 +84,12 @@ test('desktop: CSP, create, progress and image-based PDF download', { timeout: 4
     assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval/);
     assert.ok(await page.locator('#jobForm').isVisible());
     assert.ok(await page.locator('#batchURLs').isVisible());
-
+    assert.ok(await page.locator('.sidebar .nav-links').isVisible());
+    assert.equal(await page.locator('.nav-link').count(),4);
+    assert.ok(await page.locator('#historySearch').isVisible());
+    assert.ok(await page.locator('#historyFilter').isVisible());
+    assert.ok(await page.locator('#statTotal').isVisible());
+    assert.ok(await page.locator('img.brand-logo').isVisible());
     await page.locator('#token').fill(token);
     await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
     await page.locator('#bestQuality').check();
@@ -92,6 +97,12 @@ test('desktop: CSP, create, progress and image-based PDF download', { timeout: 4
     await page.locator('#downloadButton').waitFor({ state: 'visible', timeout: 10000 });
     assert.equal(await page.locator('#jobReference').textContent(), 'Job ID: ' + ids.desktop);
     assert.equal(await page.locator('#pageCount').textContent(), '2 / 2 หน้า');
+    await page.waitForFunction(() => document.querySelector('#statTotal')?.textContent === '1');
+    assert.equal(await page.locator('#statDone').textContent(), '1');
+    await page.locator('#historySearch').fill('no-match-id');
+    assert.match(await page.locator('#historyList').innerText(), /ไม่พบรายการ/);
+    await page.locator('#historySearch').fill('');
+    assert.match(await page.locator('#historyList').innerText(), /งาน #aaaaaaaa/);
 
     const downloadEvent = page.waitForEvent('download');
     await page.locator('#downloadButton').click();
@@ -157,8 +168,10 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
     await page.locator('#batchURLs').fill(
       'https://anyflip.com/demo/authorized-a\nhttps://anyflip.com/demo/authorized-b',
     );
+    assert.equal(await page.locator('#batchCount').textContent(), '2 / 8');
     await page.locator('#batchStartButton').click();
     await page.locator('#jobPanel').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#batchCount').textContent(), '2 / 8');
     await page.locator('#cancelButton').click();
     await page.waitForFunction(() => document.querySelector('#jobState')?.textContent === 'ยกเลิกแล้ว');
     assert.equal(batches, 1);
@@ -171,5 +184,10 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
     assert.equal(await page.locator('#jobReference').textContent(), 'Job ID: ' + activeID);
     assert.equal(retries, 1);
     assert.ok(await page.locator('#historyList').isVisible());
+    await page.locator('#historyFilter').selectOption('completed');
+    assert.match(await page.locator('#historyList').innerText(), /สำเร็จ/);
+    await page.locator('#historyFilter').selectOption('all');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false);
+    assert.ok(await page.locator('.nav-link[href="#batch"]').isVisible());
   });
 });
