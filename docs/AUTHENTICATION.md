@@ -32,7 +32,7 @@
 
 - Authenticated users can submit `POST /auth/change-password` with `currentPassword` and `newPassword`. New passwords must be 12–128 bytes and differ from the existing password. Successful changes revoke every active session for that account; users must sign in again.
 - Human Administrators can list account status, suspend/reactivate users via `PATCH /auth/users/{username}/status` with `{"disabled":true|false}`, and reset **another** account's password via `POST /auth/users/{username}/reset-password` with `{"password":"..."}`.
-- Disabled accounts cannot sign in or use any old Session Cookie. Reactivation never restores the revoked cookies. Suspended account jobs/history remain stored for authorized Admin access; disabling is not deletion.
+- Disabled accounts cannot sign in or use any old Session Cookie. Reactivation never restores revoked cookies. Suspension cancels outstanding queued/running downloads and blocks new admission on a second server-side account check. Existing job metadata/PDF retention remain available to authorized Admin; disabling is not deletion.
 - An Administrator cannot suspend themselves, and the last active Administrator cannot be disabled. To change an Admin's own password, the existing password must be supplied. API machine Bearer tokens retain job access but cannot administer accounts or change passwords.
 - `.anyflip-accounts.json` remains version 1, with a backward-compatible optional `disabled` flag, and remains `0600`. Credential changes write atomically before session revocation; persistence errors roll back the mutation. Operators must back up and protect this file.
 
