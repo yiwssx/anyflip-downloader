@@ -91,3 +91,36 @@ func TestAccountLoginSessionRolesOwnershipAndLogout(t *testing.T) {
  if got:=request("GET","/api/jobs/"+strings.Repeat("c",32),"",admin,"",false).Code;got!=200{t.Fatalf("admin archived status %d",got)}
  if got:=request("GET","/api/jobs/"+strings.Repeat("c",32),"",nil,"",false).Code;got!=401{t.Fatalf("anonymous archived status %d",got)}
 }
+
+func TestAccountHistoryOwnerPersistsAcrossRestart(t *testing.T) {
+ root:=t.TempDir()
+ s,err:=newWebServer(testWebToken,root)
+ if err!=nil{t.Fatal(err)}
+ id:=strings.Repeat("d",32)
+ job:=&webJob{id:id,owner:"alice",stage:"completed",completed:2,total:2,finished:time.Now()}
+ s.mu.Lock()
+ s.archiveFinishedJobLocked(job)
+ s.mu.Unlock()
+ reopened,err:=newWebServer(testWebToken,root)
+ if err!=nil{t.Fatal(err)}
+ reopened.mu.Lock()
+ archived,ok:=reopened.archivedSnapshotLocked(id)
+ reopened.mu.Unlock()
+ if !ok || archived.Owner!="alice" || !archived.Archived || archived.DownloadReady {
+  t.Fatalf("account ownership lost across restart: %+v found=%v",archived,ok)
+ }
+}
+
+func TestSecureAccountLoginRefusesPlainHTTPOrigin(t *testing.T) {
+ hash,err:=hashAccountPassword("a-secret-admin-password")
+ if err!=nil{t.Fatal(err)}
+ s,err:=newWebServer(testWebToken,t.TempDir())
+ if err!=nil{t.Fatal(err)}
+ s.auth,err=loadAccountAuth(s.root,"admin",hash,true)
+ if err!=nil{t.Fatal(err)}
+ r:=httptest.NewRequest("POST","http://accounts.example/auth/login",strings.NewReader(`{"username":"admin","password":"a-secret-admin-password"}`))
+ r.Header.Set("Origin","http://accounts.example")
+ w:=httptest.NewRecorder()
+ s.handler().ServeHTTP(w,r)
+ if w.Code!=http.StatusForbidden {t.Fatalf("plain-HTTP account login accepted: %d",w.Code)}
+}
