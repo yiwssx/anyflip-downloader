@@ -188,6 +188,18 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
         display:style.display,flexDirection:style.flexDirection};
     });
     assert.ok(layout.secondaryTop >= layout.primaryBottom - 2, 'Mobile columns overlap: '+JSON.stringify(layout));
+    const targetGeometry=await page.evaluate(()=>{
+      const button=document.getElementById('refreshHistory');
+      button.scrollIntoView({block:'center',behavior:'instant'});
+      const rect=button.getBoundingClientRect();
+      const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+      const parent=document.querySelector('.primary-column').getBoundingClientRect();
+      return {button:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},
+       hit:hit?.outerHTML.slice(0,160),hitID:hit?.id,scrollY,innerHeight,
+       primary:{top:parent.top,bottom:parent.bottom},
+       clickable:hit===button||button.contains(hit)};
+    });
+    assert.ok(targetGeometry.clickable,'Mobile history refresh is occluded: '+JSON.stringify(targetGeometry));
     await page.locator('#refreshHistory').click();
     const retry = page.getByRole('button', { name: 'ลองใหม่' });
     await retry.waitFor({ state: 'visible' });
