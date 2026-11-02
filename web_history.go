@@ -41,7 +41,8 @@ func validArchivedJob(item archivedWebJob) bool {
 		item.Finished.IsZero() ||
 		item.Response.Completed < 0 || item.Response.Total < 0 ||
 		item.Response.Completed > item.Response.Total ||
-		len(item.Response.Error) > 512 || len(item.Response.ErrorCode) > 80 {
+		len(item.Response.Error) > 512 || len(item.Response.ErrorCode) > 80 ||
+		(item.Response.Owner != "" && item.Response.Owner != "_service" && !accountNamePattern.MatchString(item.Response.Owner)) {
 		return false
 	}
 	switch item.Response.Stage {
