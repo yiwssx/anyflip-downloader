@@ -28,7 +28,15 @@
 
 4. Preserve all host-local Compose overlays, quota mounts, existing named volumes and the quota-aware systemd workflow. Do **not** deploy by replacing the operator's customized `compose.web.yaml` with the stock repository template. Confirm TLS, storage backups, account migration and rollback before cutover.
 
-The account store is written atomically with restricted permissions. Back it up privately; never commit it. Account sessions are process-local and will be revoked on restart. Users cannot self-register; Admin creates accounts in the authenticated GUI. An administrator must explicitly provision password reset/revocation procedures before production rollout.
+### Account lifecycle (PR #58)
+
+- Authenticated users can submit `POST /auth/change-password` with `currentPassword` and `newPassword`. New passwords must be 12–128 bytes and differ from the existing password. Successful changes revoke every active session for that account; users must sign in again.
+- Human Administrators can list account status, suspend/reactivate users via `PATCH /auth/users/{username}/status` with `{"disabled":true|false}`, and reset **another** account's password via `POST /auth/users/{username}/reset-password` with `{"password":"..."}`.
+- Disabled accounts cannot sign in or use any old Session Cookie. Reactivation never restores the revoked cookies. Suspended account jobs/history remain stored for authorized Admin access; disabling is not deletion.
+- An Administrator cannot suspend themselves, and the last active Administrator cannot be disabled. To change an Admin's own password, the existing password must be supplied. API machine Bearer tokens retain job access but cannot administer accounts or change passwords.
+- `.anyflip-accounts.json` remains version 1, with a backward-compatible optional `disabled` flag, and remains `0600`. Credential changes write atomically before session revocation; persistence errors roll back the mutation. Operators must back up and protect this file.
+
+The account store is written atomically with restricted permissions. Back it up privately; never commit it. Account sessions are process-local and will be revoked on restart. Users cannot self-register; Admin creates accounts in the authenticated GUI. The application provides password reset and session revocation; operators must still establish a secure out-of-band credential delivery, backup/restore, audit logging and emergency administrator recovery procedure before production rollout.
 
 ## Endpoints
 
@@ -38,6 +46,9 @@ The account store is written atomically with restricted permissions. Back it up 
 | `/auth/me` | GET | Valid account session |
 | `/auth/logout` | POST | Same-origin session, revokes cookie |
 | `/auth/users` | GET/POST | Admin (username, role; POST provisions password) |
+| `/auth/change-password` | POST | Signed-in account; current password required; revokes sessions |
+| `/auth/users/{username}/status` | PATCH | Human Admin; suspend/reenable |
+| `/auth/users/{username}/reset-password` | POST | Human Admin; target cannot be self; revokes target sessions |
 | `/api/jobs*` | Existing methods | Account session and job owner; Admin access; server-side Bearer service token |
 
 Cookies never grant a session merely by visiting the website. Passwords are checked during a Login request. For requests using the session cookie, mutating operations require matching Origin or same-origin browser metadata. Authentication is necessary but not sufficient for public access: rate limits, HTTPS, audit logs, account recovery, session persistence choices and security assessment must be accepted separately.
