@@ -350,6 +350,12 @@ func runWeb(addr string) error {
 		secure, err := strconv.ParseBool(os.Getenv("ANYFLIP_AUTH_COOKIE_SECURE"))
 		if os.Getenv("ANYFLIP_AUTH_COOKIE_SECURE") == "" { secure = false; err = nil }
 		if err != nil { return fmt.Errorf("invalid ANYFLIP_AUTH_COOKIE_SECURE: %w", err) }
+		// Passwords must not travel over the public or private LAN in plain HTTP.
+		// The opt-in accounts mode requires a Secure cookie unless bound only to loopback
+		// for local development. Reverse proxies must serve HTTPS with ProxyPreserveHost.
+		if !secure && !strings.HasPrefix(addr,"127.0.0.1:") && !strings.HasPrefix(addr,"localhost:") && !strings.HasPrefix(addr,"[::1]:") {
+			return errors.New("accounts mode requires HTTPS and ANYFLIP_AUTH_COOKIE_SECURE=true for non-loopback listeners")
+		}
 		server.auth, err = loadAccountAuth(server.root, os.Getenv("ANYFLIP_AUTH_BOOTSTRAP_USERNAME"), os.Getenv("ANYFLIP_AUTH_BOOTSTRAP_HASH"), secure)
 		if err != nil { return err }
 	} else if mode != "" && mode != "token" {
