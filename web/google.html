@@ -1,81 +1,124 @@
 <!doctype html>
 <html lang="th">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <title>AnyFlip Downloader — Download Manager</title>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light"><meta name="theme-color" content="#0b382b">
+  <meta name="description" content="RCAT AnyFlip Downloader — ระบบจัดการดาวน์โหลดเอกสารสำหรับวิทยาลัยเกษตรและเทคโนโลยีร้อยเอ็ด">
+  <title>RCAT AnyFlip Downloader · Download Workspace</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any">
-  <meta name="theme-color" content="#102541">
   <link rel="stylesheet" href="/style.css">
 </head>
-<body>
-<header>
-  <div class="brand">
-    <img class="brand-logo" src="/logo.svg" alt="โลโก้ RCAT AnyFlip Downloader" width="74" height="74" decoding="async">
-    <div class="brand-copy">
-      <strong>RCAT AnyFlip Downloader</strong>
-      <p>ดาวน์โหลดหนังสือที่มีสิทธิ์เข้าถึง และสร้างไฟล์ PDF จากภาพ — Web Download Manager</p>
-    </div>
+<body class="mode-google">
+<a class="skip-link" href="#primaryContent">ข้ามไปยังเนื้อหาหลัก</a>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="header-brand" href="/" aria-label="หน้าแรก RCAT AnyFlip Downloader"><img class="brand-logo" src="/logo.svg" alt="" width="58" height="58" decoding="async"><span class="brand-copy"><strong>RCAT <span>AnyFlip</span></strong><small>DOCUMENT DOWNLOAD CENTER</small></span></a>
+    <div class="header-right"><span class="header-tag">ระบบสำหรับบุคลากร</span><span class="header-badge"><span class="status-dot"></span>GOOGLE WORKSPACE</span></div>
   </div>
 </header>
-<main>
-  <section class="panel" id="loginPanel" aria-labelledby="loginTitle">
-    <h2 id="loginTitle">เข้าสู่ระบบด้วย Google</h2>
-    <p class="sub">เฉพาะบัญชี Google Workspace ของวิทยาลัยที่ลงท้ายด้วย <strong>@rcat.ac.th</strong> เท่านั้น</p>
-    <div class="actions"><a class="primary" id="googleSignIn" href="/auth/google">Sign in with Google</a></div>
-    <p id="loginError" role="alert" class="error" hidden></p>
-  </section>
-  <div id="workArea" hidden>
-    <section class="panel">
-      <div class="progresshead"><strong id="signedInUser"></strong><button id="logoutButton" type="button" class="secondary">ออกจากระบบ</button></div>
-      <p id="logoutError" class="error" role="alert" hidden></p>
-    </section>
-  <section class="panel" aria-labelledby="newJobTitle">
-    <h2 id="newJobTitle">สร้างงานดาวน์โหลด</h2>
-    <p class="sub">วางลิงก์หนังสือจาก AnyFlip เพื่อตรวจสอบหน้าเอกสารและรวมเป็น PDF โดยประมวลผลบนเซิร์ฟเวอร์</p>
-    <form id="jobForm">
-      <div class="field"><label for="bookURL">ลิงก์หนังสือ AnyFlip</label>
-        <input id="bookURL" type="url" inputmode="url" required placeholder="https://anyflip.com/publisher/book"></div>
-      <div class="fields">
-        <div class="field"><label for="bookTitle">ชื่อไฟล์ PDF (ไม่บังคับ)</label><input id="bookTitle" maxlength="110" placeholder="ใช้ชื่อหนังสืออัตโนมัติ"></div>
-        <div class="field"><label for="threads">การดาวน์โหลดพร้อมกัน</label>
-          <select id="threads"><option value="1">1 หน้า</option><option value="2">2 หน้า</option><option value="3" selected>3 หน้า</option><option value="4">4 หน้า</option><option value="6">6 หน้า</option><option value="8">8 หน้า</option></select></div>
-      </div>
-      <div class="field"><label class="quality-toggle" for="bestQuality"><input id="bestQuality" type="checkbox"><span>เลือกภาพความละเอียดสูงสุดที่ผู้เผยแพร่ระบุไว้ <small>(อาจใช้เวลาและปริมาณดาวน์โหลดเพิ่ม; ค่าปกติไม่เลือก)</small></span></label></div>
-      <div class="actions"><button class="primary" id="startButton" type="submit">เริ่มดาวน์โหลด</button></div>
-      <p class="error" id="formError" role="alert" hidden></p>
-    </form>
-    <div class="notice">ผลลัพธ์เป็น <strong>Image-based PDF</strong> ไม่ใช่ PDF ต้นฉบับที่เก็บข้อความหรือกราฟิกเวกเตอร์ไว้ทั้งหมด โปรดใช้งานเฉพาะหนังสือที่ได้รับอนุญาตให้ดาวน์โหลดหรือทำสำเนาเท่านั้น ระบบไม่ข้ามการตรวจสอบสิทธิ์หรือ DRM</div>
-  </section>
-  <section class="panel" id="jobPanel" aria-labelledby="progressTitle" hidden>
-    <div class="progresshead"><h2 id="progressTitle">สถานะการดาวน์โหลด</h2><span class="pill" id="jobState">รอเริ่มงาน</span></div>
-    <p class="sub" id="jobDescription">กำลังรอข้อมูลจากเซิร์ฟเวอร์</p>
-    <div class="track" role="progressbar" aria-label="ความคืบหน้าการดาวน์โหลด" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack"><div class="fill" id="progressFill"></div></div>
-    <div class="meta"><span id="pageCount">0 / 0 หน้า</span><span id="percent">0%</span></div>
-    <div class="actions">
-      <button type="button" class="danger" id="cancelButton">ยกเลิกงาน</button>
-      <button type="button" class="primary" id="downloadButton" hidden>ดาวน์โหลด Image-based PDF</button>
+<main id="primaryContent">
+
+<section id="loginPanel" class="login-stage" aria-labelledby="loginTitle">
+  <div class="login-card">
+    <div class="login-visual" aria-hidden="true">
+      <div class="login-art"><img src="/logo.svg" alt="" width="180" height="180"></div>
+      <p class="eyebrow">RCAT DIGITAL SERVICES</p>
+      <h2>เครื่องมือจัดการเอกสาร<br>สำหรับบุคลากรวิทยาลัย</h2>
+      <p>รวมการดาวน์โหลดและแปลงหน้าเอกสารเป็น PDF ภายในพื้นที่ทำงานส่วนตัว</p>
+      <div class="feature-row"><span>✓ ติดตามสถานะงาน</span><span>✓ ดาวน์โหลดได้หลายรายการ</span><span>✓ ประวัติแยกตามบัญชี</span></div>
     </div>
-    <p class="error" id="jobError" role="alert" hidden></p>
-    <p class="sub" id="jobReference" aria-label="รหัสงานสำหรับตรวจสอบ" hidden></p>
-  </section>
-  <section class="panel" aria-labelledby="batchTitle">
-    <h2 id="batchTitle">ดาวน์โหลดหลายรายการ</h2>
-    <p class="sub">วาง URL หนังสือที่ได้รับอนุญาต รายการละหนึ่งบรรทัด สูงสุด 8 รายการในครั้งเดียว ใช้การตั้งค่าจำนวนหน้าพร้อมกันจากแบบฟอร์มหลัก</p>
-    <label for="batchURLs">ลิงก์หนังสือ AnyFlip (หนึ่ง URL ต่อหนึ่งบรรทัด)</label>
-    <textarea id="batchURLs" placeholder="https://anyflip.com/publisher/book"></textarea>
-    <div class="actions"><button id="batchStartButton" type="button" class="secondary">เพิ่มรายการเข้าคิว</button></div>
-    <p class="error" id="batchError" role="alert" hidden></p>
-  </section>
-  <section class="panel" aria-labelledby="historyTitle">
-    <div class="progresshead"><h2 id="historyTitle">ประวัติงานล่าสุด</h2><button type="button" class="secondary" id="refreshHistory">รีเฟรช</button></div>
-    <p class="sub">เก็บสถานะงานสูงสุด 50 รายการนานไม่เกิน 7 วัน แม้รีสตาร์ตเซิร์ฟเวอร์ โดยไม่เก็บลิงก์ต้นทางหรือ Token; ไฟล์ PDF ยังหมดอายุภายใน 1 ชั่วโมง และงานที่กู้ประวัติจะไม่สามารถดาวน์โหลดหรือลองใหม่จากข้อมูลเดิมได้</p>
-    <div id="historyList" aria-live="polite"><p class="sub">กำลังโหลดประวัติ</p></div>
-    <p class="error" id="historyError" role="alert" hidden></p>
-  </section>
+    <div class="login-form">
+      <div class="secure-label">GOOGLE WORKSPACE</div>
+      <h1 id="loginTitle">ยินดีต้อนรับ</h1>
+      <p class="lead">เข้าสู่ระบบด้วยบัญชี Google ของวิทยาลัย เพื่อเริ่มใช้งาน RCAT AnyFlip Downloader</p>
+      <a class="google-button" id="googleSignIn" href="/auth/google"><span class="google-mark" aria-hidden="true">G</span> เข้าสู่ระบบด้วย Google <span aria-hidden="true">→</span></a>
+      <p class="domain-note"><span class="domain-dot" aria-hidden="true"></span> อนุญาตเฉพาะบัญชีที่ยืนยันแล้วในโดเมน <strong>@rcat.ac.th</strong></p>
+      <p class="error" id="loginError" role="alert" hidden></p>
+      <div class="login-footnote">Google เป็นผู้จัดการการยืนยันตัวตน ระบบนี้ไม่เก็บรหัสผ่าน Google ของคุณ</div>
+    </div>
   </div>
-  <footer>AnyFlip Downloader • Self-hosted Web GUI • เชื่อมต่อผ่าน HTTPS เมื่อเปิดใช้งานออนไลน์</footer>
+</section>
+
+<div id="workArea" hidden class="workspace-shell">
+  <aside class="sidebar" aria-label="เมนูนำทางหลัก">
+    <div class="sidebar-label">WORKSPACE</div>
+    <nav class="nav-links" aria-label="ส่วนต่าง ๆ ของระบบ">
+      <a href="#overview" class="nav-link"><span class="nav-icon" aria-hidden="true">◫</span> ภาพรวม</a>
+      <a href="#createJob" class="nav-link"><span class="nav-icon" aria-hidden="true">↧</span> ดาวน์โหลดเอกสาร</a>
+      <a href="#batch" class="nav-link"><span class="nav-icon" aria-hidden="true">▤</span> ดาวน์โหลดหลายรายการ</a>
+      <a href="#history" class="nav-link"><span class="nav-icon" aria-hidden="true">◷</span> ประวัติงาน</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="side-help"><span class="help-icon" aria-hidden="true">ⓘ</span><strong>เอกสารที่ได้รับอนุญาตเท่านั้น</strong><p>ระบบสร้าง Image-based PDF จากภาพ ไม่ใช่ PDF ต้นฉบับหรือไฟล์ข้อความ</p></div>
+      <span class="sidebar-version">RCAT · Web Download Manager</span>
+    </div>
+  </aside>
+  <div class="workspace-main">
+    <div class="top-utility"><div class="account-pill"><span class="avatar" aria-hidden="true">R</span><span id="signedInUser" class="account-name"></span><button id="logoutButton" type="button" class="button-quiet">ออกจากระบบ</button></div><p id="logoutError" class="error" role="alert" hidden></p></div>
+    <section class="welcome" id="overview" aria-labelledby="overviewTitle">
+      <div>
+        <div class="eyebrow">DOWNLOAD WORKSPACE <span class="accent-line" aria-hidden="true"></span></div>
+        <h1 id="overviewTitle">จัดการดาวน์โหลด<span class="highlight">ได้ในที่เดียว</span></h1>
+        <p>แปลงหน้าเอกสาร AnyFlip เป็นไฟล์ PDF ติดตามความคืบหน้า และจัดการประวัติการใช้งานของคุณ</p>
+        <a class="jump-link" href="#createJob">สร้างงานดาวน์โหลด <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="hero-symbol" aria-hidden="true"><img src="/logo.svg" alt="" width="160" height="160"></div>
+    </section>
+    
+    <section class="metrics" aria-label="สรุปงานดาวน์โหลด">
+      <div class="metric"><div class="metric-icon all" aria-hidden="true">▤</div><div><span>งานทั้งหมด</span><strong id="statTotal">—</strong></div></div>
+      <div class="metric"><div class="metric-icon active" aria-hidden="true">◷</div><div><span>กำลังดำเนินการ</span><strong id="statActive">—</strong></div></div>
+      <div class="metric"><div class="metric-icon done" aria-hidden="true">✓</div><div><span>เสร็จสมบูรณ์</span><strong id="statDone">—</strong></div></div>
+    </section>
+    <div class="content-grid">
+      <div class="primary-column">
+        <section class="panel" id="createJob" aria-labelledby="newJobTitle">
+          <div class="section-heading"><span class="section-icon" aria-hidden="true">↧</span><div><span class="section-eyebrow">NEW DOWNLOAD</span><h2 id="newJobTitle">สร้างงานดาวน์โหลด</h2><p>กรอกลิงก์เอกสารที่คุณมีสิทธิ์ดาวน์โหลด ระบบจะประมวลผลให้โดยอัตโนมัติ</p></div></div>
+          <form id="jobForm">
+            <div class="field"><label for="bookURL">ลิงก์หนังสือ AnyFlip <span class="required">*</span></label>
+              <input id="bookURL" type="url" inputmode="url" spellcheck="false" autocomplete="url" required placeholder="https://anyflip.com/publisher/book" aria-describedby="urlHint">
+              <p class="hint" id="urlHint">รองรับลิงก์หนังสือ AnyFlip ที่เข้าถึงได้และได้รับอนุญาต</p>
+            </div>
+            <div class="fields"><div class="field"><label for="bookTitle">ชื่อไฟล์ PDF <span class="optional">ไม่บังคับ</span></label><input id="bookTitle" maxlength="110" placeholder="ใช้ชื่อหนังสืออัตโนมัติ"></div>
+              <div class="field"><label for="threads">ดาวน์โหลดพร้อมกัน</label><select id="threads"><option value="1">1 หน้า</option><option value="2">2 หน้า</option><option value="3" selected>3 หน้า</option><option value="4">4 หน้า</option><option value="6">6 หน้า</option><option value="8">8 หน้า</option></select></div></div>
+            <div class="quality-box"><label class="quality-toggle" for="bestQuality"><input id="bestQuality" type="checkbox"><span><strong>ใช้ภาพความละเอียดสูงสุด</strong><small>เลือกจากภาพที่ผู้เผยแพร่ระบุไว้ อาจใช้เวลาและข้อมูลมากขึ้น</small></span></label></div>
+            <div class="form-actions"><button class="primary" id="startButton" type="submit"><span aria-hidden="true">↧</span> เริ่มดาวน์โหลด</button><span class="action-hint">ระบบจะแสดงความคืบหน้าด้านล่าง</span></div>
+            <p class="error" id="formError" role="alert" hidden></p>
+          </form>
+        </section>
+        <section class="panel progress-panel" id="jobPanel" aria-labelledby="progressTitle" hidden>
+          <div class="progresshead"><div><span class="section-eyebrow">JOB PROGRESS</span><h2 id="progressTitle">สถานะการดาวน์โหลด</h2></div><span class="pill" id="jobState">รอเริ่มงาน</span></div>
+          <p class="sub" id="jobDescription">กำลังรอข้อมูลจากเซิร์ฟเวอร์</p>
+          <div class="progress-steps" aria-label="ขั้นตอนการทำงาน"><span data-stage="queued">เข้าคิว</span><span data-stage="preparing">เตรียมข้อมูล</span><span data-stage="downloading">ดาวน์โหลด</span><span data-stage="converting">สร้าง PDF</span></div>
+          <div class="track" role="progressbar" aria-label="ความคืบหน้าการดาวน์โหลด" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack"><div class="fill" id="progressFill"></div></div>
+          <div class="meta"><span id="pageCount">0 / 0 หน้า</span><strong id="percent">0%</strong></div>
+          <div class="actions"><button type="button" class="danger" id="cancelButton">ยกเลิกงาน</button><button type="button" class="primary" id="downloadButton" hidden>↧ ดาวน์โหลดไฟล์ PDF</button></div>
+          <p class="error" id="jobError" role="alert" hidden></p><p class="job-ref" id="jobReference" aria-label="รหัสงานสำหรับตรวจสอบ" hidden></p>
+        </section>
+        <section class="panel" id="batch" aria-labelledby="batchTitle">
+          <div class="section-heading"><span class="section-icon blue" aria-hidden="true">▤</span><div><span class="section-eyebrow">BATCH DOWNLOAD</span><h2 id="batchTitle">ดาวน์โหลดหลายรายการ</h2><p>เพิ่มเอกสารเข้าคิวพร้อมกันสูงสุด 8 รายการ โดยใช้การตั้งค่าจากฟอร์มด้านบน</p></div></div>
+          <label for="batchURLs">ลิงก์หนังสือ AnyFlip <span class="optional">หนึ่ง URL ต่อบรรทัด</span></label>
+          <textarea id="batchURLs" rows="5" spellcheck="false" placeholder="https://anyflip.com/publisher/book-one&#10;https://anyflip.com/publisher/book-two" aria-describedby="batchHelp"></textarea>
+          <div class="batch-footer"><span class="hint" id="batchHelp"><strong id="batchCount">0 / 8</strong> รายการในคิวที่กำลังเตรียม</span><button id="batchStartButton" type="button" class="secondary">เพิ่มรายการเข้าคิว <span aria-hidden="true">→</span></button></div>
+          <p class="error" id="batchError" role="alert" hidden></p>
+        </section>
+      </div>
+      <div class="secondary-column">
+        <section class="panel history-panel" id="history" aria-labelledby="historyTitle">
+          <div class="progresshead"><div><span class="section-eyebrow">RECENT ACTIVITY</span><h2 id="historyTitle">ประวัติงานล่าสุด</h2></div><button type="button" class="button-quiet" id="refreshHistory">↻ รีเฟรช</button></div>
+          <div class="history-tools"><label class="visually-hidden" for="historySearch">ค้นหาด้วยรหัสงาน</label><input id="historySearch" type="search" placeholder="ค้นหารหัสงาน..." autocomplete="off"><label class="visually-hidden" for="historyFilter">กรองสถานะงาน</label><select id="historyFilter" aria-label="กรองสถานะงาน"><option value="all">ทุกสถานะ</option><option value="active">กำลังทำงาน</option><option value="completed">สำเร็จ</option><option value="failed">ไม่สำเร็จ</option><option value="cancelled">ยกเลิกแล้ว</option></select></div>
+          <div id="historyList" aria-live="polite"><div class="empty-state"><span aria-hidden="true">◷</span><strong>กำลังโหลดประวัติ</strong><p>รายการงานจะปรากฏที่นี่</p></div></div>
+          <p class="error" id="historyError" role="alert" hidden></p>
+          <p class="history-footnote">เก็บประวัติสูงสุด 50 รายการนานไม่เกิน 7 วัน • ไฟล์ PDF หมดอายุภายใน 1 ชั่วโมง • งานย้อนหลังที่กู้คืนหลังรีสตาร์ตไม่สามารถดาวน์โหลดหรือลองใหม่ได้</p>
+        </section>
+        <aside class="notice" aria-label="ข้อควรทราบ">
+          <span aria-hidden="true" class="notice-icon">ⓘ</span><div><strong>เกี่ยวกับไฟล์ PDF</strong><p>ผลลัพธ์เป็น <strong>Image-based PDF</strong> ไม่ใช่ไฟล์ PDF ต้นฉบับที่เก็บข้อความหรือกราฟิกเวกเตอร์ ระบบไม่ข้ามสิทธิ์ดาวน์โหลดหรือ DRM</p></div>
+        </aside>
+      </div>
+    </div>
+    <footer>© RCAT AnyFlip Downloader · สำหรับเอกสารที่ได้รับอนุญาตเท่านั้น</footer>
+  </div>
+</div>
 </main>
 <script src="/app.js" defer></script>
 </body>
