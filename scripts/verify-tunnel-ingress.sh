@@ -2,8 +2,8 @@
 # Read-only end-to-end acceptance for controlled Cloudflare Tunnel alternative.
 set -Eeuo pipefail
 alt="https://anyflip.rcat.dpdns.org/healthz"
-origin="http://127.0.0.1:8094/healthz"
-echo "===== Local AnyFlip origin (run on rcatiotserver) ====="
+origin="http://10.10.1.100:8094/healthz"
+echo "===== Host-LAN-bound AnyFlip origin (run on rcatiotserver) ====="
 if curl --fail --silent --show-error --connect-timeout 2 --max-time 6 "$origin" -o /dev/null; then
   echo "PASS: local origin returns success"
 else
