@@ -205,5 +205,16 @@ func (s *webServer) authUpdateUserStatus(w http.ResponseWriter,r *http.Request) 
  if err:=s.auth.setAccountDisabled(requestPrincipal(r).Username,target,*body.Disabled);err!=nil{
   respondAccountMutationError(w,err);return
  }
+ if *body.Disabled {
+  // Suspend outstanding jobs owned by this user without deleting their files
+  // or archived history. This locks against concurrent queue admission.
+  s.mu.Lock()
+  for _, job := range s.jobs {
+   if job.owner==target && job.cancel!=nil && job.finished.IsZero() {
+    job.cancel()
+   }
+  }
+  s.mu.Unlock()
+ }
  w.WriteHeader(http.StatusNoContent)
 }
