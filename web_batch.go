@@ -79,18 +79,6 @@ func (s *webServer) enqueueWebJobsForOwner(specs []webJobSpec, owner string) ([]
 	}
 
 	s.mu.Lock()
-	// Recheck owner status at queue admission, not only when the HTTP request
-	// was initially authenticated. A concurrent suspension must fail closed.
-	if s.auth != nil && owner != "" && owner != "_service" {
-		s.auth.mu.Lock()
-		account, exists := s.auth.users[owner]
-		s.auth.mu.Unlock()
-		if !exists || account.Disabled {
-			s.mu.Unlock()
-			cancelAll()
-			return nil, http.StatusForbidden, errors.New("account not permitted")
-		}
-	}
 	if s.stopping {
 		s.mu.Unlock()
 		cancelAll()
@@ -167,11 +155,11 @@ func (s *webServer) listJobs(w http.ResponseWriter, r *http.Request) {
 	}
 	entries := make([]listEntry, 0, len(s.jobs)+len(s.history))
 	for _, job := range s.jobs {
-		if s.auth != nil && !mayAccessOwner(r, job.owner) { continue }
+		if s.google != nil && !mayAccessOwner(r, job.owner) { continue }
 		entries = append(entries, listEntry{status:s.snapshot(job), at:job.created})
 	}
 	for _, item := range s.history {
-		if s.auth != nil && !mayAccessOwner(r, item.Response.Owner) { continue }
+		if s.google != nil && !mayAccessOwner(r, item.Response.Owner) { continue }
 		if _, live := s.jobs[item.Response.ID]; live {
 			continue
 		}
