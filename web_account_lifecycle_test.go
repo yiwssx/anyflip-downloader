@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -146,4 +147,24 @@ func TestAccountLifecycleMalformedCookieAndUnknownRoles(t *testing.T) {
 	if code:=lifecycleRequest(t,s,"POST","/auth/change-password","http://account.test",nil,map[string]string{"currentPassword":"first-admin-password-strong","newPassword":"new-password-strong-123"},true).Code;code!=http.StatusForbidden {t.Fatalf("service token changed human password: %d",code)}
 	if code:=lifecycleRequest(t,s,"POST","/auth/users/alice/reset-password","http://account.test",admin,map[string]string{"password":"new-valid-password-123","role":"admin"},false).Code;code!=http.StatusBadRequest {t.Fatalf("unknown reset fields accepted: %d",code)}
 	if !errors.Is(s.auth.setAccountDisabled("admin","missing",true),errAccountNotFound){t.Fatal("missing account did not return sentinel")}
+}
+
+func TestSuspensionCancelsQueuedJobsAndBlocksAdmission(t *testing.T) {
+	s:=newLifecycleFixture(t)
+	admin:=lifecycleLogin(t,s,"admin","first-admin-password-strong")
+	ctx,cancel:=context.WithCancel(context.Background())
+	defer cancel()
+	id:=strings.Repeat("f",32)
+	s.mu.Lock()
+	s.jobs[id]=&webJob{id:id,owner:"alice",stage:"queued",cancel:cancel}
+	s.mu.Unlock()
+	code:=lifecycleRequest(t,s,"PATCH","/auth/users/alice/status","http://account.test",admin,map[string]bool{"disabled":true},false).Code
+	if code!=http.StatusNoContent {t.Fatalf("suspend returned %d",code)}
+	select {
+	case <-ctx.Done():
+	default:
+		t.Fatal("outstanding suspended-user job was not cancelled")
+	}
+	_,status,err:=s.enqueueWebJobsForOwner([]webJobSpec{{URL:"https://anyflip.com/demo/authorized",Threads:2}},"alice")
+	if status!=http.StatusForbidden || err==nil {t.Fatalf("disabled account admitted job: status=%d err=%v",status,err)}
 }
