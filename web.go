@@ -97,6 +97,10 @@ func (s *webServer) handler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
+		if s.auth != nil && s.auth.secureCookie && r.TLS == nil && r.Header.Get("X-Forwarded-Proto") != "https" {
+			http.Error(w, "HTTPS required for account login", http.StatusForbidden)
+			return
+		}
 		if s.auth != nil {
 			serveEmbeddedWebAsset(w, "web/account.html", "text/html; charset=utf-8")
 		} else {
