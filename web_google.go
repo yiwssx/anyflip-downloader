@@ -235,17 +235,12 @@ func principalOwner(r *http.Request)string{
 }
 func mayAccessOwner(r *http.Request,owner string)bool{
  subject:=principalOwner(r)
- return subject=="_service" || (subject!=""&&subject==owner)
+ return subject!="" && subject==owner
 }
 func (s *webServer) authorizeGoogle(next http.Handler)http.Handler {
  return http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){
-  if header:=r.Header.Get("Authorization");header!=""{
-   if strings.HasPrefix(header,"Bearer ")&&subtle.ConstantTimeCompare([]byte(strings.TrimPrefix(header,"Bearer ")),[]byte(s.token))==1{
-    next.ServeHTTP(w,r.WithContext(context.WithValue(r.Context(),googlePrincipalContextKey{},googlePrincipal{Owner:"_service"})))
-    return
-   }
-   http.Error(w,"unauthorized",http.StatusUnauthorized);return
-  }
+  // In Google mode, even the legacy service token cannot bypass Google login.
+  if r.Header.Get("Authorization")!=""{http.Error(w,"unauthorized",http.StatusUnauthorized);return}
   user,ok:=s.google.sessionUser(r)
   if !ok{http.Error(w,"unauthorized",http.StatusUnauthorized);return}
   next.ServeHTTP(w,r.WithContext(context.WithValue(r.Context(),googlePrincipalContextKey{},googlePrincipal{Owner:user.Owner})))
