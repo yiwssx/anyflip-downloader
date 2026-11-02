@@ -123,4 +123,12 @@ func TestSecureAccountLoginRefusesPlainHTTPOrigin(t *testing.T) {
  w:=httptest.NewRecorder()
  s.handler().ServeHTTP(w,r)
  if w.Code!=http.StatusForbidden {t.Fatalf("plain-HTTP account login accepted: %d",w.Code)}
+ page:=httptest.NewRequest("GET","http://accounts.example/",nil)
+ blocked:=httptest.NewRecorder()
+ s.handler().ServeHTTP(blocked,page)
+ if blocked.Code!=http.StatusForbidden{t.Fatalf("plain-HTTP account form exposed: %d",blocked.Code)}
+ page.Header.Set("X-Forwarded-Proto","https")
+ proxied:=httptest.NewRecorder()
+ s.handler().ServeHTTP(proxied,page)
+ if proxied.Code!=http.StatusOK{t.Fatalf("HTTPS proxy did not serve login form: %d",proxied.Code)}
 }
