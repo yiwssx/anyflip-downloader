@@ -2,6 +2,8 @@ package main
 
 import (
  "context"
+ "errors"
+ "sort"
  "crypto/sha256"
  "crypto/subtle"
  "encoding/hex"
@@ -102,7 +104,7 @@ func (s *webServer) authLogout(w http.ResponseWriter,r *http.Request) {
  w.WriteHeader(http.StatusNoContent)
 }
 func (s *webServer) authAddUser(w http.ResponseWriter,r *http.Request) {
- if requestPrincipal(r).Role!="admin" {http.Error(w,"forbidden",http.StatusForbidden);return}
+ if !isHumanAdmin(r) {http.Error(w,"forbidden",http.StatusForbidden);return}
  if !sameOriginSessionRequest(r){http.Error(w,"forbidden origin",http.StatusForbidden);return}
  r.Body=http.MaxBytesReader(w,r.Body,2048)
  var body struct {Username string `json:"username"`;Password string `json:"password"`;Role string `json:"role"`}
@@ -116,10 +118,92 @@ func (s *webServer) authAddUser(w http.ResponseWriter,r *http.Request) {
  sendJSON(w,http.StatusCreated,struct{Username string `json:"username"`;Role string `json:"role"`}{body.Username,body.Role})
 }
 func (s *webServer) authListUsers(w http.ResponseWriter,r *http.Request) {
- if requestPrincipal(r).Role!="admin"{http.Error(w,"forbidden",http.StatusForbidden);return}
+ if !isHumanAdmin(r){http.Error(w,"forbidden",http.StatusForbidden);return}
  s.auth.mu.Lock()
- users:=make([]struct{ Username string `json:"username"`;Role string `json:"role"` },0,len(s.auth.users))
- for _,u:=range s.auth.users{users=append(users,struct{Username string `json:"username"`;Role string `json:"role"`}{u.Username,u.Role})}
+ type safeUser struct { Username string `json:"username"`; Role string `json:"role"`; Disabled bool `json:"disabled"` }
+ users:=make([]safeUser,0,len(s.auth.users))
+ for _,u:=range s.auth.users{users=append(users,safeUser{u.Username,u.Role,u.Disabled})}
  s.auth.mu.Unlock()
+ sort.Slice(users,func(i,j int)bool{return users[i].Username<users[j].Username})
  sendJSON(w,http.StatusOK,struct{Users any `json:"users"`}{users})
+}
+
+func isHumanAdmin(r *http.Request) bool {
+ p:=requestPrincipal(r)
+ return p.Role=="admin" && p.Username!="" && p.Username!="_service"
+}
+func claimAccountHashSlot(w http.ResponseWriter, a *accountAuth) bool {
+ select {
+ case a.loginGate <- struct{}{}:
+  return true
+ default:
+  http.Error(w,"authentication temporarily busy",http.StatusTooManyRequests)
+  return false
+ }
+}
+func decodeAccountMutation(w http.ResponseWriter, r *http.Request, limit int64, dest any) bool {
+ r.Body=http.MaxBytesReader(w,r.Body,limit)
+ decoder:=json.NewDecoder(r.Body)
+ decoder.DisallowUnknownFields()
+ if err:=decoder.Decode(dest);err!=nil{
+  http.Error(w,"invalid request",http.StatusBadRequest);return false
+ }
+ var extra json.RawMessage
+ if err:=decoder.Decode(&extra);err!=io.EOF{
+  http.Error(w,"invalid request",http.StatusBadRequest);return false
+ }
+ return true
+}
+func respondAccountMutationError(w http.ResponseWriter,err error) {
+ switch {
+ case errors.Is(err,errAccountNotFound):
+  http.Error(w,"account not found",http.StatusNotFound)
+ case errors.Is(err,errBadCurrentPassword):
+  http.Error(w,"current password incorrect",http.StatusForbidden)
+ case errors.Is(err,errLastActiveAdmin),errors.Is(err,errSelfDisable),errors.Is(err,errAccountConflict):
+  http.Error(w,"account change not permitted",http.StatusConflict)
+ default:
+  // Other input errors should not reveal storage paths or credential hashes.
+  http.Error(w,"account change failed",http.StatusBadRequest)
+ }
+}
+func (s *webServer) authChangePassword(w http.ResponseWriter,r *http.Request) {
+ p:=requestPrincipal(r)
+ if p.Username=="" || p.Username=="_service" {http.Error(w,"forbidden",http.StatusForbidden);return}
+ if !sameOriginSessionRequest(r) {http.Error(w,"forbidden",http.StatusForbidden);return}
+ var body struct{CurrentPassword string `json:"currentPassword"`;NewPassword string `json:"newPassword"`}
+ if !decodeAccountMutation(w,r,1024,&body){return}
+ if !claimAccountHashSlot(w,s.auth){return}
+ defer func(){<-s.auth.loginGate}()
+ err:=s.auth.changeOwnPassword(p.Username,body.CurrentPassword,body.NewPassword)
+ if err!=nil{respondAccountMutationError(w,err);return}
+ s.auth.clearCookie(w,r)
+ w.WriteHeader(http.StatusNoContent)
+}
+func (s *webServer) authResetPassword(w http.ResponseWriter,r *http.Request) {
+ if !isHumanAdmin(r){http.Error(w,"forbidden",http.StatusForbidden);return}
+ if !sameOriginSessionRequest(r){http.Error(w,"forbidden",http.StatusForbidden);return}
+ target:=r.PathValue("username")
+ if !accountNamePattern.MatchString(target){http.NotFound(w,r);return}
+ var body struct{Password string `json:"password"`}
+ if !decodeAccountMutation(w,r,1024,&body){return}
+ if !claimAccountHashSlot(w,s.auth){return}
+ defer func(){<-s.auth.loginGate}()
+ if err:=s.auth.resetAccountPassword(requestPrincipal(r).Username,target,body.Password);err!=nil{
+  respondAccountMutationError(w,err);return
+ }
+ w.WriteHeader(http.StatusNoContent)
+}
+func (s *webServer) authUpdateUserStatus(w http.ResponseWriter,r *http.Request) {
+ if !isHumanAdmin(r){http.Error(w,"forbidden",http.StatusForbidden);return}
+ if !sameOriginSessionRequest(r){http.Error(w,"forbidden",http.StatusForbidden);return}
+ target:=r.PathValue("username")
+ if !accountNamePattern.MatchString(target){http.NotFound(w,r);return}
+ var body struct{Disabled *bool `json:"disabled"`}
+ if !decodeAccountMutation(w,r,1024,&body){return}
+ if body.Disabled==nil{http.Error(w,"disabled field required",http.StatusBadRequest);return}
+ if err:=s.auth.setAccountDisabled(requestPrincipal(r).Username,target,*body.Disabled);err!=nil{
+  respondAccountMutationError(w,err);return
+ }
+ w.WriteHeader(http.StatusNoContent)
 }
