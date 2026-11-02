@@ -68,6 +68,12 @@ func (s *webServer) authLogin(w http.ResponseWriter,r *http.Request) {
   w.Header().Set("Retry-After",strconv.Itoa(int((wait+time.Second-1)/time.Second)))
   http.Error(w,"too many login attempts",http.StatusTooManyRequests);return
  }
+ select {
+ case s.auth.loginGate <- struct{}{}:
+  defer func(){ <-s.auth.loginGate }()
+ default:
+  http.Error(w,"login temporarily busy",http.StatusTooManyRequests);return
+ }
  r.Body=http.MaxBytesReader(w,r.Body,1024)
  var body struct {Username string `json:"username"`; Password string `json:"password"`}
  decoder:=json.NewDecoder(r.Body);decoder.DisallowUnknownFields()
