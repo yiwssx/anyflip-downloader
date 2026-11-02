@@ -150,8 +150,12 @@
     finally{button.disabled=false}
   });
   $('logoutButton').addEventListener('click',async()=>{
-    try{await fetch('/auth/logout',{method:'POST',credentials:'same-origin',cache:'no-store'});}
-    finally{showLogin()}
+    error($('logoutError'),'');
+    try {
+      const res=await fetch('/auth/logout',{method:'POST',credentials:'same-origin',cache:'no-store'});
+      if(!res.ok)throw new Error('ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง');
+      showLogin();
+    }catch(e){error($('logoutError'),e.message || 'ไม่สามารถออกจากระบบได้')}
   });
   $('createUserForm').addEventListener('submit',async event=>{
     event.preventDefault();
