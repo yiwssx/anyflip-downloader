@@ -44,6 +44,13 @@ test('real account login, Admin creates User, isolated GUI without Access Token'
   await page.locator('#newPassword').fill('teacher-password-12345');
   await page.locator('#createUserButton').click();
   await page.locator('#createUserSuccess').waitFor({state:'visible'});
+  await page.locator('#resetUsername').selectOption('teacher');
+  await page.locator('#resetPassword').fill('teacher-reset-password-123');
+  await page.locator('#resetPasswordButton').click();
+  await page.locator('#resetPasswordSuccess').waitFor({state:'visible'});
+  const teacherRow=page.locator('#usersList .historyRow').filter({hasText:'teacher'});
+  await teacherRow.getByRole('button',{name:'ระงับบัญชี'}).click();
+  await teacherRow.getByRole('button',{name:'เปิดใช้บัญชี'}).waitFor({state:'visible'});
   await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
   await page.locator('#startButton').click();
   await page.locator('#downloadButton').waitFor({state:'visible',timeout:12000});
@@ -53,10 +60,35 @@ test('real account login, Admin creates User, isolated GUI without Access Token'
   const me=await page.request.get(baseURL+'/auth/me');
   assert.equal(me.status(),401,'logout did not invalidate account session');
   await page.locator('#username').fill('teacher');
-  await page.locator('#password').fill('teacher-password-12345');
+  await page.locator('#password').fill('teacher-reset-password-123');
+  await page.locator('#loginButton').click();
+  await page.locator('#loginError').waitFor({state:'visible'});
+  assert.equal(await page.locator('#jobForm').isVisible(),false,'disabled user accessed download form');
+
+  await page.locator('#username').fill('admin');
+  await page.locator('#password').fill('ci-browser-password-123456');
+  await page.locator('#loginButton').click();
+  await page.locator('#adminPanel').waitFor({state:'visible'});
+  await teacherRow.getByRole('button',{name:'เปิดใช้บัญชี'}).click();
+  await teacherRow.getByRole('button',{name:'ระงับบัญชี'}).waitFor({state:'visible'});
+  await page.locator('#logoutButton').click();
+  await page.locator('#loginPanel').waitFor({state:'visible'});
+
+  await page.locator('#username').fill('teacher');
+  await page.locator('#password').fill('teacher-reset-password-123');
   await page.locator('#loginButton').click();
   await page.locator('#jobForm').waitFor({state:'visible'});
   assert.equal(await page.locator('#adminPanel').isVisible(),false,'regular user can see admin panel');
+  await page.locator('#currentPassword').fill('teacher-reset-password-123');
+  await page.locator('#changedPassword').fill('teacher-rotated-password-123');
+  await page.locator('#changePasswordButton').click();
+  await page.locator('#loginPanel').waitFor({state:'visible'});
+  const revoked=await page.request.get(baseURL+'/auth/me');
+  assert.equal(revoked.status(),401,'password rotation did not revoke the session');
+  await page.locator('#username').fill('teacher');
+  await page.locator('#password').fill('teacher-rotated-password-123');
+  await page.locator('#loginButton').click();
+  await page.locator('#jobForm').waitFor({state:'visible'});
   assert.deepEqual(errors,[]);
   await context.close();
  }finally{await browser.close()}

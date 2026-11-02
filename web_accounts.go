@@ -30,6 +30,7 @@ type accountUser struct {
  Username string `json:"username"`
  Role string `json:"role"`
  PasswordHash string `json:"passwordHash"`
+ Disabled bool `json:"disabled,omitempty"`
 }
 type accountsDocument struct {
  Version int `json:"version"`
@@ -46,6 +47,7 @@ type accountAuth struct {
  root string
  secureCookie bool
  loginThrottle *authThrottle
+ passwordThrottle *authThrottle // Per-account throttle for current-password verification.
  loginGate chan struct{} // Bound concurrent Argon2id computations per server.
 }
 func validAccountRole(role string) bool { return role == "admin" || role == "user" }
@@ -74,7 +76,7 @@ func verifyAccountPassword(hash,password string) bool {
  return subtle.ConstantTimeCompare(actual,digest)==1
 }
 func loadAccountAuth(root, bootstrapUsername, bootstrapHash string, secure bool) (*accountAuth,error) {
- a:=&accountAuth{root:root,secureCookie:secure,users:map[string]accountUser{},sessions:map[string]accountSession{},loginThrottle:newAuthThrottle(),loginGate:make(chan struct{},2)}
+ a:=&accountAuth{root:root,secureCookie:secure,users:map[string]accountUser{},sessions:map[string]accountSession{},loginThrottle:newAuthThrottle(),passwordThrottle:newAuthThrottle(),loginGate:make(chan struct{},2)}
  path:=filepath.Join(root,accountsFile)
  info,err:=os.Lstat(path)
  if errors.Is(err,os.ErrNotExist) {
@@ -95,7 +97,7 @@ func loadAccountAuth(root, bootstrapUsername, bootstrapHash string, secure bool)
   if !validAccountUser(u) {return nil,errors.New("invalid account record")}
   if _,ok:=a.users[u.Username];ok{return nil,errors.New("duplicate username")}
   a.users[u.Username]=u
-  if u.Role=="admin"{admins++}
+  if u.Role=="admin" && !u.Disabled {admins++}
  }
  if admins==0{return nil,errors.New("account store requires an administrator")}
  return a,nil
@@ -137,7 +139,7 @@ func (a *accountAuth) authenticate(username,password string) (accountUser,bool) 
   _,_ = hashAccountPassword("unused-password-constant")
   return accountUser{},false
  }
- if !verifyAccountPassword(user.PasswordHash,password){return accountUser{},false}
+ if !verifyAccountPassword(user.PasswordHash,password) || user.Disabled {return accountUser{},false}
  return user,true
 }
 func (a *accountAuth) newSession(user accountUser) (string,error) {
@@ -148,6 +150,8 @@ func (a *accountAuth) newSession(user accountUser) (string,error) {
  now:=time.Now()
  for k,s:=range a.sessions {if !s.Expires.After(now){delete(a.sessions,k)}}
  if len(a.sessions)>=2048 {return "",errors.New("too many active sessions")}
+ current, exists := a.users[user.Username]
+ if !exists || current.Disabled || current.PasswordHash!=user.PasswordHash { return "",errors.New("account changed during login") }
  a.sessions[sessionDigest(value)]=accountSession{Username:user.Username,Expires:now.Add(sessionDuration)}
  return value,nil
 }
@@ -161,7 +165,7 @@ func (a *accountAuth) userForSession(r *http.Request) (accountUser,bool) {
  if !exists {return accountUser{},false}
  if !session.Expires.After(time.Now()){delete(a.sessions,key);return accountUser{},false}
  user,exists:=a.users[session.Username]
- return user,exists
+ return user,exists && !user.Disabled
 }
 func (a *accountAuth) revoke(r *http.Request) {
  cookie,err:=r.Cookie(sessionCookieName)

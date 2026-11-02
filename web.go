@@ -123,6 +123,9 @@ func (s *webServer) handler() http.Handler {
 		mux.HandleFunc("GET /auth/me", s.authMe)
 		mux.Handle("POST /auth/users", s.authorize(http.HandlerFunc(s.authAddUser)))
 		mux.Handle("GET /auth/users", s.authorize(http.HandlerFunc(s.authListUsers)))
+		mux.Handle("POST /auth/change-password", s.authorize(http.HandlerFunc(s.authChangePassword)))
+		mux.Handle("POST /auth/users/{username}/reset-password", s.authorize(http.HandlerFunc(s.authResetPassword)))
+		mux.Handle("PATCH /auth/users/{username}/status", s.authorize(http.HandlerFunc(s.authUpdateUserStatus)))
 	}
 	mux.Handle("POST /api/jobs", s.authorize(http.HandlerFunc(s.createJob)))
 	mux.Handle("GET /api/jobs", s.authorize(http.HandlerFunc(s.listJobs)))

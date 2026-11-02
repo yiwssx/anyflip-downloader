@@ -28,6 +28,16 @@
       <div class="progresshead"><strong id="signedInUser"></strong><button type="button" class="secondary" id="logoutButton">ออกจากระบบ</button></div>
       <p id="logoutError" class="error" role="alert" hidden></p>
     </section>
+  <section class="panel" id="passwordPanel" aria-labelledby="passwordTitle">
+    <h2 id="passwordTitle">เปลี่ยนรหัสผ่านของฉัน</h2>
+    <p class="sub">หลังเปลี่ยนรหัสผ่าน ระบบจะออกจากระบบทุกอุปกรณ์เพื่อความปลอดภัย</p>
+    <form id="changePasswordForm">
+      <div class="field"><label for="currentPassword">รหัสผ่านปัจจุบัน</label><input id="currentPassword" type="password" autocomplete="current-password" required></div>
+      <div class="field"><label for="changedPassword">รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)</label><input id="changedPassword" type="password" autocomplete="new-password" minlength="12" required></div>
+      <div class="actions"><button id="changePasswordButton" type="submit" class="secondary">เปลี่ยนรหัสผ่าน</button></div>
+      <p class="error" id="changePasswordError" role="alert" hidden></p>
+    </form>
+  </section>
   <section class="panel" aria-labelledby="newJobTitle">
     <h2 id="newJobTitle">สร้างงานดาวน์โหลด</h2>
     <p class="sub">วางลิงก์หนังสือจาก AnyFlip เพื่อตรวจสอบหน้าเอกสารและรวมเป็น PDF โดยประมวลผลบนเซิร์ฟเวอร์</p>
@@ -81,6 +91,20 @@
       <div class="actions"><button type="submit" class="secondary" id="createUserButton">สร้างบัญชี</button></div>
       <p class="error" id="createUserError" role="alert" hidden></p>
       <p id="createUserSuccess" class="sub" hidden></p>
+    </form>
+    <div class="divider"></div>
+    <h3>บัญชีที่มีอยู่</h3>
+    <div class="actions"><button id="refreshUsers" type="button" class="secondary">รีเฟรชรายชื่อ</button></div>
+    <div id="usersList" aria-live="polite"></div>
+    <p class="error" id="userActionError" role="alert" hidden></p>
+    <h3>รีเซ็ตรหัสผ่านผู้ใช้</h3>
+    <p class="sub">Admin รีเซ็ตรหัสผ่านผู้อื่นได้ แต่เปลี่ยนรหัสผ่านตนเองต้องยืนยันรหัสผ่านปัจจุบันด้านบน</p>
+    <form id="resetPasswordForm">
+      <div class="field"><label for="resetUsername">บัญชีเป้าหมาย</label><select id="resetUsername" required></select></div>
+      <div class="field"><label for="resetPassword">รหัสผ่านใหม่</label><input id="resetPassword" type="password" autocomplete="new-password" minlength="12" required></div>
+      <div class="actions"><button type="submit" id="resetPasswordButton" class="secondary">รีเซ็ตรหัสผ่าน</button></div>
+      <p class="error" id="resetPasswordError" role="alert" hidden></p>
+      <p class="sub" id="resetPasswordSuccess" hidden></p>
     </form>
   </section>
   </div>

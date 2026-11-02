@@ -79,6 +79,18 @@ func (s *webServer) enqueueWebJobsForOwner(specs []webJobSpec, owner string) ([]
 	}
 
 	s.mu.Lock()
+	// Recheck owner status at queue admission, not only when the HTTP request
+	// was initially authenticated. A concurrent suspension must fail closed.
+	if s.auth != nil && owner != "" && owner != "_service" {
+		s.auth.mu.Lock()
+		account, exists := s.auth.users[owner]
+		s.auth.mu.Unlock()
+		if !exists || account.Disabled {
+			s.mu.Unlock()
+			cancelAll()
+			return nil, http.StatusForbidden, errors.New("account not permitted")
+		}
+	}
 	if s.stopping {
 		s.mu.Unlock()
 		cancelAll()
