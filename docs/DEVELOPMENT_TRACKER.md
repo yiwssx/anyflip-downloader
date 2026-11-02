@@ -21,7 +21,7 @@
 - [x] Implemented Login/Logout/Me, HttpOnly Strict session cookies, same-origin protection and Admin-only account creation
 - [x] Implemented job ownership scope for status/history, batch, retry, download, cancel; Admin and service-token override
 - [x] Implemented tokenless Login GUI in opt-in `accounts` mode, with separate legacy token-only GUI
-- [ ] Verify new Go unit/race tests, browser E2E in both modes, Docker smoke and vulnerability scan against final PR commit
+- [x] Verified Go Build/Vet/Unit/Race and vulnerability scan, Docker smoke and Chromium browser E2E in both modes on PR #57 head `330c277f` — [Go/Docker run 41381964185](https://github.com/yiwssx/anyflip-downloader/actions/runs/41381964185) · [Browser run 41381964175](https://github.com/yiwssx/anyflip-downloader/actions/runs/41381964175); follow-up docs-only revision requires CI recheck
 - [ ] Host HTTPS reverse-proxy configuration and private initial-admin provisioning (operator-controlled)
 - [ ] Physical browser/LAN security acceptance, account backup, recovery/reset/deactivation, logging and public security gates
 - **Release gate:** Account mode must not be deployed through the existing plain-HTTP LAN URL. Preserve host-local quota Compose, systemd service, mounts, data and backups. See [AUTHENTICATION.md](AUTHENTICATION.md).
