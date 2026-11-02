@@ -14,7 +14,7 @@
 
 ## P4-AUTH — Account Login / Session / RBAC (2026-11-02)
 
-**Tracking:** [PR #57](https://github.com/yiwssx/anyflip-downloader/pull/57) — code under review/CI; host deployment not attempted. GitHub Issues disabled in this repository (HTTP 410), so this tracker and PR are the work records.
+**Tracking:** [PR #57](https://github.com/yiwssx/anyflip-downloader/pull/57) merged into `main` (2026-11-02). Host deployment not attempted. GitHub Issues are disabled in this repository (HTTP 410), so this tracker and PRs are the work records.
 
 - [x] Development branch and PR created; token-only mode retained by default; no Anonymous Session
 - [x] Implemented Argon2id password hashing, first-admin bootstrap, 0600 account store
@@ -25,6 +25,21 @@
 - [ ] Host HTTPS reverse-proxy configuration and private initial-admin provisioning (operator-controlled)
 - [ ] Physical browser/LAN security acceptance, account backup, recovery/reset/deactivation, logging and public security gates
 - **Release gate:** Account mode must not be deployed through the existing plain-HTTP LAN URL. Preserve host-local quota Compose, systemd service, mounts, data and backups. See [AUTHENTICATION.md](AUTHENTICATION.md).
+
+### P4-AUTH-2 — Account lifecycle (2026-11-02)
+
+**Tracking:** [PR #58](https://github.com/yiwssx/anyflip-downloader/pull/58). Account lifecycle code in review; **not deployed**.
+
+- [x] Self-service password change with current-password verification and mandatory logout across sessions
+- [x] Admin-only password reset of another user; browser and machine-service token cannot bypass Admin role checks
+- [x] Suspend/reactivate accounts; disabled users cannot log in, use existing cookies or resurrect sessions on reactivation
+- [x] Protect last active Admin; prevent Admin from disabling own account or resetting own password without verifying current password
+- [x] Keep version-1 account store compatibility, persist disabled state and credential rotation atomically, rollback on storage failure
+- [x] Implement account management UI and automated Go/Browser regression tests
+- [ ] Final PR #58 Go Build, Vet, Unit/Race, vulnerability, Docker and two-mode browser CI gate
+- [ ] Physical HTTPS proxy/browser testing, account backup/restore and credential rotation recovery procedure
+- [ ] Audit log policy, administrative account recovery and operational abuse limits for public release
+- **Scope:** Code only. Do not replace operator-customized quota files, mounts, services, token or LAN binding.
 
 ## Phase / Checklist
 
