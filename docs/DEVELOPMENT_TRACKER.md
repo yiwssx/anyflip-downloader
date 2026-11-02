@@ -28,7 +28,7 @@
 
 ### P4-AUTH-2 — Account lifecycle (2026-11-02)
 
-**Tracking:** [PR #58](https://github.com/yiwssx/anyflip-downloader/pull/58). Account lifecycle code in review; **not deployed**.
+**Tracking:** [PR #58](https://github.com/yiwssx/anyflip-downloader/pull/58) merged on 2026-11-02; account lifecycle code passed Go, Docker and Browser CI; **not deployed**.
 
 - [x] Self-service password change with current-password verification and mandatory logout across sessions
 - [x] Admin-only password reset of another user; browser and machine-service token cannot bypass Admin role checks
@@ -40,6 +40,20 @@
 - [ ] Physical HTTPS proxy/browser testing, account backup/restore and credential rotation recovery procedure
 - [ ] Audit log policy, administrative account recovery and operational abuse limits for public release
 - **Scope:** Code only. Do not replace operator-customized quota files, mounts, services, token or LAN binding.
+
+### P4-AUTH-3 — Private audit and offline recovery (2026-11-02)
+
+**Tracking:** PR #59 candidate, branch `feature/p4-auth-audit-recovery`; code is not deployed.
+
+- [x] Private 0600 JSONL event log in account mode; fixed event/result schema, sanitized account identifiers and no credentials/tokens/URLs/IPs
+- [x] Log login success/failure, logout, administrator account operations, password changes and offline recovery, with audit intent before security-sensitive mutations
+- [x] Bounded 512 KiB active log plus one 512 KiB rotation archive; reject unsafe file types, permissions and oversized files
+- [x] Offline-only, **existing administrator** recovery command; no HTTP route or user-to-admin promotion; stdin password and exclusive 0600 pre-recovery backup
+- [x] Add unit/security tests for redaction, rotation, fail-closed audit failures, unsafe storage, backup collisions and recovery
+- [ ] Final PR build/Go unit/race/govulncheck, Docker smoke and Browser E2E
+- [ ] Host acceptance: stop service, verify backup/restore, HTTPS access, operator-only account/audit file permissions
+- [ ] External tamper-evident audit retention and production security review (the local rolling JSONL is **not** tamper-proof)
+- **Scope:** No server changes. Preserve quota-aware Docker volumes and systemd; no public deployment.
 
 ## Phase / Checklist
 
