@@ -1,0 +1,19 @@
+# Standalone ingress for AnyFlip, separate from existing Apache/Docker and www SaaS/O2O.
+# Linux host networking is necessary because compose.web.yaml binds AnyFlip to 127.0.0.1:8094.
+# The remotely managed tunnel is intentionally restricted to anyflip.rcat.dpdns.org.
+services:
+  anyflip-tunnel:
+    image: cloudflare/cloudflared:latest
+    command: ["tunnel", "--no-autoupdate", "run"]
+    network_mode: host
+    environment:
+      TUNNEL_TOKEN: ${RCAT_ANYFLIP_TUNNEL_TOKEN:?Provide a scoped tunnel token via a private env file}
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 192m
+    stop_grace_period: 20s
