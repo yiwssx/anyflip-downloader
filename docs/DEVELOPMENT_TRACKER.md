@@ -12,6 +12,20 @@
 - ไม่ติดตั้งฐานข้อมูล/OCR ตั้งแต่วันแรกโดยไม่จำเป็น; เน้นความเสถียร ความปลอดภัย และไฟล์ผลลัพธ์ถูกต้องก่อน
 - **หนึ่ง PR ต่อหนึ่งงาน** พร้อมทดสอบและตรวจรับก่อน Merge; Tracker นี้เป็นศูนย์กลางติดตาม
 
+## P4-SSO — Google Workspace only (2026-11-02)
+
+**Decision update:** Supersedes local accounts, roles, password change, private account audit and offline administrator recovery features from PRs #57–#59. These features were removed in [PR #60](https://github.com/yiwssx/anyflip-downloader/pull/60) to meet the simplified requirement: **only verified Google Workspace members of `@rcat.ac.th` can sign in**.
+
+- [x] Google OAuth 2.0 authorization code + PKCE + nonce/state and backend RSA ID-token signature verification
+- [x] Require Google issuer/audience/expiry, `email_verified`, matching email domain and `hd=rcat.ac.th`
+- [x] Remove local user registration, local passwords/Admin/recovery dashboard and related API routes
+- [x] Browser Google-only login with HttpOnly session and per-Google-subject job ownership
+- [x] Reject legacy API Bearer credentials when in Google SSO mode; default legacy token mode preserved for existing deployment until cutover
+- [ ] PR #60 CI, Go Unit/Race, browser test and vulnerability scan
+- [ ] Operator creates Google OAuth Client and sets authorized HTTPS redirect URI
+- [ ] HTTPS reverse proxy/production host acceptance with real `@rcat.ac.th` accounts
+- **No host deployment or quota changes.** Previous P4-AUTH entries below remain historical records, not current design requirements. See [AUTHENTICATION.md](AUTHENTICATION.md).
+
 ## P4-AUTH — Account Login / Session / RBAC (2026-11-02)
 
 **Tracking:** [PR #57](https://github.com/yiwssx/anyflip-downloader/pull/57) merged into `main` (2026-11-02). Host deployment not attempted. GitHub Issues are disabled in this repository (HTTP 410), so this tracker and PRs are the work records.
