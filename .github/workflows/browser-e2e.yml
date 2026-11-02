@@ -6,8 +6,11 @@ on:
     paths:
       - 'web/**'
       - 'web.go'
+      - 'web_accounts*.go'
+      - 'web_auth_routes.go'
       - 'web_csp_test.go'
       - 'tests/browser-e2e.mjs'
+      - 'tests/accounts-e2e.mjs'
       - '.github/workflows/browser-e2e.yml'
       - 'go.mod'
       - 'go.sum'
@@ -16,8 +19,11 @@ on:
     paths:
       - 'web/**'
       - 'web.go'
+      - 'web_accounts*.go'
+      - 'web_auth_routes.go'
       - 'web_csp_test.go'
       - 'tests/browser-e2e.mjs'
+      - 'tests/accounts-e2e.mjs'
       - '.github/workflows/browser-e2e.yml'
       - 'go.mod'
       - 'go.sum'
@@ -77,3 +83,28 @@ jobs:
           fi
           node --check tests/browser-e2e.mjs
           node --test tests/browser-e2e.mjs
+          # Verify the separate opt-in login flow against a new isolated data root.
+          kill "$server_pid" 2>/dev/null || true
+          wait "$server_pid" 2>/dev/null || true
+          rm -rf -- "$ANYFLIP_JOB_DIR"
+          ANYFLIP_JOB_DIR="$(mktemp -d "$RUNNER_TEMP/anyflip-accounts-XXXXXXXX")"
+          export ANYFLIP_AUTH_MODE=accounts
+          export ANYFLIP_AUTH_BOOTSTRAP_USERNAME=admin
+          export ANYFLIP_AUTH_BOOTSTRAP_HASH
+          ANYFLIP_AUTH_BOOTSTRAP_HASH="$(printf '%s' 'ci-browser-password-123456' | "$RUNNER_TEMP/anyflip-browser-e2e" -hash-password)"
+          "$RUNNER_TEMP/anyflip-browser-e2e" -web -listen 127.0.0.1:8094 &
+          server_pid=$!
+          healthy=0
+          for i in {1..30}; do
+            if curl --silent --fail --max-time 2 "$BROWSER_TEST_BASE_URL/healthz" >/dev/null; then
+              healthy=1
+              break
+            fi
+            sleep 1
+          done
+          if [[ "$healthy" != 1 ]]; then
+            echo 'Account Web GUI did not start' >&2
+            exit 1
+          fi
+          node --check tests/accounts-e2e.mjs
+          node --test tests/accounts-e2e.mjs

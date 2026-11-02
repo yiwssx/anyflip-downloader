@@ -12,6 +12,20 @@
 - ไม่ติดตั้งฐานข้อมูล/OCR ตั้งแต่วันแรกโดยไม่จำเป็น; เน้นความเสถียร ความปลอดภัย และไฟล์ผลลัพธ์ถูกต้องก่อน
 - **หนึ่ง PR ต่อหนึ่งงาน** พร้อมทดสอบและตรวจรับก่อน Merge; Tracker นี้เป็นศูนย์กลางติดตาม
 
+## P4-AUTH — Account Login / Session / RBAC (2026-11-02)
+
+**Tracking:** [PR #57](https://github.com/yiwssx/anyflip-downloader/pull/57) — code under review/CI; host deployment not attempted. GitHub Issues disabled in this repository (HTTP 410), so this tracker and PR are the work records.
+
+- [x] Development branch and PR created; token-only mode retained by default; no Anonymous Session
+- [x] Implemented Argon2id password hashing, first-admin bootstrap, 0600 account store
+- [x] Implemented Login/Logout/Me, HttpOnly Strict session cookies, same-origin protection and Admin-only account creation
+- [x] Implemented job ownership scope for status/history, batch, retry, download, cancel; Admin and service-token override
+- [x] Implemented tokenless Login GUI in opt-in `accounts` mode, with separate legacy token-only GUI
+- [x] Verified Go Build/Vet/Unit/Race and vulnerability scan, Docker smoke and Chromium browser E2E in both modes on PR #57 head `330c277f` — [Go/Docker run 41381964185](https://github.com/yiwssx/anyflip-downloader/actions/runs/41381964185) · [Browser run 41381964175](https://github.com/yiwssx/anyflip-downloader/actions/runs/41381964175); follow-up docs-only revision requires CI recheck
+- [ ] Host HTTPS reverse-proxy configuration and private initial-admin provisioning (operator-controlled)
+- [ ] Physical browser/LAN security acceptance, account backup, recovery/reset/deactivation, logging and public security gates
+- **Release gate:** Account mode must not be deployed through the existing plain-HTTP LAN URL. Preserve host-local quota Compose, systemd service, mounts, data and backups. See [AUTHENTICATION.md](AUTHENTICATION.md).
+
 ## Phase / Checklist
 
 ### P0 — ปรับปรุง Download Core และความปลอดภัย (Blocker)

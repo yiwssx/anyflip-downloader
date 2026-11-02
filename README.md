@@ -218,6 +218,8 @@ ownership; a secure HTTP client alone does not make a public endpoint safe.
 
 ## Self-hosted Web GUI (MVP)
 
+**Account login is now available as an opt-in code path:** set `ANYFLIP_AUTH_MODE=accounts` only after preparing HTTPS and the private first-admin password hash. The account-mode browser uses Login and HttpOnly server-side sessions; users do not enter or receive an API Access Token. Admin and User roles have separate job permissions. Token-only mode remains the default for backward compatibility. See [Account authentication and safe migration](docs/AUTHENTICATION.md) for bootstrapping, rollback and limitations; the Ubuntu operator's HTTP LAN deployment has **not** been migrated.
+
 The same Go binary includes an authenticated browser interface. A LAN-only
 self-hosted deployment was operator-confirmed working on 2026-10-28 after
 [pdfcpu's writable-config fix (PR #18)](https://github.com/yiwssx/anyflip-downloader/pull/18).

@@ -45,6 +45,9 @@ type queuedWebJob struct {
 }
 
 func (s *webServer) enqueueWebJobs(specs []webJobSpec) ([]webJobResponse, int, error) {
+	return s.enqueueWebJobsForOwner(specs, "")
+}
+func (s *webServer) enqueueWebJobsForOwner(specs []webJobSpec, owner string) ([]webJobResponse, int, error) {
 	if len(specs) == 0 || len(specs) > maxWebBatchJobs {
 		return nil, http.StatusBadRequest, errors.New("batch requires 1 to 8 jobs")
 	}
@@ -70,7 +73,7 @@ func (s *webServer) enqueueWebJobs(specs []webJobSpec) ([]webJobResponse, int, e
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 		job := &webJob{
 			id: hex.EncodeToString(random[:]), stage: "queued",
-			created: time.Now(), cancel: cancel, spec: spec,
+			created: time.Now(), cancel: cancel, spec: spec, owner: owner,
 		}
 		queued = append(queued, queuedWebJob{job: job, ctx: ctx})
 	}
@@ -134,7 +137,7 @@ func (s *webServer) createBatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid batch request", http.StatusBadRequest)
 		return
 	}
-	jobs, status, err := s.enqueueWebJobs(body.Jobs)
+	jobs, status, err := s.enqueueWebJobsForOwner(body.Jobs, principalOwner(r))
 	if err != nil {
 		http.Error(w, err.Error(), status)
 		return
@@ -144,7 +147,7 @@ func (s *webServer) createBatch(w http.ResponseWriter, r *http.Request) {
 	}{Jobs: jobs})
 }
 
-func (s *webServer) listJobs(w http.ResponseWriter, _ *http.Request) {
+func (s *webServer) listJobs(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	type listEntry struct {
 		status webJobResponse
@@ -152,9 +155,11 @@ func (s *webServer) listJobs(w http.ResponseWriter, _ *http.Request) {
 	}
 	entries := make([]listEntry, 0, len(s.jobs)+len(s.history))
 	for _, job := range s.jobs {
+		if s.auth != nil && !mayAccessOwner(r, job.owner) { continue }
 		entries = append(entries, listEntry{status:s.snapshot(job), at:job.created})
 	}
 	for _, item := range s.history {
+		if s.auth != nil && !mayAccessOwner(r, item.Response.Owner) { continue }
 		if _, live := s.jobs[item.Response.ID]; live {
 			continue
 		}
@@ -189,7 +194,7 @@ func (s *webServer) retryJob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "only failed or cancelled jobs can be retried", http.StatusConflict)
 		return
 	}
-	result, status, err := s.enqueueWebJobs([]webJobSpec{spec})
+	result, status, err := s.enqueueWebJobsForOwner([]webJobSpec{spec}, principalOwner(r))
 	if err != nil {
 		http.Error(w, err.Error(), status)
 		return
