@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html web/style.css web/app.js web/account.html web/account.js
+//go:embed web/index.html web/style.css web/app.js web/google.html web/google.js
 var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -36,7 +36,7 @@ type webJob struct {
 	finished  time.Time
 	cancel    context.CancelFunc
 	spec      webJobSpec // in-memory only; never serialized in API output
-	owner     string // account username; empty for legacy jobs
+	owner     string // stable hashed Google subject; empty for legacy jobs
 }
 
 type webJobResponse struct {
@@ -59,7 +59,7 @@ type webServer struct {
 	stopping bool
 	root     string
 	token    string
-	auth     *accountAuth // nil for backward-compatible token-only mode
+	google   *googleAuth // nil for backward-compatible token-only mode
 	sem      chan struct{}
 	client   *http.Client // Optional controlled test transport; nil in production.
 	authThrottle *authThrottle
@@ -97,12 +97,8 @@ func (s *webServer) handler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
-		if s.auth != nil && s.auth.secureCookie && r.TLS == nil && r.Header.Get("X-Forwarded-Proto") != "https" {
-			http.Error(w, "HTTPS required for account login", http.StatusForbidden)
-			return
-		}
-		if s.auth != nil {
-			serveEmbeddedWebAsset(w, "web/account.html", "text/html; charset=utf-8")
+		if s.google != nil {
+			serveEmbeddedWebAsset(w, "web/google.html", "text/html; charset=utf-8")
 		} else {
 			serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
 		}
@@ -111,21 +107,17 @@ func (s *webServer) handler() http.Handler {
 		serveEmbeddedWebAsset(w, "web/style.css", "text/css; charset=utf-8")
 	})
 	mux.HandleFunc("GET /app.js", func(w http.ResponseWriter, _ *http.Request) {
-		if s.auth != nil {
-			serveEmbeddedWebAsset(w, "web/account.js", "text/javascript; charset=utf-8")
+		if s.google != nil {
+			serveEmbeddedWebAsset(w, "web/google.js", "text/javascript; charset=utf-8")
 		} else {
 			serveEmbeddedWebAsset(w, "web/app.js", "text/javascript; charset=utf-8")
 		}
 	})
-	if s.auth != nil {
-		mux.HandleFunc("POST /auth/login", s.authLogin)
-		mux.HandleFunc("POST /auth/logout", s.authLogout)
-		mux.HandleFunc("GET /auth/me", s.authMe)
-		mux.Handle("POST /auth/users", s.authorize(http.HandlerFunc(s.authAddUser)))
-		mux.Handle("GET /auth/users", s.authorize(http.HandlerFunc(s.authListUsers)))
-		mux.Handle("POST /auth/change-password", s.authorize(http.HandlerFunc(s.authChangePassword)))
-		mux.Handle("POST /auth/users/{username}/reset-password", s.authorize(http.HandlerFunc(s.authResetPassword)))
-		mux.Handle("PATCH /auth/users/{username}/status", s.authorize(http.HandlerFunc(s.authUpdateUserStatus)))
+	if s.google != nil {
+		mux.HandleFunc("GET /auth/google", s.google.start)
+		mux.HandleFunc("GET /auth/google/callback", s.google.callback)
+		mux.HandleFunc("GET /auth/me", s.google.me)
+		mux.HandleFunc("POST /auth/logout", s.google.logout)
 	}
 	mux.Handle("POST /api/jobs", s.authorize(http.HandlerFunc(s.createJob)))
 	mux.Handle("GET /api/jobs", s.authorize(http.HandlerFunc(s.listJobs)))
@@ -158,7 +150,7 @@ func serveEmbeddedWebAsset(w http.ResponseWriter, name, contentType string) {
 }
 
 func (s *webServer) authorize(next http.Handler) http.Handler {
-	if s.auth != nil { return s.authorizeAccounts(next) }
+	if s.google != nil { return s.authorizeGoogle(next) }
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if wait := s.authThrottle.retryAfter(r.RemoteAddr); wait > 0 {
 			seconds := int((wait + time.Second - 1) / time.Second)
@@ -201,7 +193,7 @@ func (s *webServer) lookupJob(w http.ResponseWriter, r *http.Request) (*webJob, 
 	s.mu.Lock()
 	job, ok := s.jobs[id]
 	s.mu.Unlock()
-	if !ok || (s.auth != nil && !mayAccessOwner(r, job.owner)) {
+	if !ok || (s.google != nil && !mayAccessOwner(r, job.owner)) {
 		http.NotFound(w, r)
 		return nil, false
 	}
@@ -302,7 +294,7 @@ func (s *webServer) getJob(w http.ResponseWriter, r *http.Request) {
 		value, ok = s.archivedSnapshotLocked(id)
 	}
 	s.mu.Unlock()
-	if !ok || (s.auth != nil && !mayAccessOwner(r, value.Owner)) {
+	if !ok || (s.google != nil && !mayAccessOwner(r, value.Owner)) {
 		http.NotFound(w, r)
 		return
 	}
@@ -353,17 +345,10 @@ func runWeb(addr string) error {
 	if err != nil {
 		return err
 	}
-	if mode := os.Getenv("ANYFLIP_AUTH_MODE"); mode == "accounts" {
-		secure, err := strconv.ParseBool(os.Getenv("ANYFLIP_AUTH_COOKIE_SECURE"))
-		if os.Getenv("ANYFLIP_AUTH_COOKIE_SECURE") == "" { secure = false; err = nil }
-		if err != nil { return fmt.Errorf("invalid ANYFLIP_AUTH_COOKIE_SECURE: %w", err) }
-		// Passwords must not travel over the public or private LAN in plain HTTP.
-		// The opt-in accounts mode requires a Secure cookie unless bound only to loopback
-		// for local development. Reverse proxies must serve HTTPS with ProxyPreserveHost.
-		if !secure && !strings.HasPrefix(addr,"127.0.0.1:") && !strings.HasPrefix(addr,"localhost:") && !strings.HasPrefix(addr,"[::1]:") {
-			return errors.New("accounts mode requires HTTPS and ANYFLIP_AUTH_COOKIE_SECURE=true for non-loopback listeners")
-		}
-		server.auth, err = loadAccountAuth(server.root, os.Getenv("ANYFLIP_AUTH_BOOTSTRAP_USERNAME"), os.Getenv("ANYFLIP_AUTH_BOOTSTRAP_HASH"), secure)
+	if mode := os.Getenv("ANYFLIP_AUTH_MODE"); mode == "google" {
+		server.google, err = newGoogleAuth(
+			os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET"),
+			os.Getenv("GOOGLE_REDIRECT_URI"))
 		if err != nil { return err }
 	} else if mode != "" && mode != "token" {
 		return fmt.Errorf("unsupported ANYFLIP_AUTH_MODE %q", mode)
