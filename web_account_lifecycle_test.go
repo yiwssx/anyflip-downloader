@@ -168,3 +168,22 @@ func TestSuspensionCancelsQueuedJobsAndBlocksAdmission(t *testing.T) {
 	_,status,err:=s.enqueueWebJobsForOwner([]webJobSpec{{URL:"https://anyflip.com/demo/authorized",Threads:2}},"alice")
 	if status!=http.StatusForbidden || err==nil {t.Fatalf("disabled account admitted job: status=%d err=%v",status,err)}
 }
+
+func TestAccountPasswordRotationRateLimitIsScopedPerUser(t *testing.T) {
+	s:=newLifecycleFixture(t)
+	alice:=lifecycleLogin(t,s,"alice","alice-first-password")
+	bob:=lifecycleLogin(t,s,"bob","bob-first-password")
+	for i:=0;i<authMaxFailures;i++ {
+		code:=lifecycleRequest(t,s,"POST","/auth/change-password","http://account.test",alice,
+			map[string]string{"currentPassword":"incorrect-password","newPassword":"new-alice-password-strong"},false).Code
+		if code!=http.StatusForbidden {t.Fatalf("bad attempt %d returned %d",i,code)}
+	}
+	limited:=lifecycleRequest(t,s,"POST","/auth/change-password","http://account.test",alice,
+		map[string]string{"currentPassword":"alice-first-password","newPassword":"new-alice-password-strong"},false)
+	if limited.Code!=http.StatusTooManyRequests || limited.Header().Get("Retry-After")=="" {
+		t.Fatalf("password guessing not throttled: status=%d header=%q",limited.Code,limited.Header().Get("Retry-After"))
+	}
+	other:=lifecycleRequest(t,s,"POST","/auth/change-password","http://account.test",bob,
+		map[string]string{"currentPassword":"bob-first-password","newPassword":"bob-rotated-password-strong"},false)
+	if other.Code!=http.StatusNoContent {t.Fatalf("another user incorrectly locked: %d",other.Code)}
+}
