@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -131,4 +130,3 @@ func (a *authAudit) readForTest() ([]authAuditEvent,error) {
 
 // Audit events are intentionally never exposed as an HTTP response.
 // Operators review and export the private log using host filesystem access.
-var _ io.Reader
