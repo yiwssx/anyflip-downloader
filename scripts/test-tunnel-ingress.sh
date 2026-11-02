@@ -45,7 +45,7 @@ bash "$repo/scripts/start-tunnel-ingress.sh" > "$tmp/log" 2>&1 || {
 }
 grep -q 'PASS: live TLS-verified HTTPS' "$tmp/log"
 grep -q 'up -d --pull always --no-deps anyflip-tunnel' "$TEST_TRACE"
-! grep -q 'anyflip-web\|down\|restart' "$TEST_TRACE"
+! grep -Eq '(^|[[:space:]])(anyflip-web|down|restart)([[:space:]]|$)' "$TEST_TRACE"
 [[ "$(cat "$MOCK_COUNT")" == 2 ]]
 echo "PASS: healthy connector requires actual HTTPS result and starts only isolated service"
 
