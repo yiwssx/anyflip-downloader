@@ -13,6 +13,7 @@ import (
  "net"
  "net/http"
  "net/url"
+ "regexp"
  "strings"
  "sync"
  "time"
@@ -102,7 +103,16 @@ func (g *googleAuth) setCookie(w http.ResponseWriter,name,value string,ttl time.
 func (g *googleAuth) deleteCookie(w http.ResponseWriter,name string,lax bool) {
  g.setCookie(w,name,"",-time.Second,lax)
 }
+func (g *googleAuth) validBrowserHost(r *http.Request)bool {
+ u,_:=url.Parse(g.redirectURI)
+ if r.Host!=u.Host{return false}
+ if u.Scheme=="https"{
+  return r.TLS!=nil || r.Header.Get("X-Forwarded-Proto")=="https"
+ }
+ return r.TLS==nil // Localhost development only.
+}
 func (g *googleAuth) start(w http.ResponseWriter,r *http.Request){
+ if !g.validBrowserHost(r){http.Error(w,"HTTPS and configured host required",http.StatusForbidden);return}
  state,err:=randomGoogleToken();if err!=nil{http.Error(w,"sign-in unavailable",503);return}
  nonce,err:=randomGoogleToken();if err!=nil{http.Error(w,"sign-in unavailable",503);return}
  verifier,err:=randomGoogleToken();if err!=nil{http.Error(w,"sign-in unavailable",503);return}
@@ -129,6 +139,7 @@ func (g *googleAuth) start(w http.ResponseWriter,r *http.Request){
  http.Redirect(w,r,u.String(),http.StatusSeeOther)
 }
 func (g *googleAuth) callback(w http.ResponseWriter,r *http.Request){
+ if !g.validBrowserHost(r){http.Error(w,"HTTPS and configured host required",http.StatusForbidden);return}
  stateCookie,err:=r.Cookie(googleStateCookie)
  g.deleteCookie(w,googleStateCookie,true)
  if err!=nil||len(stateCookie.Value)!=43{http.Error(w,"invalid sign-in state",403);return}
@@ -208,4 +219,34 @@ func (g *googleAuth) me(w http.ResponseWriter,r *http.Request){
  user,ok:=g.sessionUser(r)
  if !ok{http.Error(w,"unauthorized",401);return}
  sendJSON(w,200,struct{Email string `json:"email"`}{user.Email})
+}
+
+type googlePrincipal struct{ Owner string }
+type googlePrincipalContextKey struct{}
+var storedGoogleOwnerPattern=regexp.MustCompile(`^g-[0-9a-f]{64}$`)
+var storedLegacyOwnerPattern=regexp.MustCompile(`^[a-z][a-z0-9_.-]{2,31}$`)
+func validStoredJobOwner(value string)bool{
+ return storedGoogleOwnerPattern.MatchString(value)||storedLegacyOwnerPattern.MatchString(value)
+}
+func principalOwner(r *http.Request)string{
+ p,_:=r.Context().Value(googlePrincipalContextKey{}).(googlePrincipal)
+ return p.Owner
+}
+func mayAccessOwner(r *http.Request,owner string)bool{
+ subject:=principalOwner(r)
+ return subject=="_service" || (subject!=""&&subject==owner)
+}
+func (s *webServer) authorizeGoogle(next http.Handler)http.Handler {
+ return http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){
+  if header:=r.Header.Get("Authorization");header!=""{
+   if strings.HasPrefix(header,"Bearer ")&&subtle.ConstantTimeCompare([]byte(strings.TrimPrefix(header,"Bearer ")),[]byte(s.token))==1{
+    next.ServeHTTP(w,r.WithContext(context.WithValue(r.Context(),googlePrincipalContextKey{},googlePrincipal{Owner:"_service"})))
+    return
+   }
+   http.Error(w,"unauthorized",http.StatusUnauthorized);return
+  }
+  user,ok:=s.google.sessionUser(r)
+  if !ok{http.Error(w,"unauthorized",http.StatusUnauthorized);return}
+  next.ServeHTTP(w,r.WithContext(context.WithValue(r.Context(),googlePrincipalContextKey{},googlePrincipal{Owner:user.Owner})))
+ })
 }
