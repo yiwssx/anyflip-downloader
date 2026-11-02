@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Non-disruptive, host-local RCAT AnyFlip tunnel connector startup.
 # Requires operator access to Ubuntu host 10.10.1.100 (cannot be run from GitHub).
+# Deployed AnyFlip publishes ONLY 10.10.1.100:8094 on the host, NOT loopback.
 set -Eeuo pipefail
 repository="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repository"
@@ -10,8 +11,8 @@ if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>
   exit 1
 fi
 
-if ! curl -fsS --connect-timeout 2 --max-time 5 http://127.0.0.1:8094/healthz >/dev/null; then
-  echo "ERROR: Existing AnyFlip backend is not healthy on 127.0.0.1:8094. No changes made." >&2
+if ! curl -fsS --connect-timeout 2 --max-time 5 http://10.10.1.100:8094/healthz >/dev/null; then
+  echo "ERROR: Existing AnyFlip backend is not healthy on 10.10.1.100:8094. No changes made." >&2
   exit 1
 fi
 
