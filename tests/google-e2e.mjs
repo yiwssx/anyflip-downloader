@@ -31,3 +31,47 @@ test('Google-only sign-in: no local passwords, token field or anonymous jobs',as
   await context.close();
  }finally{await browser.close()}
 });
+
+
+test('Google workspace dashboard: responsive authenticated experience and history controls',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  for(const viewport of [{width:1365,height:900},{width:390,height:844}]){
+   const context=await browser.newContext({viewport,isMobile:viewport.width<600,hasTouch:viewport.width<600});
+   const page=await context.newPage();
+   const failures=[];
+   page.on('pageerror',e=>failures.push(e.message));
+   await page.route('**/auth/me',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify({email:'person@rcat.ac.th'})
+   }));
+   await page.route('**/api/jobs',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify({jobs:[
+     {id:'a'.repeat(32),stage:'completed',completed:5,total:5,downloadReady:true},
+     {id:'b'.repeat(32),stage:'queued',completed:0,total:20,downloadReady:false},
+     {id:'c'.repeat(32),stage:'cancelled',completed:2,total:10,downloadReady:false,archived:true}
+    ]})
+   }));
+   await page.goto(base+'/',{waitUntil:'networkidle'});
+   await page.locator('#workArea').waitFor({state:'visible'});
+   assert.equal(await page.locator('#loginPanel').isVisible(),false);
+   assert.equal(await page.locator('#signedInUser').textContent(),'person@rcat.ac.th');
+   await page.waitForFunction(()=>document.querySelector('#statTotal')?.textContent==='3');
+   assert.equal(await page.locator('#statActive').textContent(),'1');
+   assert.equal(await page.locator('#statDone').textContent(),'1');
+   assert.equal(await page.locator('.nav-link').count(),4);
+   assert.equal(await page.locator('#token').count(),0);
+   assert.equal(await page.locator('#adminPanel').count(),0);
+   await page.locator('#historyFilter').selectOption('completed');
+   assert.equal(await page.locator('.historyRow').count(),1);
+   await page.locator('#historySearch').fill('does-not-match');
+   assert.match(await page.locator('#historyList').innerText(),/ไม่พบรายการ/);
+   await page.locator('#historySearch').fill('');
+   assert.equal(await page.locator('.historyRow').count(),1);
+   await page.locator('#batchURLs').fill('https://anyflip.com/demo/one\nhttps://anyflip.com/demo/two');
+   assert.equal(await page.locator('#batchCount').textContent(),'2 / 8');
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2),false,'horizontal overflow');
+   assert.deepEqual(failures,[]);
+   await context.close();
+  }
+ }finally{await browser.close()}
+});

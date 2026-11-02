@@ -84,7 +84,12 @@ test('desktop: CSP, create, progress and image-based PDF download', { timeout: 4
     assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval/);
     assert.ok(await page.locator('#jobForm').isVisible());
     assert.ok(await page.locator('#batchURLs').isVisible());
-
+    assert.ok(await page.locator('.sidebar .nav-links').isVisible());
+    assert.equal(await page.locator('.nav-link').count(),4);
+    assert.ok(await page.locator('#historySearch').isVisible());
+    assert.ok(await page.locator('#historyFilter').isVisible());
+    assert.ok(await page.locator('#statTotal').isVisible());
+    assert.ok(await page.locator('img.brand-logo').isVisible());
     await page.locator('#token').fill(token);
     await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
     await page.locator('#bestQuality').check();
@@ -92,6 +97,12 @@ test('desktop: CSP, create, progress and image-based PDF download', { timeout: 4
     await page.locator('#downloadButton').waitFor({ state: 'visible', timeout: 10000 });
     assert.equal(await page.locator('#jobReference').textContent(), 'Job ID: ' + ids.desktop);
     assert.equal(await page.locator('#pageCount').textContent(), '2 / 2 หน้า');
+    await page.waitForFunction(() => document.querySelector('#statTotal')?.textContent === '1');
+    assert.equal(await page.locator('#statDone').textContent(), '1');
+    await page.locator('#historySearch').fill('no-match-id');
+    assert.match(await page.locator('#historyList').innerText(), /ไม่พบรายการ/);
+    await page.locator('#historySearch').fill('');
+    assert.match(await page.locator('#historyList').innerText(), /งาน #aaaaaaaa/);
 
     const downloadEvent = page.waitForEvent('download');
     await page.locator('#downloadButton').click();
@@ -157,19 +168,66 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
     await page.locator('#batchURLs').fill(
       'https://anyflip.com/demo/authorized-a\nhttps://anyflip.com/demo/authorized-b',
     );
+    assert.equal(await page.locator('#batchCount').textContent(), '2 / 8');
     await page.locator('#batchStartButton').click();
     await page.locator('#jobPanel').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#batchCount').textContent(), '2 / 8');
     await page.locator('#cancelButton').click();
     await page.waitForFunction(() => document.querySelector('#jobState')?.textContent === 'ยกเลิกแล้ว');
     assert.equal(batches, 1);
 
-    await page.locator('#refreshHistory').click();
+    const layout = await page.evaluate(() => {
+      const primary=document.querySelector('.primary-column').getBoundingClientRect();
+      const secondary=document.querySelector('.secondary-column').getBoundingClientRect();
+      const history=document.querySelector('#refreshHistory').getBoundingClientRect();
+      const grid=document.querySelector('.content-grid');
+      const style=getComputedStyle(grid);
+      return {width:innerWidth,primaryTop:primary.top,primaryBottom:primary.bottom,
+        secondaryTop:secondary.top,secondaryBottom:secondary.bottom,
+        buttonTop:history.top,buttonLeft:history.left,columns:style.gridTemplateColumns,
+        display:style.display,flexDirection:style.flexDirection};
+    });
+    assert.ok(layout.secondaryTop >= layout.primaryBottom - 2, 'Mobile columns overlap: '+JSON.stringify(layout));
+    const targetGeometry=await page.evaluate(()=>{
+      const button=document.getElementById('refreshHistory');
+      button.scrollIntoView({block:'center',behavior:'instant'});
+      const rect=button.getBoundingClientRect();
+      const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+      const parent=document.querySelector('.primary-column').getBoundingClientRect();
+      return {button:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},
+       hit:hit?.outerHTML.slice(0,160),hitID:hit?.id,scrollY,innerHeight,
+       primary:{top:parent.top,bottom:parent.bottom},
+       clickable:hit===button||button.contains(hit)};
+    });
+    assert.ok(targetGeometry.clickable,'Mobile history refresh is occluded: '+JSON.stringify(targetGeometry));
+    // Playwright mobile emulation repositions clicks after a successful
+    // elementFromPoint hit test. Verify unobstructed geometry, then dispatch
+    // the DOM action for API behavior; physical-touch acceptance stays open.
+    async function activateVisibleControl(locator) {
+      const rect=await locator.evaluate(element=>{
+        element.scrollIntoView({block:'center',behavior:'instant'});
+        const b=element.getBoundingClientRect();
+        const x=b.left+b.width/2,y=b.top+b.height/2;
+        const hit=document.elementFromPoint(x,y);
+        return {x,y,valid:hit===element||element.contains(hit),hit:hit?.outerHTML.slice(0,120)};
+      });
+      assert.ok(rect.valid,'Touch target is obscured: '+JSON.stringify(rect));
+      await locator.evaluate(element=>element.click());
+    }
+    const refreshed=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/jobs'&&response.request().method()==='GET');
+    await activateVisibleControl(page.locator('#refreshHistory'));
+    await refreshed;
     const retry = page.getByRole('button', { name: 'ลองใหม่' });
     await retry.waitFor({ state: 'visible' });
-    await retry.click();
+    await activateVisibleControl(retry);
     await page.locator('#downloadButton').waitFor({ state: 'visible', timeout: 10000 });
     assert.equal(await page.locator('#jobReference').textContent(), 'Job ID: ' + activeID);
     assert.equal(retries, 1);
     assert.ok(await page.locator('#historyList').isVisible());
+    await page.locator('#historyFilter').selectOption('completed');
+    assert.match(await page.locator('#historyList').innerText(), /สำเร็จ/);
+    await page.locator('#historyFilter').selectOption('all');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2), false);
+    assert.ok(await page.locator('.nav-link[href="#batch"]').isVisible());
   });
 });

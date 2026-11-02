@@ -12,6 +12,19 @@
 - ไม่ติดตั้งฐานข้อมูล/OCR ตั้งแต่วันแรกโดยไม่จำเป็น; เน้นความเสถียร ความปลอดภัย และไฟล์ผลลัพธ์ถูกต้องก่อน
 - **หนึ่ง PR ต่อหนึ่งงาน** พร้อมทดสอบและตรวจรับก่อน Merge; Tracker นี้เป็นศูนย์กลางติดตาม
 
+## P2-UX2 — Unified RCAT Web UI/UX (2026-11-02)
+
+**Tracking:** [PR #62](https://github.com/yiwssx/anyflip-downloader/pull/62), branch `feature/unified-responsive-ui-ux`; code-only UI redesign, no host deployment.
+
+- [x] Responsive RCAT-branded application shell, navigation, clearer content hierarchy and Google Workspace sign-in page
+- [x] Unified token and Google modes without changing authentication logic, downloads, job APIs or filesystem behavior
+- [x] Dashboard totals/active/completed, searchable/filterable job history, stage timeline, batch URL counter and actionable empty/error states
+- [x] Mobile/tablet layout, keyboard focus/skip-link, semantic form labels, progressbar ARIA and reduced-motion support
+- [x] Browser regression coverage for both authentication modes, desktop/mobile layouts and critical downloads
+- [x] PR #62 Go Build/Vet/Unit/Race/Govulncheck, Docker smoke and Chromium Desktop/Mobile Browser E2E passed at head `aec48e94` — [Go/Docker CI](https://github.com/yiwssx/anyflip-downloader/actions/runs/41408168134) · [Browser CI](https://github.com/yiwssx/anyflip-downloader/actions/runs/41408168236). Final documentation-only commit requires a fresh check.
+- [ ] Physical screen-reader/keyboard and Android/iOS browser acceptance on deployed HTTPS host
+- **Release:** Preserve current quota-aware systemd/Docker/volume settings; no host upgrade or OAuth cutover performed.
+
 ## P4-SSO — Google Workspace only (2026-11-02)
 
 **Decision update:** Supersedes local accounts, roles, password change, private account audit and offline administrator recovery features from PRs #57–#59. These features were removed in [PR #60](https://github.com/yiwssx/anyflip-downloader/pull/60) to meet the simplified requirement: **only verified Google Workspace members of `@rcat.ac.th` can sign in**.
