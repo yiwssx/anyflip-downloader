@@ -6,14 +6,11 @@ on:
     paths:
       - 'web/**'
       - 'web.go'
-      - 'web_accounts*.go'
-      - 'web_auth_routes.go'
-      - 'web_auth_*.go'
-      - 'web_account_lifecycle.go'
+      - 'web_google*.go'
       - 'main.go'
       - 'web_csp_test.go'
       - 'tests/browser-e2e.mjs'
-      - 'tests/accounts-e2e.mjs'
+      - 'tests/google-e2e.mjs'
       - '.github/workflows/browser-e2e.yml'
       - 'go.mod'
       - 'go.sum'
@@ -22,14 +19,11 @@ on:
     paths:
       - 'web/**'
       - 'web.go'
-      - 'web_accounts*.go'
-      - 'web_auth_routes.go'
-      - 'web_auth_*.go'
-      - 'web_account_lifecycle.go'
+      - 'web_google*.go'
       - 'main.go'
       - 'web_csp_test.go'
       - 'tests/browser-e2e.mjs'
-      - 'tests/accounts-e2e.mjs'
+      - 'tests/google-e2e.mjs'
       - '.github/workflows/browser-e2e.yml'
       - 'go.mod'
       - 'go.sum'
@@ -89,15 +83,15 @@ jobs:
           fi
           node --check tests/browser-e2e.mjs
           node --test tests/browser-e2e.mjs
-          # Verify the separate opt-in login flow against a new isolated data root.
+          # Verify Google-only sign-in UI without contacting live Google.
           kill "$server_pid" 2>/dev/null || true
           wait "$server_pid" 2>/dev/null || true
           rm -rf -- "$ANYFLIP_JOB_DIR"
-          ANYFLIP_JOB_DIR="$(mktemp -d "$RUNNER_TEMP/anyflip-accounts-XXXXXXXX")"
-          export ANYFLIP_AUTH_MODE=accounts
-          export ANYFLIP_AUTH_BOOTSTRAP_USERNAME=admin
-          export ANYFLIP_AUTH_BOOTSTRAP_HASH
-          ANYFLIP_AUTH_BOOTSTRAP_HASH="$(printf '%s' 'ci-browser-password-123456' | "$RUNNER_TEMP/anyflip-browser-e2e" -hash-password)"
+          ANYFLIP_JOB_DIR="$(mktemp -d "$RUNNER_TEMP/anyflip-google-XXXXXXXX")"
+          export ANYFLIP_AUTH_MODE=google
+          export GOOGLE_CLIENT_ID=ci-synthetic-client
+          export GOOGLE_CLIENT_SECRET=ci-synthetic-secret
+          export GOOGLE_REDIRECT_URI=http://127.0.0.1:8094/auth/google/callback
           "$RUNNER_TEMP/anyflip-browser-e2e" -web -listen 127.0.0.1:8094 &
           server_pid=$!
           healthy=0
@@ -109,8 +103,8 @@ jobs:
             sleep 1
           done
           if [[ "$healthy" != 1 ]]; then
-            echo 'Account Web GUI did not start' >&2
+            echo 'Google sign-in GUI did not start' >&2
             exit 1
           fi
-          node --check tests/accounts-e2e.mjs
-          node --test tests/accounts-e2e.mjs
+          node --check tests/google-e2e.mjs
+          node --test tests/google-e2e.mjs
