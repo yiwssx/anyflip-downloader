@@ -1,5 +1,6 @@
 # Standalone ingress for AnyFlip, separate from existing Apache/Docker and www SaaS/O2O.
-# Linux host networking is necessary because compose.web.yaml binds AnyFlip to 127.0.0.1:8094.
+# Linux host networking is necessary because the actual deployed AnyFlip GUI binds
+# ONLY to 10.10.1.100:8094, not 127.0.0.1; preserve its port and quota config.
 # The remotely managed tunnel is intentionally restricted to anyflip.rcat.dpdns.org.
 services:
   anyflip-tunnel:
