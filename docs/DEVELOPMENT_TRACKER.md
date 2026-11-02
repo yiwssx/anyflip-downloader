@@ -36,7 +36,7 @@
 - [x] Protect last active Admin; prevent Admin from disabling own account or resetting own password without verifying current password
 - [x] Keep version-1 account store compatibility, persist disabled state and credential rotation atomically, rollback on storage failure
 - [x] Implement account management UI and automated Go/Browser regression tests
-- [ ] Final PR #58 Go Build, Vet, Unit/Race, vulnerability, Docker and two-mode browser CI gate
+- [x] PR #58 Go Build, Vet, Unit/Race, vulnerability, Docker and two-mode browser CI verified on `a8e29a75` — [Go/Docker CI](https://github.com/yiwssx/anyflip-downloader/actions/runs/41383540050) · [Browser CI](https://github.com/yiwssx/anyflip-downloader/actions/runs/41383540043); documentation-only tracker update pending final CI
 - [ ] Physical HTTPS proxy/browser testing, account backup/restore and credential rotation recovery procedure
 - [ ] Audit log policy, administrative account recovery and operational abuse limits for public release
 - **Scope:** Code only. Do not replace operator-customized quota files, mounts, services, token or LAN binding.
