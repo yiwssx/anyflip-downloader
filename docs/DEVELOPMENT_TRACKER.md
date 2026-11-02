@@ -50,7 +50,7 @@
 - [x] Bounded 512 KiB active log plus one 512 KiB rotation archive; reject unsafe file types, permissions and oversized files
 - [x] Offline-only, **existing administrator** recovery command; no HTTP route or user-to-admin promotion; stdin password and exclusive 0600 pre-recovery backup
 - [x] Add unit/security tests for redaction, rotation, fail-closed audit failures, unsafe storage, backup collisions and recovery
-- [ ] Final PR build/Go unit/race/govulncheck, Docker smoke and Browser E2E
+- [x] Go Build/Vet/Unit/Race, govulncheck, Docker smoke and dual-mode Browser E2E passed on PR #59 source head `e1656373` — [Go/Docker CI](https://github.com/yiwssx/anyflip-downloader/actions/runs/41384609087) · [Browser CI](https://github.com/yiwssx/anyflip-downloader/actions/runs/41384609118). Final documentation-only commit subject to recheck.
 - [ ] Host acceptance: stop service, verify backup/restore, HTTPS access, operator-only account/audit file permissions
 - [ ] External tamper-evident audit retention and production security review (the local rolling JSONL is **not** tamper-proof)
 - **Scope:** No server changes. Preserve quota-aware Docker volumes and systemd; no public deployment.
