@@ -53,6 +53,34 @@ The account store is written atomically with restricted permissions. Back it up 
 
 Cookies never grant a session merely by visiting the website. Passwords are checked during a Login request. For requests using the session cookie, mutating operations require matching Origin or same-origin browser metadata. Authentication is necessary but not sufficient for public access: rate limits, HTTPS, audit logs, account recovery, session persistence choices and security assessment must be accepted separately.
 
+## Private audit trail and offline administrator recovery (P4-AUTH-3)
+
+### Structured account security events
+
+Only when `ANYFLIP_AUTH_MODE=accounts` is enabled, the Go server writes JSON Lines to `/data/jobs/.anyflip-auth-audit.jsonl` (permission 0600). Each entry contains a UTC timestamp, a fixed event name, sanitized actor/target account names and a result (`intent`, `ok`, `denied` or `failed`). The events include login success/failure, logout, user creation, password change/reset, suspend/enable and offline admin recovery. Requests, passwords, hashes, cookies, bearer secrets, source book URLs and network addresses are **not** written to this file. Malformed account names become `unknown`.
+
+The active audit log is limited to **512 KiB** and rotates to exactly one `.1` archive (an additional at-most-512-KiB file). Audit history is therefore deliberately bounded and **not permanent**. Export logs privately before rotation if retention is required. There is no HTTP route to read the audit file. This is an **operational** log, not a tamper-evident/cryptographically signed or transactional audit system. For account changes and successful login, the `intent` record must be successfully written before execution; failure returns HTTP 503. A post-commit `ok` record is best-effort and a write failure is reported in the server log; it cannot undo an already committed account change. Operators should review audit availability and implement external append-only retention before public release.
+
+### Emergency offline recovery of an existing administrator
+
+There is **no browser or HTTP recovery endpoint** and no unauthenticated backdoor. Recovery requires privileged, out-of-band shell access to the private account store on the actual host.
+
+1. Arrange a maintenance window; **stop the Web application and any other account-store writers first**. The account file and CLI do not support concurrent processes editing the same store. Preserve operator-specific Compose overlays, ext4 hard quota, volume mappings and systemd service.
+2. Back up the existing `/data/jobs/.anyflip-accounts.json`, private audit logs and storage mount metadata separately with permission 0600, and ensure the backup can be restored. Confirm the intended `/data/jobs` is the mounted quota-aware data directory before any recovery. Never publish the account store.
+3. Use the reviewed Go binary inside a controlled maintenance context with the same mounted data directory. Example command (only after stopping the Web process and confirming path access):
+
+   ```sh
+   read -rsp 'New admin password (12+ characters): ' RECOVERY_PASSWORD
+   printf '\n'
+   printf '%s' "$RECOVERY_PASSWORD" | ./anyflip-downloader -recover-admin admin -recovery-dir /data/jobs
+   unset RECOVERY_PASSWORD
+   ```
+
+   The password enters through stdin, not command-line arguments, .env, GitHub or URLs. Replace `admin` only with the username of an **existing** administrator. The command refuses an absent account database or regular user. It makes an exclusive, private `/data/jobs/.anyflip-accounts.pre-recovery.bak` snapshot, resets that admin's Argon2id hash and enables the existing account. If a prior recovery snapshot exists, the command refuses to overwrite it; move it into independently protected backup storage **after verifying it**, before a second recovery. It also records offline recovery intent and outcome in the local audit log.
+4. Verify permissions/backup, restart the Web service using the host's existing deployment workflow, sign in with the recovered password **only via HTTPS**, change the password again using the authenticated UI if required, and review the audit trail. A restart revokes all old process-local sessions.
+
+**Limitations:** Offline recovery cannot repair a lost/corrupt account store, replace host backups, recover a missing machine token, or prevent an attacker with filesystem administrative access. Do not run against a live Docker service. Emergency console steps and audit backups remain operator acceptance gates.
+
 ## Testing and release gates
 
 - Go tests: hash, persistence, login/logout, role denial, per-user listing, IDOR rejection, Admin access, archived history and CSRF.
