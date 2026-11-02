@@ -16,7 +16,7 @@ fi
 MOCK
 cat > "$tmp/bin/curl" <<'MOCK'
 #!/usr/bin/env bash
-if [[ "$*" == *"http://127.0.0.1:8094/healthz"* ]]; then
+if [[ "$*" == *"http://10.10.1.100:8094/healthz"* ]]; then
   [[ "${MOCK_LOCAL_DOWN:-0}" != 1 ]]
   exit
 fi

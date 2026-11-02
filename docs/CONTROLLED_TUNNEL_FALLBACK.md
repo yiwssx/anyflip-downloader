@@ -7,10 +7,14 @@ Incident: [new-www #786](https://github.com/yiwssx/new-www.rcat.ac.th/issues/786
 - Controlled zone: `rcat.dpdns.org`. No changes to `rcat.ac.th` or its DNS account.
 - New remotely-managed Cloudflare Tunnel: `rcat-anyflip-direct-ingress`, UUID `3f3c41dd-8c67-4cbf-a743-3881eba895cf`.
 - New independent proxied DNS CNAME: `anyflip.rcat.dpdns.org` -> `3f3c41dd-8c67-4cbf-a743-3881eba895cf.cfargotunnel.com`.
-- Exact ingress: `anyflip.rcat.dpdns.org` -> `http://127.0.0.1:8094`; catch-all -> HTTP 404.
+- Exact ingress: `anyflip.rcat.dpdns.org` -> `http://10.10.1.100:8094`; catch-all -> HTTP 404.
 - The tunnel is **INACTIVE** until a connector runs on `10.10.1.100`. DNS-only publication does not make the application reachable.
 - The original URL `anyflip.rcat.ac.th` is unaffected and **will not automatically be repaired** by this alternative entry point.
 - The separate `www.rcat.ac.th` SaaS/O2O Gateway, Vercel routing, institutional Reverse Proxy, and RMS/PDF/IoT/Radio are unchanged.
+
+## Verified host bind correction (2026-11-03)
+
+Operator's Ubuntu diagnostics confirm `anyflip-downloader-anyflip-web-1` is **healthy**, the quota systemd service **active**, and `10.10.1.100:8094/healthz` returns **HTTP 200** while `127.0.0.1:8094` refuses. The prior tunnel ingress and deployment preflight wrongly used loopback and have both been corrected. This does not fix the original `anyflip.rcat.ac.th` URL; it establishes a separate controlled-domain route.
 
 ## Safe connection procedure on the existing Ubuntu host (10.10.1.100)
 
@@ -31,7 +35,7 @@ This operation runs a **new, independent** Docker Compose project; it does not r
    bash scripts/start-tunnel-ingress.sh
    ```
 
-   The script first verifies `http://127.0.0.1:8094/healthz`, validates Docker access, then launches only the `anyflip-tunnel` service from `compose.tunnel.yaml` under Docker Compose project `rcat-anyflip-ingress`. Host networking is deliberate: the existing Docker Web GUI publishes only `127.0.0.1:8094` on the host. Cloudflared connects from localhost without opening an inbound firewall port or changing Apache.
+   The script first verifies `http://10.10.1.100:8094/healthz`, validates Docker access, then launches only the `anyflip-tunnel` service from `compose.tunnel.yaml` under Docker Compose project `rcat-anyflip-ingress`. Host networking is deliberate: the live Docker Web GUI publishes ONLY `10.10.1.100:8094` (LAN interface) on this Ubuntu host; loopback `127.0.0.1:8094` refused connections in the 2026-11-03 physical probe. Cloudflared shares the host network and connects to the LAN-bound local address, without opening an inbound firewall port or changing Apache. Do not replace/recreate the Web GUI: its quota service and existing named volumes remain intact.
 
 4. Verify external HTTPS with:
 
