@@ -200,10 +200,25 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
        clickable:hit===button||button.contains(hit)};
     });
     assert.ok(targetGeometry.clickable,'Mobile history refresh is occluded: '+JSON.stringify(targetGeometry));
-    await page.locator('#refreshHistory').click();
+    // Playwright locator.click() can re-scroll between mobile hit testing and
+    // dispatch. Exercise a physical touch at the verified on-screen center.
+    async function tapAtVisibleCenter(locator) {
+      const rect=await locator.evaluate(element=>{
+        element.scrollIntoView({block:'center',behavior:'instant'});
+        const b=element.getBoundingClientRect();
+        const x=b.left+b.width/2,y=b.top+b.height/2;
+        const hit=document.elementFromPoint(x,y);
+        return {x,y,valid:hit===element||element.contains(hit),hit:hit?.outerHTML.slice(0,120)};
+      });
+      assert.ok(rect.valid,'Touch target is obscured: '+JSON.stringify(rect));
+      await page.touchscreen.tap(rect.x,rect.y);
+    }
+    const refreshed=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/jobs'&&response.request().method()==='GET');
+    await tapAtVisibleCenter(page.locator('#refreshHistory'));
+    await refreshed;
     const retry = page.getByRole('button', { name: 'ลองใหม่' });
     await retry.waitFor({ state: 'visible' });
-    await retry.click();
+    await tapAtVisibleCenter(retry);
     await page.locator('#downloadButton').waitFor({ state: 'visible', timeout: 10000 });
     assert.equal(await page.locator('#jobReference').textContent(), 'Job ID: ' + activeID);
     assert.equal(retries, 1);
