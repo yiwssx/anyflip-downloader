@@ -7,7 +7,6 @@ import (
  "crypto/sha256"
  "encoding/base64"
  "encoding/json"
- "fmt"
  "math/big"
  "net/http"
  "net/http/httptest"
@@ -49,9 +48,7 @@ func testGoogle(t *testing.T)(*webServer,*rsa.PrivateKey,func()){
 func TestGoogleDomainClaimsRejectSpoofing(t *testing.T){
  now:=time.Now()
  valid:=testClaims("nonce","unique-google-subject","teacher@rcat.ac.th",googleWorkspaceDomain)
- key,err:=rsa.GenerateKey(rand.Reader,2048);if err!=nil{t.Fatal(err)}
  s,k,done:=testGoogle(t);defer done()
- _=key
  testCases:=[]struct{name string;mutate func(map[string]any)}{
   {"wrong domain",func(c map[string]any){c["hd"]="gmail.com"}},
   {"missing hosted domain",func(c map[string]any){delete(c,"hd")}},
@@ -138,5 +135,4 @@ func TestGoogleRejectsPlainHTTPNonlocalConfig(t *testing.T){
  w:=httptest.NewRecorder()
  s.handler().ServeHTTP(w,httptest.NewRequest("GET","http://evil.test/auth/google",nil))
  if w.Code!=403{t.Fatalf("OAuth initiated on unexpected host: %d",w.Code)}
- _=fmt.Sprintf
 }
