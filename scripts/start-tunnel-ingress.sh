@@ -11,7 +11,7 @@ if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>
   exit 1
 fi
 
-if ! curl -fsS --connect-timeout 2 --max-time 5 http://10.10.1.100:8094/healthz >/dev/null; then
+if ! curl --noproxy '*' -fsS --connect-timeout 2 --max-time 5 http://10.10.1.100:8094/healthz >/dev/null; then
   echo "ERROR: Existing AnyFlip backend is not healthy on 10.10.1.100:8094. No changes made." >&2
   exit 1
 fi
