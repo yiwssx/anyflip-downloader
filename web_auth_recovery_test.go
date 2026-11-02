@@ -31,7 +31,7 @@ func TestOfflineAdminRecoveryRequiresExistingAdminAndPrivateBackup(t *testing.T)
 	if err!=nil{t.Fatal(err)}
 	if info.Mode().Perm()!=0600{t.Fatalf("recovery snapshot permissions = %v",info.Mode().Perm())}
 	raw,err:=os.ReadFile(backup);if err!=nil{t.Fatal(err)}
-	if !strings.Contains(string(raw),\"\\\"disabled\\\":true\"){t.Fatal("backup did not preserve prior suspended state")}
+	if !strings.Contains(string(raw), `"disabled":true`){t.Fatal("backup did not preserve prior suspended state")}
 	if err:=recoverAdminOffline(dir,"otheradmin","yet-another-password-012345");err==nil{
 		t.Fatal("second recovery overwrote existing snapshot")
 	}
