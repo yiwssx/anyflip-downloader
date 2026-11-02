@@ -176,6 +176,18 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
     await page.waitForFunction(() => document.querySelector('#jobState')?.textContent === 'ยกเลิกแล้ว');
     assert.equal(batches, 1);
 
+    const layout = await page.evaluate(() => {
+      const primary=document.querySelector('.primary-column').getBoundingClientRect();
+      const secondary=document.querySelector('.secondary-column').getBoundingClientRect();
+      const history=document.querySelector('#refreshHistory').getBoundingClientRect();
+      const grid=document.querySelector('.content-grid');
+      const style=getComputedStyle(grid);
+      return {width:innerWidth,primaryTop:primary.top,primaryBottom:primary.bottom,
+        secondaryTop:secondary.top,secondaryBottom:secondary.bottom,
+        buttonTop:history.top,buttonLeft:history.left,columns:style.gridTemplateColumns,
+        display:style.display,flexDirection:style.flexDirection};
+    });
+    assert.ok(layout.secondaryTop >= layout.primaryBottom - 2, 'Mobile columns overlap: '+JSON.stringify(layout));
     await page.locator('#refreshHistory').click();
     const retry = page.getByRole('button', { name: 'ลองใหม่' });
     await retry.waitFor({ state: 'visible' });
