@@ -32,7 +32,7 @@
 
 - [x] Self-service password change with current-password verification and mandatory logout across sessions
 - [x] Admin-only password reset of another user; browser and machine-service token cannot bypass Admin role checks
-- [x] Suspend/reactivate accounts; disabled users cannot log in, use existing cookies or resurrect sessions on reactivation
+- [x] Suspend/reactivate accounts; disabled users cannot log in, use existing cookies or resurrect sessions on reactivation; running/queued jobs are cancelled and new admission is blocked
 - [x] Protect last active Admin; prevent Admin from disabling own account or resetting own password without verifying current password
 - [x] Keep version-1 account store compatibility, persist disabled state and credential rotation atomically, rollback on storage failure
 - [x] Implement account management UI and automated Go/Browser regression tests
