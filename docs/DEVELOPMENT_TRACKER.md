@@ -21,7 +21,7 @@
 - [x] Dashboard totals/active/completed, searchable/filterable job history, stage timeline, batch URL counter and actionable empty/error states
 - [x] Mobile/tablet layout, keyboard focus/skip-link, semantic form labels, progressbar ARIA and reduced-motion support
 - [x] Browser regression coverage for both authentication modes, desktop/mobile layouts and critical downloads
-- [ ] Latest PR CI Go Build/Vet/Unit/Race/Govulncheck, Docker and Browser E2E
+- [x] PR #62 Go Build/Vet/Unit/Race/Govulncheck, Docker smoke and Chromium Desktop/Mobile Browser E2E passed at head `aec48e94` — [Go/Docker CI](https://github.com/yiwssx/anyflip-downloader/actions/runs/41408168134) · [Browser CI](https://github.com/yiwssx/anyflip-downloader/actions/runs/41408168236). Final documentation-only commit requires a fresh check.
 - [ ] Physical screen-reader/keyboard and Android/iOS browser acceptance on deployed HTTPS host
 - **Release:** Preserve current quota-aware systemd/Docker/volume settings; no host upgrade or OAuth cutover performed.
 
