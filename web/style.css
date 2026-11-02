@@ -1,7 +1,7 @@
 /* RCAT AnyFlip Downloader · unified responsive design system */
 :root{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#20332e;background:#f4f7f5;font-synthesis:none;--forest:#0b382b;--forest2:#15513e;--green:#18704b;--mint:#e8f5ed;--gold:#efc34b;--text:#20332e;--muted:#6b7c77;--border:#e2eae5;--surface:#fff;--shadow:0 10px 36px #193e3010}
 *,*::before,*::after{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:96px}
+html{scroll-padding-top:96px}
 body{margin:0;min-width:0;min-height:100vh}
 button,input,select,textarea{font:inherit}
 button,a{ -webkit-tap-highlight-color:transparent }
