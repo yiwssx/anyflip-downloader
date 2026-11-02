@@ -61,6 +61,9 @@ func (s *webServer) authorizeAccounts(next http.Handler) http.Handler {
 }
 func (s *webServer) authLogin(w http.ResponseWriter,r *http.Request) {
  if !sameOriginSessionRequest(r) {http.Error(w,"forbidden origin",http.StatusForbidden);return}
+ if s.auth.secureCookie && r.TLS==nil && !strings.HasPrefix(r.Header.Get("Origin"),"https://") {
+  http.Error(w,"HTTPS required for account login",http.StatusForbidden);return
+ }
  if wait:=s.auth.loginThrottle.retryAfter(r.RemoteAddr);wait>0 {
   w.Header().Set("Retry-After",strconv.Itoa(int((wait+time.Second-1)/time.Second)))
   http.Error(w,"too many login attempts",http.StatusTooManyRequests);return
