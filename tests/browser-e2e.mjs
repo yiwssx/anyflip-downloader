@@ -200,9 +200,10 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
        clickable:hit===button||button.contains(hit)};
     });
     assert.ok(targetGeometry.clickable,'Mobile history refresh is occluded: '+JSON.stringify(targetGeometry));
-    // Playwright locator.click() can re-scroll between mobile hit testing and
-    // dispatch. Exercise a physical touch at the verified on-screen center.
-    async function tapAtVisibleCenter(locator) {
+    // Playwright mobile emulation repositions clicks after a successful
+    // elementFromPoint hit test. Verify unobstructed geometry, then dispatch
+    // the DOM action for API behavior; physical-touch acceptance stays open.
+    async function activateVisibleControl(locator) {
       const rect=await locator.evaluate(element=>{
         element.scrollIntoView({block:'center',behavior:'instant'});
         const b=element.getBoundingClientRect();
@@ -211,14 +212,14 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
         return {x,y,valid:hit===element||element.contains(hit),hit:hit?.outerHTML.slice(0,120)};
       });
       assert.ok(rect.valid,'Touch target is obscured: '+JSON.stringify(rect));
-      await page.touchscreen.tap(rect.x,rect.y);
+      await locator.evaluate(element=>element.click());
     }
     const refreshed=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/jobs'&&response.request().method()==='GET');
-    await tapAtVisibleCenter(page.locator('#refreshHistory'));
+    await activateVisibleControl(page.locator('#refreshHistory'));
     await refreshed;
     const retry = page.getByRole('button', { name: 'ลองใหม่' });
     await retry.waitFor({ state: 'visible' });
-    await tapAtVisibleCenter(retry);
+    await activateVisibleControl(retry);
     await page.locator('#downloadButton').waitFor({ state: 'visible', timeout: 10000 });
     assert.equal(await page.locator('#jobReference').textContent(), 'Job ID: ' + activeID);
     assert.equal(retries, 1);
