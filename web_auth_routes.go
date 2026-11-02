@@ -171,12 +171,23 @@ func (s *webServer) authChangePassword(w http.ResponseWriter,r *http.Request) {
  p:=requestPrincipal(r)
  if p.Username=="" || p.Username=="_service" {http.Error(w,"forbidden",http.StatusForbidden);return}
  if !sameOriginSessionRequest(r) {http.Error(w,"forbidden",http.StatusForbidden);return}
+ peer:=p.Username+":0"
+ if wait:=s.auth.passwordThrottle.retryAfter(peer);wait>0{
+  w.Header().Set("Retry-After",strconv.Itoa(int((wait+time.Second-1)/time.Second)))
+  http.Error(w,"too many password attempts",http.StatusTooManyRequests)
+  return
+ }
  var body struct{CurrentPassword string `json:"currentPassword"`;NewPassword string `json:"newPassword"`}
  if !decodeAccountMutation(w,r,1024,&body){return}
  if !claimAccountHashSlot(w,s.auth){return}
  defer func(){<-s.auth.loginGate}()
  err:=s.auth.changeOwnPassword(p.Username,body.CurrentPassword,body.NewPassword)
- if err!=nil{respondAccountMutationError(w,err);return}
+ if err!=nil{
+  if errors.Is(err,errBadCurrentPassword){s.auth.passwordThrottle.recordFailure(peer)}
+  respondAccountMutationError(w,err)
+  return
+ }
+ s.auth.passwordThrottle.recordSuccess(peer)
  s.auth.clearCookie(w,r)
  w.WriteHeader(http.StatusNoContent)
 }
