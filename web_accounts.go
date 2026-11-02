@@ -46,6 +46,7 @@ type accountAuth struct {
  root string
  secureCookie bool
  loginThrottle *authThrottle
+ loginGate chan struct{} // Bound concurrent Argon2id computations per server.
 }
 func validAccountRole(role string) bool { return role == "admin" || role == "user" }
 func validAccountUser(user accountUser) bool {
@@ -73,7 +74,7 @@ func verifyAccountPassword(hash,password string) bool {
  return subtle.ConstantTimeCompare(actual,digest)==1
 }
 func loadAccountAuth(root, bootstrapUsername, bootstrapHash string, secure bool) (*accountAuth,error) {
- a:=&accountAuth{root:root,secureCookie:secure,users:map[string]accountUser{},sessions:map[string]accountSession{},loginThrottle:newAuthThrottle()}
+ a:=&accountAuth{root:root,secureCookie:secure,users:map[string]accountUser{},sessions:map[string]accountSession{},loginThrottle:newAuthThrottle(),loginGate:make(chan struct{},2)}
  path:=filepath.Join(root,accountsFile)
  info,err:=os.Lstat(path)
  if errors.Is(err,os.ErrNotExist) {
