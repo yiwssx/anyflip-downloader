@@ -11,6 +11,8 @@ services:
       ANYFLIP_WEB_TOKEN: ${ANYFLIP_WEB_TOKEN:-}
       # Default 'token' preserves the running deployment until an approved login cutover.
       ANYFLIP_AUTH_MODE: ${ANYFLIP_AUTH_MODE:-token}
+      # Explicit opt-in; RBAC role store must already have been bootstrapped.
+      ANYFLIP_RBAC_ENABLED: ${ANYFLIP_RBAC_ENABLED:-0}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
