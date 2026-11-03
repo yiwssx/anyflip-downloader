@@ -200,6 +200,13 @@ footer{margin:26px 0 0;padding:19px 0;text-align:center;border-top:1px solid var
 .admin-table th { background:#f1f7f4;color:#2a5645;font-weight:700;white-space:nowrap; }
 .admin-table th,.admin-table td { padding:.75rem .85rem;border-bottom:1px solid #e7efeb;vertical-align:middle;font-size:.87rem; }
 .admin-table tr:last-child td { border-bottom:0; }
+/* Keep intervention controls visible in horizontally scrolling mobile tables. */
+.admin-table th:last-child,.admin-table td:last-child {
+ position:sticky;right:0;z-index:1;background:#fff;box-shadow:-1px 0 0 #e2eae6;
+}
+.admin-table th:last-child { background:#f1f7f4; }
+.admin-table td:last-child button { white-space:nowrap; }
+
 .admin-table code { font-size:.78rem;white-space:nowrap; }
 .admin-table select { min-width:140px;max-width:190px; }
 .admin-table .admin-empty { text-align:center;padding:1.4rem;color:#708679; }
