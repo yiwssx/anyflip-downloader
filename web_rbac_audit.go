@@ -31,7 +31,7 @@ func validRBACAuditEvent(e rbacAuditEvent)bool{
  switch e.Event{
  case "role_change_intent":
   if !validRBACRole(e.OldRole) || !validRBACRole(e.NewRole){return false}
- case "job_cancel","role_change_denied":
+ case "job_cancel","role_change_denied","privileged_denied":
   if e.OldRole!=""||e.NewRole!=""{return false}
  default:return false
  }
