@@ -18,7 +18,10 @@
     });
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
-        await checkRole();
+        // Do not recurse through checkRole/refreshAll on a denied API.
+        me=null;
+        $('adminNav').hidden=true;
+        $('adminConsole').hidden=true;
         throw new Error('สิทธิ์ของบัญชีนี้ไม่อนุญาตให้ดำเนินการดังกล่าว');
       }
       throw new Error(response.status === 429
