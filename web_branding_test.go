@@ -40,8 +40,12 @@ func TestBrandingAssetsAreSelfContainedAndServedInBothModes(t *testing.T) {
     if err!=nil{t.Fatalf("malformed brand SVG %s: %v",asset.path,err)}
    }
   }
+  // In Google mode the login page is served only on its canonical hostname;
+  // static brand assets remain accessible on either ingress.
+  pageHost:="example.test"
+  if google {pageHost="rcat.example"}
   w:=httptest.NewRecorder()
-  handler.ServeHTTP(w,httptest.NewRequest(http.MethodGet,"http://example.test/",nil))
+  handler.ServeHTTP(w,httptest.NewRequest(http.MethodGet,"http://"+pageHost+"/",nil))
   if w.Code!=http.StatusOK{t.Fatalf("unexpected page status: %d",w.Code)}
   body:=w.Body.String()
   for _,needle:=range []string{`rel="icon" type="image/svg+xml" href="/favicon.svg"`,`class="brand-logo" src="/logo.svg"`,`RCAT AnyFlip Downloader`} {
