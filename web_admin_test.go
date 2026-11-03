@@ -14,6 +14,7 @@ import (
 
 func TestRBACAdminRoutesAndOwnerIsolation(t *testing.T){
  s,_,done:=testGoogle(t);defer done()
+ if err:=os.Chmod(s.root,0700);err!=nil{t.Fatal(err)}
  super:=rbacTestIdentity("super")
  manager:=rbacTestIdentity("manager")
  teacher:=rbacTestIdentity("teacher")
