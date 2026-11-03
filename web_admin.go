@@ -175,7 +175,7 @@ func (s *webServer) adminCancelJob(w http.ResponseWriter,r *http.Request){
   s.mu.Unlock();http.Error(w,"job is already terminal",http.StatusConflict);return
  }
  actor:=rbacPrincipal(r).Owner
- if err:=s.google.rbac.audit("job_cancel",actor,job.owner,body.Reason);err!=nil{
+ if err:=s.google.rbac.auditJobCancellation(actor,job.owner,job.id,body.Reason);err!=nil{
   s.mu.Unlock()
   http.Error(w,"audit unavailable; cancellation blocked",http.StatusServiceUnavailable);return
  }
