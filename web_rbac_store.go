@@ -229,6 +229,6 @@ func (s *rbacStore) changeRole(actor,target,role string)error{
  m.Role=role;next[target]=m
  // Write the sanitized intent before a critical privilege mutation.
  // If audit storage fails, the role does not change.
- if err:=s.auditLocked(rbacAuditEvent{At:time.Now().UTC(),Event:"role_change_intent",Actor:actor,Target:target});err!=nil{return fmt.Errorf("RBAC audit failure: %w",err)}
+ if err:=s.auditLocked(rbacAuditEvent{At:time.Now().UTC(),Event:"role_change_intent",Actor:actor,Target:target,OldRole:s.members[target].Role,NewRole:role});err!=nil{return fmt.Errorf("RBAC audit failure: %w",err)}
  return s.persistLocked(next)
 }
