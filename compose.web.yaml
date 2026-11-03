@@ -1,5 +1,5 @@
-# The application is *not* published on a public interface.
-# Apache on the host proxies HTTPS traffic to loopback port 8094.
+# Example only: preserve the running host's quota overlay and 10.10.1.100:8094 LAN bind.
+# Real public HTTPS ingress is provided by the independent Cloudflare Tunnel.
 services:
   anyflip-web:
     build:
@@ -7,7 +7,8 @@ services:
       dockerfile: Dockerfile
     command: ["-web", "-listen", "0.0.0.0:8080"]
     environment:
-      ANYFLIP_WEB_TOKEN: ${ANYFLIP_WEB_TOKEN:?Generate a strong token and set it in .env}
+      # Optional in Google Workspace mode. Required and length-validated in token mode.
+      ANYFLIP_WEB_TOKEN: ${ANYFLIP_WEB_TOKEN:-}
       # Default 'token' preserves the running deployment until an approved login cutover.
       ANYFLIP_AUTH_MODE: ${ANYFLIP_AUTH_MODE:-token}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -18,7 +19,9 @@ services:
       HOME: /data/jobs
       XDG_CONFIG_HOME: /data/jobs/.config
     ports:
-      - "127.0.0.1:8094:8080"
+      # Defaults to loopback in CI/dev; on the existing Ubuntu host explicitly set
+      # ANYFLIP_HOST_BIND_IP=10.10.1.100 to PRESERVE the live LAN binding.
+      - "${ANYFLIP_HOST_BIND_IP:-127.0.0.1}:8094:8080"
     volumes:
       - anyflip_jobs:/data/jobs
     read_only: true

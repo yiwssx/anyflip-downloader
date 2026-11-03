@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -67,7 +68,16 @@ type webServer struct {
 }
 
 func newWebServer(token, root string) (*webServer, error) {
-	if len(token) < 16 {
+	return newWebServerForAuthMode(token, root, "token")
+}
+
+// Google Workspace mode intentionally requires no legacy shared Bearer token.
+// Token mode still fails closed without a sufficiently strong token.
+func newWebServerForAuthMode(token, root, mode string) (*webServer, error) {
+	if mode != "token" && mode != "google" {
+		return nil, fmt.Errorf("unsupported ANYFLIP_AUTH_MODE %q", mode)
+	}
+	if mode == "token" && len(token) < 16 {
 		return nil, fmt.Errorf("ANYFLIP_WEB_TOKEN must be at least 16 characters")
 	}
 	if root == "" {
@@ -98,6 +108,17 @@ func (s *webServer) handler() http.Handler {
 			return
 		}
 		if s.google != nil {
+			// Serve interactive SSO only on the canonical HTTPS hostname.
+			// The alternate Tunnel hostname remains available for /healthz.
+			canonical, err := url.Parse(s.google.redirectURI)
+			if err != nil || canonical.Host == "" {
+				http.Error(w, "SSO not configured", http.StatusServiceUnavailable)
+				return
+			}
+			if r.Host != canonical.Host {
+				http.Redirect(w, r, canonical.Scheme+"://"+canonical.Host+"/", http.StatusSeeOther)
+				return
+			}
 			serveEmbeddedWebAsset(w, "web/google.html", "text/html; charset=utf-8")
 		} else {
 			serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
@@ -347,17 +368,24 @@ func runWeb(addr string) error {
 	if root == "" {
 		root = ".anyflip-web-jobs"
 	}
-	server, err := newWebServer(token, root)
+	mode := os.Getenv("ANYFLIP_AUTH_MODE")
+	if mode == "" {
+		mode = "token"
+	}
+	var google *googleAuth
+	if mode == "google" {
+		var err error
+		google, err = newGoogleAuth(
+			os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET"),
+			os.Getenv("GOOGLE_REDIRECT_URI"))
+		if err != nil {
+			return err
+		}
+	}
+	server, err := newWebServerForAuthMode(token, root, mode)
 	if err != nil {
 		return err
 	}
-	if mode := os.Getenv("ANYFLIP_AUTH_MODE"); mode == "google" {
-		server.google, err = newGoogleAuth(
-			os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET"),
-			os.Getenv("GOOGLE_REDIRECT_URI"))
-		if err != nil { return err }
-	} else if mode != "" && mode != "token" {
-		return fmt.Errorf("unsupported ANYFLIP_AUTH_MODE %q", mode)
-	}
+	server.google = google
 	return serveWebUntilSignal(addr, server)
 }

@@ -61,6 +61,12 @@ jobs:
         bash -n scripts/verify-tunnel-ingress.sh
         bash -n scripts/test-tunnel-ingress.sh
         bash scripts/test-tunnel-ingress.sh
+        bash -n scripts/preflight-google-cutover.sh
+        python3 -m py_compile scripts/check-google-auth-compose.py scripts/test-google-auth-compose.py
+        python3 scripts/test-google-auth-compose.py
+        node --check web/google.js
+        # Google-mode Compose must validate WITHOUT ANYFLIP_WEB_TOKEN.
+        ANYFLIP_WEB_TOKEN= ANYFLIP_AUTH_MODE=google GOOGLE_CLIENT_ID=12345-synthetic.apps.googleusercontent.com GOOGLE_CLIENT_SECRET=ci-synthetic GOOGLE_REDIRECT_URI=https://anyflip.rcat.ac.th/auth/google/callback docker compose -f compose.web.yaml config --quiet
         # Validate isolated tunnel Compose configuration without starting its connector.
         RCAT_ANYFLIP_TUNNEL_TOKEN=ci-synthetic-no-privileges docker compose -f compose.tunnel.yaml config --quiet
 
