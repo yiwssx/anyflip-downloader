@@ -22,6 +22,7 @@ type rbacAuditEvent struct {
  Actor string `json:"actor"`
  Target string `json:"target,omitempty"`
  Reason string `json:"reason,omitempty"`
+ JobID string `json:"jobId,omitempty"`
  OldRole string `json:"oldRole,omitempty"`
  NewRole string `json:"newRole,omitempty"`
 }
@@ -30,9 +31,11 @@ func validRBACAuditEvent(e rbacAuditEvent)bool{
  if e.Target!="" && !storedGoogleOwnerPattern.MatchString(e.Target){return false}
  switch e.Event{
  case "role_change_intent":
-  if !validRBACRole(e.OldRole) || !validRBACRole(e.NewRole){return false}
- case "job_cancel","role_change_denied","privileged_denied":
-  if e.OldRole!=""||e.NewRole!=""{return false}
+  if e.JobID!=""||!validRBACRole(e.OldRole)||!validRBACRole(e.NewRole){return false}
+ case "job_cancel":
+  if !jobIDPattern.MatchString(e.JobID)||e.OldRole!=""||e.NewRole!=""{return false}
+ case "role_change_denied","privileged_denied","admin_sign_in":
+  if e.JobID!=""||e.OldRole!=""||e.NewRole!=""{return false}
  default:return false
  }
  switch e.Reason{
@@ -102,6 +105,13 @@ func (s *rbacStore) auditLocked(event rbacAuditEvent)error{
 func (s *rbacStore) audit(event,actor,target,reason string)error{
  s.mu.Lock();defer s.mu.Unlock()
  return s.auditLocked(rbacAuditEvent{At:time.Now().UTC(),Event:event,Actor:actor,Target:target,Reason:reason})
+}
+func (s *rbacStore) auditJobCancellation(actor,target,jobID,reason string)error{
+ s.mu.Lock();defer s.mu.Unlock()
+ return s.auditLocked(rbacAuditEvent{
+  At:time.Now().UTC(),Event:"job_cancel",Actor:actor,Target:target,
+  JobID:jobID,Reason:reason,
+ })
 }
 func (s *rbacStore) recentAudit(limit int)([]rbacAuditEvent,error){
  if limit<1||limit>100{return nil,errors.New("audit page limit")}
