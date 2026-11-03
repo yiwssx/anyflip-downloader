@@ -65,6 +65,7 @@ type webServer struct {
 	client   *http.Client // Optional controlled test transport; nil in production.
 	authThrottle *authThrottle
 	activeReservations int // running Web jobs with reserved volume headroom
+	rbacLimiter rbacRateLimiter
 }
 
 func newWebServer(token, root string) (*webServer, error) {
