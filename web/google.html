@@ -47,6 +47,7 @@
       <a href="#createJob" class="nav-link"><span class="nav-icon" aria-hidden="true">↧</span> ดาวน์โหลดเอกสาร</a>
       <a href="#batch" class="nav-link"><span class="nav-icon" aria-hidden="true">▤</span> ดาวน์โหลดหลายรายการ</a>
       <a href="#history" class="nav-link"><span class="nav-icon" aria-hidden="true">◷</span> ประวัติงาน</a>
+      <a href="#adminConsole" class="nav-link" id="adminNav" hidden><span class="nav-icon" aria-hidden="true">⚙</span> ผู้ดูแลระบบ</a>
     </nav>
     <div class="sidebar-bottom">
       <div class="side-help"><span class="help-icon" aria-hidden="true">ⓘ</span><strong>เอกสารที่ได้รับอนุญาตเท่านั้น</strong><p>ระบบสร้าง Image-based PDF จากภาพ ไม่ใช่ PDF ต้นฉบับหรือไฟล์ข้อความ</p></div>
@@ -70,6 +71,42 @@
       <div class="metric"><div class="metric-icon active" aria-hidden="true">◷</div><div><span>กำลังดำเนินการ</span><strong id="statActive">—</strong></div></div>
       <div class="metric"><div class="metric-icon done" aria-hidden="true">✓</div><div><span>เสร็จสมบูรณ์</span><strong id="statDone">—</strong></div></div>
     </section>
+
+    <section id="adminConsole" class="panel admin-console" aria-labelledby="adminTitle" hidden>
+      <div class="progresshead"><div><span class="section-eyebrow">INSTITUTION ADMINISTRATION</span><h2 id="adminTitle">ศูนย์จัดการระบบ</h2><p id="adminRoleLabel" class="hint"></p></div><button id="adminRefresh" class="secondary" type="button">↻ รีเฟรชข้อมูล</button></div>
+      <p class="hint">แสดงเฉพาะข้อมูลสถานะและข้อมูลบัญชีขั้นต่ำ ไม่แสดงลิงก์ต้นฉบับหรือไฟล์ PDF ของผู้อื่น</p>
+      <p class="error" id="adminError" role="alert" hidden></p>
+      <div class="admin-kpis" aria-label="ภาพรวมงานทั้งหมดในระบบ">
+        <div><span>งานทั้งหมด</span><strong id="adminTotal">—</strong></div>
+        <div><span>กำลังดำเนินการ</span><strong id="adminActive">—</strong></div>
+        <div><span>สำเร็จ</span><strong id="adminCompleted">—</strong></div>
+        <div><span>ล้มเหลว</span><strong id="adminFailed">—</strong></div>
+      </div>
+      <section class="admin-section" aria-labelledby="adminJobsTitle">
+        <div class="admin-section-heading"><div><h3 id="adminJobsTitle">ติดตามและระงับงาน</h3><p>ตรวจสอบข้อมูลสถานะรวม โดยไม่สามารถเปิด PDF ของผู้ใช้อื่นได้</p></div></div>
+        <div class="admin-tools">
+          <label for="adminJobSearch">ค้นหาในหน้านี้ <input id="adminJobSearch" type="search" placeholder="รหัสงาน / เจ้าของ / สถานะ"></label>
+          <label for="adminCancelReason">สาเหตุการระงับงาน <select id="adminCancelReason"><option value="policy">ไม่สอดคล้องกับนโยบาย</option><option value="resources">ทรัพยากรไม่เพียงพอ</option><option value="duplicate">งานซ้ำ</option><option value="other">เหตุผลอื่นที่อนุมัติ</option></select></label>
+        </div>
+        <div class="admin-scroll" tabindex="0" role="region" aria-label="ตารางสถานะงาน">
+          <table class="admin-table"><thead><tr><th>รหัสงาน</th><th>เจ้าของ</th><th>สถานะ</th><th>จำนวนหน้า</th><th>เริ่มเมื่อ</th><th>จัดการ</th></tr></thead><tbody id="adminJobRows"></tbody></table>
+        </div>
+        <div class="admin-pagination"><button type="button" class="button-quiet" id="adminPrev">← ก่อนหน้า</button><span id="adminPageLabel" aria-live="polite">กำลังโหลด</span><button type="button" class="button-quiet" id="adminNext">ถัดไป →</button></div>
+      </section>
+      <section class="admin-section" aria-labelledby="adminUsersTitle">
+        <div class="admin-section-heading"><div><h3 id="adminUsersTitle">บัญชี Google Workspace และสิทธิ์</h3><p id="adminRoleHelp">แสดงเฉพาะบัญชีที่เคยผ่านการยืนยันตัวตนกับแอป</p></div></div>
+        <div class="admin-tools"><label for="adminUserSearch">ค้นหาบัญชี <input id="adminUserSearch" type="search" placeholder="ชื่อบัญชีหรือ Identity Reference"></label></div>
+        <div class="admin-scroll" tabindex="0" role="region" aria-label="ตารางบัญชีและบทบาท">
+          <table class="admin-table"><thead><tr><th>บัญชี</th><th>บทบาท</th><th>เข้าสู่ระบบล่าสุด</th><th>การจัดการ</th></tr></thead><tbody id="adminUserRows"></tbody></table>
+        </div>
+      </section>
+      <section class="admin-section" id="adminAuditSection" aria-labelledby="adminAuditTitle" hidden>
+        <h3 id="adminAuditTitle">บันทึกการดำเนินการที่มีสิทธิ์พิเศษ</h3>
+        <p class="hint">เฉพาะผู้ดูแลสูงสุด · เก็บข้อมูลเหตุการณ์ขั้นต่ำโดยไม่บันทึกโทเคนและเนื้อหาเอกสาร</p>
+        <ul class="admin-audit-list" id="adminAuditList" aria-live="polite"></ul>
+      </section>
+    </section>
+
     <div class="content-grid">
       <div class="primary-column">
         <section class="panel" id="createJob" aria-labelledby="newJobTitle">
@@ -121,5 +158,6 @@
 </div>
 </main>
 <script src="/app.js" defer></script>
+<script src="/admin.js" defer></script>
 </body>
 </html>
