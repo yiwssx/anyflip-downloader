@@ -162,6 +162,12 @@ func (g *googleAuth) callback(w http.ResponseWriter,r *http.Request){
  if err!=nil{http.Error(w,"account not permitted",403);return}
  if g.rbac!=nil {
   if err:=g.rbac.registerVerifiedUser(user);err!=nil{http.Error(w,"account unavailable",http.StatusServiceUnavailable);return}
+  if role,allowed:=g.rbac.currentRole(user.Owner);allowed && (role==roleAdmin||role==roleSuperAdmin){
+   // A privileged session is issued only after its audit event is durable.
+   if err:=g.rbac.audit("admin_sign_in",user.Owner,"","");err!=nil{
+    http.Error(w,"privileged sign-in audit unavailable",http.StatusServiceUnavailable);return
+   }
+  }
  }
  session,err:=randomGoogleToken()
  if err!=nil{http.Error(w,"sign-in unavailable",503);return}
