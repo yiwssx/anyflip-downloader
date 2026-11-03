@@ -160,8 +160,13 @@ func bootstrapRBACStore(root,identityRef string) error {
 // Resolve from registry on every request. Sessions never cache privileges.
 func (s *rbacStore) currentRole(identityRef string)(string,bool) {
  s.mu.Lock();defer s.mu.Unlock()
- m,ok:=s.members[identityRef]
- return m.Role,ok && !m.Disabled && validRBACRole(m.Role)
+ // Fail closed on post-startup file corruption, unsafe permissions or removal.
+ doc,err:=readRBACDocument(s.root)
+ if err!=nil{return "",false}
+ for _,m:=range doc.Members{
+  if m.ID==identityRef{return m.Role,!m.Disabled && validRBACRole(m.Role)}
+ }
+ return "",false
 }
 
 func (s *rbacStore) snapshotMembers() []rbacMember {
