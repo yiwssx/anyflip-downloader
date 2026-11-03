@@ -115,6 +115,7 @@ test('Workspace Admin Console: role-aware pages, responsive layout and confirmed
    await page.goto(base+'/',{waitUntil:'networkidle'});
    await page.locator('#workArea').waitFor({state:'visible'});
    await page.locator('#adminConsole').waitFor({state:'visible'});
+   await page.waitForFunction(()=>document.querySelector('#adminTotal')?.textContent==='2');
    assert.equal(await page.locator('#adminNav').isVisible(),true);
    assert.equal(await page.locator('#adminTotal').textContent(),'2');
    assert.equal(await page.locator('#adminUserRows tr').count(),2);
