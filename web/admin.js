@@ -108,7 +108,8 @@
         } else {
           action.textContent='—';
         }
-        tr.appendChild(action);
+        // Put the intervention control first for keyboard and mobile access.
+        tr.insertBefore(action,tr.firstChild);
         body.appendChild(tr);
       }
     }
