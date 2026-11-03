@@ -32,6 +32,7 @@ Keep or add the following three Google values (replace placeholders privately):
 
 ```dotenv
 ANYFLIP_AUTH_MODE=google
+ANYFLIP_HOST_BIND_IP=10.10.1.100
 GOOGLE_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=YOUR_PRIVATE_GOOGLE_CLIENT_SECRET
 GOOGLE_REDIRECT_URI=https://anyflip.rcat.ac.th/auth/google/callback
