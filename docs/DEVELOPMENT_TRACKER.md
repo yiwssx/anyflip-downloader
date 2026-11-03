@@ -12,6 +12,28 @@
 - ไม่ติดตั้งฐานข้อมูล/OCR ตั้งแต่วันแรกโดยไม่จำเป็น; เน้นความเสถียร ความปลอดภัย และไฟล์ผลลัพธ์ถูกต้องก่อน
 - **หนึ่ง PR ต่อหนึ่งงาน** พร้อมทดสอบและตรวจรับก่อน Merge; Tracker นี้เป็นศูนย์กลางติดตาม
 
+## P5-ADMIN — Admin Console + Google Workspace RBAC (NEW, 2026-11-03)
+
+**Epic:** [#69 — Admin Console + RBAC](https://github.com/yiwssx/anyflip-downloader/issues/69) · **Status:** PLANNED, 0/8 child tasks complete; **no Admin/RBAC code deployed**. This is a NEW Google Workspace-backed RBAC design, **not** the abandoned local account/password/Admin modules of PRs #57–#59.
+
+**Roles:** `user` (own jobs), `admin` (institution-wide metrics/job metadata and audited cancellation), `super_admin` (app-role management + admin oversight). Admin and Super Admin **do not** receive cross-user PDF download access by default. The app-level `super_admin` is NOT a Google Workspace domain Super Admin. A verified `@rcat.ac.th` Google OIDC identity is required for every role; bind permissions to Google `iss+sub`, not to email text or browser-only visibility.
+
+### Subtasks and sequence
+- [ ] [RBAC-0 #70 — Permission matrix, threat model and API contracts](https://github.com/yiwssx/anyflip-downloader/issues/70)
+- [ ] [RBAC-1 #71 — Persistent role assignments + safe Super Admin bootstrap](https://github.com/yiwssx/anyflip-downloader/issues/71)
+- [ ] [RBAC-2 #72 — Server-side permission enforcement and object-level isolation](https://github.com/yiwssx/anyflip-downloader/issues/72)
+- [ ] [RBAC-3 #73 — User directory and Super Admin role management API](https://github.com/yiwssx/anyflip-downloader/issues/73)
+- [ ] [RBAC-4 #74 — Admin job oversight, metrics and safe cancellation](https://github.com/yiwssx/anyflip-downloader/issues/74)
+- [ ] [RBAC-5 #75 — Responsive Admin Dashboard, role-based navigation](https://github.com/yiwssx/anyflip-downloader/issues/75)
+- [ ] [RBAC-6 #76 — Security audit, redaction, privileged-action safeguards](https://github.com/yiwssx/anyflip-downloader/issues/76)
+- [ ] [RBAC-7 #77 — Unit/race/browser/security CI, production gate, backup and rollback](https://github.com/yiwssx/anyflip-downloader/issues/77)
+
+**Development order:** #70 → #71 → #72 → #73/#74/#76 → #75 → #77. One reviewed PR per bounded unit, update issue acceptance evidence per milestone. **Production dependency:** [#68 — Google Workspace-only login cutover](https://github.com/yiwssx/anyflip-downloader/issues/68); do not make Admin available publicly until the real `@rcat.ac.th` SSO/host acceptance is complete.
+
+**Non-negotiable release criteria:** no arbitrary first-user admin, no self-promotion, no loss of last Super Admin, no cross-user PDFs or insecure API privileges, persistent role backups/restore, auditable privilege changes without secrets in logs. Preserve `10.10.1.100:8094`, `compose.quota.yaml`, `anyflip-quota.service`, existing PDF volume, Tunnel and `www.rcat.ac.th`; no Docker volume deletion or silent production deployment.
+
+---
+
 ## P2-UX2 — Unified RCAT Web UI/UX (2026-11-02)
 
 **Tracking:** [PR #62](https://github.com/yiwssx/anyflip-downloader/pull/62), branch `feature/unified-responsive-ui-ux`; code-only UI redesign, no host deployment.
