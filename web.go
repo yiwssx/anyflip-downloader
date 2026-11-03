@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -107,6 +108,17 @@ func (s *webServer) handler() http.Handler {
 			return
 		}
 		if s.google != nil {
+			// Serve interactive SSO only on the canonical HTTPS hostname.
+			// The alternate Tunnel hostname remains available for /healthz.
+			canonical, err := url.Parse(s.google.redirectURI)
+			if err != nil || canonical.Host == "" {
+				http.Error(w, "SSO not configured", http.StatusServiceUnavailable)
+				return
+			}
+			if r.Host != canonical.Host {
+				http.Redirect(w, r, canonical.Scheme+"://"+canonical.Host+"/", http.StatusSeeOther)
+				return
+			}
 			serveEmbeddedWebAsset(w, "web/google.html", "text/html; charset=utf-8")
 		} else {
 			serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
