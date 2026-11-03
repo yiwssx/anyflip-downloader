@@ -22,12 +22,17 @@ type rbacAuditEvent struct {
  Actor string `json:"actor"`
  Target string `json:"target,omitempty"`
  Reason string `json:"reason,omitempty"`
+ OldRole string `json:"oldRole,omitempty"`
+ NewRole string `json:"newRole,omitempty"`
 }
 func validRBACAuditEvent(e rbacAuditEvent)bool{
  if e.At.IsZero() || !storedGoogleOwnerPattern.MatchString(e.Actor) {return false}
  if e.Target!="" && !storedGoogleOwnerPattern.MatchString(e.Target){return false}
  switch e.Event{
- case "role_change_intent","job_cancel","role_change_denied":
+ case "role_change_intent":
+  if !validRBACRole(e.OldRole) || !validRBACRole(e.NewRole){return false}
+ case "job_cancel","role_change_denied":
+  if e.OldRole!=""||e.NewRole!=""{return false}
  default:return false
  }
  switch e.Reason{
