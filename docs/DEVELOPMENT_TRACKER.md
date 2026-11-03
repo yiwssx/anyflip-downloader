@@ -28,7 +28,15 @@
 - [ ] [RBAC-6 #76 — Security audit, redaction, privileged-action safeguards](https://github.com/yiwssx/anyflip-downloader/issues/76)
 - [ ] [RBAC-7 #77 — Unit/race/browser/security CI, production gate, backup and rollback](https://github.com/yiwssx/anyflip-downloader/issues/77)
 
-**Development order:** #70 → #71 → #72 → #73/#74/#76 → #75 → #77. One reviewed PR per bounded unit, update issue acceptance evidence per milestone. **Production dependency:** [#68 — Google Workspace-only login cutover](https://github.com/yiwssx/anyflip-downloader/issues/68); do not make Admin available publicly until the real `@rcat.ac.th` SSO/host acceptance is complete.
+**Development order:** #70 → #71 → #72 → #73/#74/#76 → #75 → #77. One reviewed PR per bounded unit, update issue acceptance evidence per milestone.
+
+### Development implementation log — 2026-11-03 (code-only, feature branches)
+
+- **PR #79** (`feature/rbac-foundation-70-71`): #70 documented policy, threat model and API contract; #71 persistent private `0600` role store, atomic updates/backup, verified Google identity registration, operator-only one-time bootstrap, request-time role validation and Go concurrency/security tests. **CI at tested head passed**, but the PR remains pending review/merge.
+- **PR #80** (`feature/rbac-admin-api-72-74-76`): #72 enforced Google RBAC-only routes and preserved strict owner-scoped job endpoints; #73 read-only directory and Super Admin role APIs; #74 redacted metrics/paginated job oversight and audited cancellation; #76 private bounded audit, sanitized role transitions/denials and privileged action limiter. **Review and CI gates remain**.
+- **PR #81** (`feature/rbac-admin-console-75`): #75 Thai desktop/mobile Admin Console with role-sensitive navigation, metrics, users, paginated jobs, cancellation and confirmation, audit view; synthetic Playwright role/UI coverage, Go regression and JS syntax checks. `docs/RBAC_OPERATIONS.md` is the #77 operator handoff. **Review and CI gates remain**.
+- All PRs are **DRAFT and stacked**: do not close child issues or activate production before merge, CI/security review and #68 Google SSO acceptance. #77 additionally requires real accounts, host quota/mount tests, recovery drill and operator acceptance. This status log is implementation evidence, **not a claim that the host or Google identity configuration was changed**.
+ **Production dependency:** [#68 — Google Workspace-only login cutover](https://github.com/yiwssx/anyflip-downloader/issues/68); do not make Admin available publicly until the real `@rcat.ac.th` SSO/host acceptance is complete.
 
 **Non-negotiable release criteria:** no arbitrary first-user admin, no self-promotion, no loss of last Super Admin, no cross-user PDFs or insecure API privileges, persistent role backups/restore, auditable privilege changes without secrets in logs. Preserve `10.10.1.100:8094`, `compose.quota.yaml`, `anyflip-quota.service`, existing PDF volume, Tunnel and `www.rcat.ac.th`; no Docker volume deletion or silent production deployment.
 
