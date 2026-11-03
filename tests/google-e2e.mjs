@@ -124,6 +124,9 @@ test('Workspace Admin Console: role-aware pages, responsive layout and confirmed
    await page.locator('#adminUserRows select').selectOption('admin');
    await page.waitForTimeout(100);
    assert.equal(requests.some(r=>r.method==='PUT'&&r.payload.role==='admin'),true);
+   // The actions column is sticky within the horizontally scrollable
+   // mobile table; direct user clicks must remain possible without force.
+   await page.locator('#adminJobRows button').scrollIntoViewIfNeeded();
    await page.locator('#adminJobRows button').click();
    await page.waitForTimeout(100);
    assert.equal(requests.some(r=>r.method==='POST'&&r.payload.reason==='policy'),true);
