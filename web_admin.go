@@ -46,6 +46,10 @@ func (s *webServer) requireAdmin(w http.ResponseWriter,r *http.Request,superOnly
  if !ok{http.Error(w,"forbidden",http.StatusForbidden);return false}
  if (superOnly&&actual!=roleSuperAdmin) ||
  (!superOnly && actual!=roleAdmin&&actual!=roleSuperAdmin){
+  if s.rbacLimiter.allow(p.Owner) {
+   // Best-effort denied-attempt audit. Regardless of audit health, deny.
+   _ = s.google.rbac.audit("privileged_denied",p.Owner,"","")
+  }
   http.Error(w,"forbidden",http.StatusForbidden);return false
  }
  return true
