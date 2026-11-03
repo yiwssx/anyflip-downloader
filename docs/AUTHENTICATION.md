@@ -28,6 +28,8 @@
 
 **No credentials supplied to ChatGPT:** The owner must create the Google OAuth Client and configure its settings in the operator-owned environment. Do not send Google client secrets, OAuth codes, session cookies, or any legacy tokens in chat, GitHub or log files. CI uses synthetic signed tokens with locally generated RSA keys; it never uses production Google credentials.
 
+**Port preservation:** The stock Compose defaults to `ANYFLIP_HOST_BIND_IP=127.0.0.1`; on the existing Ubuntu host explicitly set `ANYFLIP_HOST_BIND_IP=10.10.1.100` in the private `.env` *before* preflight/deploy. The read-only preflight blocks if Compose plans a different port or data mount.
+
 **Production checklist:** See [`GOOGLE_CUTOVER.md`](GOOGLE_CUTOVER.md) and the read-only `scripts/preflight-google-cutover.sh` before rebuilding the existing container. Never use the stock Compose file alone on the customized server; doing so can change the LAN bind or discard the quota mount.
 
 ## Notes and limitations
