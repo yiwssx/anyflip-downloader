@@ -65,6 +65,7 @@ type webServer struct {
 	client   *http.Client // Optional controlled test transport; nil in production.
 	authThrottle *authThrottle
 	activeReservations int // running Web jobs with reserved volume headroom
+	rbacLimiter rbacRateLimiter
 }
 
 func newWebServer(token, root string) (*webServer, error) {
@@ -153,6 +154,16 @@ func (s *webServer) handler() http.Handler {
 	mux.Handle("GET /api/jobs/{id}", s.authorize(http.HandlerFunc(s.getJob)))
 	mux.Handle("POST /api/jobs/{id}/cancel", s.authorize(http.HandlerFunc(s.cancelJob)))
 	mux.Handle("GET /api/jobs/{id}/download", s.authorize(http.HandlerFunc(s.downloadJob)))
+	// Admin APIs are registered only in opt-in Google RBAC mode.
+	// Authentication AND authorization are enforced server-side, never by UI.
+	if s.google!=nil && s.google.rbac!=nil {
+		mux.Handle("GET /api/admin/summary",s.authorize(http.HandlerFunc(s.adminSummary)))
+		mux.Handle("GET /api/admin/jobs",s.authorize(http.HandlerFunc(s.adminListJobs)))
+		mux.Handle("POST /api/admin/jobs/{id}/cancel",s.authorize(http.HandlerFunc(s.adminCancelJob)))
+		mux.Handle("GET /api/admin/users",s.authorize(http.HandlerFunc(s.adminListUsers)))
+		mux.Handle("PUT /api/admin/users/{id}/role",s.authorize(http.HandlerFunc(s.adminSetRole)))
+		mux.Handle("GET /api/admin/audit",s.authorize(http.HandlerFunc(s.adminAudit)))
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")

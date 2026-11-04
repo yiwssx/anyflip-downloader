@@ -100,6 +100,8 @@ func readRBACDocument(root string) (rbacDocument,error) {
 func openRBACStore(root string) (*rbacStore,error) {
  doc,err:=readRBACDocument(root)
  if err!=nil{return nil,err}
+ if _,err:=readRBACAuditFile(filepath.Join(root,rbacAuditFilename));err!=nil{return nil,err}
+ if _,err:=readRBACAuditFile(filepath.Join(root,rbacAuditFilename)+".1");err!=nil{return nil,err}
  s:=&rbacStore{root:root,path:filepath.Join(root,rbacFilename),members:make(map[string]rbacMember,len(doc.Members))}
  for _,m:=range doc.Members{s.members[m.ID]=m}
  return s,nil
@@ -179,6 +181,7 @@ func (s *rbacStore) snapshotMembers() []rbacMember {
 
 func (s *rbacStore) persistLocked(members map[string]rbacMember)error{
  body,err:=encodeRBAC(members);if err!=nil{return err}
+ if _,err:=readRBACDocument(s.root);err!=nil{return fmt.Errorf("RBAC primary was modified unsafely: %w",err)}
  // Keep previous complete image, not an automatically trusted recovery source.
  old,err:=os.ReadFile(s.path)
  if err!=nil{return err}
@@ -224,5 +227,8 @@ func (s *rbacStore) changeRole(actor,target,role string)error{
  next:=make(map[string]rbacMember,len(s.members))
  for id,member:=range s.members{next[id]=member}
  m.Role=role;next[target]=m
+ // Write the sanitized intent before a critical privilege mutation.
+ // If audit storage fails, the role does not change.
+ if err:=s.auditLocked(rbacAuditEvent{At:time.Now().UTC(),Event:"role_change_intent",Actor:actor,Target:target,OldRole:s.members[target].Role,NewRole:role});err!=nil{return fmt.Errorf("RBAC audit failure: %w",err)}
  return s.persistLocked(next)
 }
