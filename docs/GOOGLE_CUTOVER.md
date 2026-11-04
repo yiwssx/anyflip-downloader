@@ -2,9 +2,9 @@
 
 **Goal:** RCAT AnyFlip Downloader at `https://anyflip.rcat.ac.th` must accept only verified Google Workspace users whose ID token has both `hd=rcat.ac.th` and a verified `@rcat.ac.th` email. Users must **never** enter the old AnyFlip Access Token.
 
-**Current state:** Web GUI already supports Google OAuth/OIDC; production still runs `ANYFLIP_AUTH_MODE=token`. The legacy mode remains operational until an explicit operator cutover. Cloudflare SaaS Custom Hostname and TLS are **Active**, the Tunnel is **Healthy**, and the canonical website is HTTP 200. No OAuth production credentials are present in source control.
+**Current state (2026-11-04):** Production Google Workspace cutover and RBAC enablement were **accepted by the Ubuntu host operator**, who confirmed that all applicable checks passed and requested closure. This is an operator attestation, not independent live-host verification by GitHub CI or the assistant. No OAuth credentials are present in source control. The commands below are retained as a reference for future redeployments and rollback.
 
-## Step 1 — Provision Google OAuth Web client (Google Workspace/Cloud project admin)
+## Step 1 — Provision Google OAuth Web client (historical setup / future reconfiguration)
 
 1. Open [Google Cloud Auth Platform](https://console.cloud.google.com/auth/overview). Create/select a Google Cloud project owned by RCAT; configure OAuth consent/branding. Set **Internal** audience if the project belongs to the RCAT Google Workspace organization and this option is available.
 2. Create **OAuth Client ID → Web application**. Authorized redirect URI must be **exactly**:
