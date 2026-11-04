@@ -386,6 +386,11 @@ func runWeb(addr string) error {
 	if err != nil {
 		return err
 	}
+	if mode=="google" && (os.Getenv("ANYFLIP_RBAC_ENABLED")=="1" || strings.EqualFold(os.Getenv("ANYFLIP_RBAC_ENABLED"),"true")) {
+		roles,err:=openRBACStore(root)
+		if err!=nil {return fmt.Errorf("RBAC enabled but private role store failed validation: %w",err)}
+		google.rbac=roles
+	}
 	server.google = google
 	return serveWebUntilSignal(addr, server)
 }

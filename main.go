@@ -19,6 +19,7 @@ import (
 
 var title string
 var webMode bool
+var rbacBootstrapOwner string
 var webListen string
 var tempDownloadFolder string
 var insecure bool
@@ -51,6 +52,7 @@ type downloadOptions struct {
 func init() {
 	flag.Usage = printUsage
 	flag.BoolVar(&webMode, "web", false, "Start the authenticated Web GUI server")
+	flag.StringVar(&rbacBootstrapOwner, "rbac-bootstrap-owner", "", "Offline operator bootstrap using identityRef obtained through verified Google login")
 	flag.StringVar(&webListen, "listen", "127.0.0.1:8080", "Web GUI listen address")
 	flag.StringVar(&tempDownloadFolder, "temp-download-folder", "", "Specifies the name of the temporary download folder")
 	flag.StringVar(&title, "title", "", "Specifies the name of the generated PDF document (uses book title if not specified)")
@@ -66,6 +68,14 @@ func init() {
 
 func main() {
 	flag.Parse()
+	if rbacBootstrapOwner!="" {
+		if webMode || flag.NArg()!=0 {log.Fatal("RBAC bootstrap cannot be combined with web/download")}
+		root:=os.Getenv("ANYFLIP_JOB_DIR")
+		if root=="" {root=".anyflip-web-jobs"}
+		if err:=bootstrapRBACStore(root,rbacBootstrapOwner);err!=nil{log.Fatal(err)}
+		fmt.Println("Private RBAC store initialized; enable RBAC only after operator checks")
+		return
+	}
 	if webMode {
 		if err := runWeb(webListen); err != nil {
 			log.Fatal(err)

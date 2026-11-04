@@ -48,6 +48,7 @@ type googleAuth struct {
  pending map[string]googlePending
  keys map[string]*rsa.PublicKey
  keysExpiry time.Time
+ rbac *rbacStore
 }
 
 func newGoogleAuth(clientID,clientSecret,redirectURI string)(*googleAuth,error){
@@ -159,6 +160,9 @@ func (g *googleAuth) callback(w http.ResponseWriter,r *http.Request){
  if err!=nil{http.Error(w,"Google sign-in failed",401);return}
  user,err:=g.verifyToken(r.Context(),idToken,pending.Nonce)
  if err!=nil{http.Error(w,"account not permitted",403);return}
+ if g.rbac!=nil {
+  if err:=g.rbac.registerVerifiedUser(user);err!=nil{http.Error(w,"account unavailable",http.StatusServiceUnavailable);return}
+ }
  session,err:=randomGoogleToken()
  if err!=nil{http.Error(w,"sign-in unavailable",503);return}
  g.mu.Lock()
@@ -219,10 +223,12 @@ func (g *googleAuth) logout(w http.ResponseWriter,r *http.Request){
 func (g *googleAuth) me(w http.ResponseWriter,r *http.Request){
  user,ok:=g.sessionUser(r)
  if !ok{http.Error(w,"unauthorized",401);return}
- sendJSON(w,200,struct{Email string `json:"email"`}{user.Email})
+ role:=roleUser
+ if g.rbac!=nil {var allowed bool;role,allowed=g.rbac.currentRole(user.Owner);if !allowed{http.Error(w,"forbidden",403);return}}
+ sendJSON(w,200,struct{Email string `json:"email"`; Role string `json:"role"`; IdentityRef string `json:"identityRef"`}{user.Email,role,user.Owner})
 }
 
-type googlePrincipal struct{ Owner string }
+type googlePrincipal struct{ Owner string; Role string }
 type googlePrincipalContextKey struct{}
 var storedGoogleOwnerPattern=regexp.MustCompile(`^g-[0-9a-f]{64}$`)
 var storedLegacyOwnerPattern=regexp.MustCompile(`^[a-z][a-z0-9_.-]{2,31}$`)
@@ -243,6 +249,8 @@ func (s *webServer) authorizeGoogle(next http.Handler)http.Handler {
   if r.Header.Get("Authorization")!=""{http.Error(w,"unauthorized",http.StatusUnauthorized);return}
   user,ok:=s.google.sessionUser(r)
   if !ok{http.Error(w,"unauthorized",http.StatusUnauthorized);return}
-  next.ServeHTTP(w,r.WithContext(context.WithValue(r.Context(),googlePrincipalContextKey{},googlePrincipal{Owner:user.Owner})))
+  role:=roleUser
+  if s.google.rbac!=nil {var allowed bool;role,allowed=s.google.rbac.currentRole(user.Owner);if !allowed{http.Error(w,"forbidden",403);return}}
+  next.ServeHTTP(w,r.WithContext(context.WithValue(r.Context(),googlePrincipalContextKey{},googlePrincipal{Owner:user.Owner,Role:role})))
  })
 }
