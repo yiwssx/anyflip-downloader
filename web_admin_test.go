@@ -55,7 +55,16 @@ func TestRBACAdminRoutesAndOwnerIsolation(t *testing.T){
  if got:=call(teacher,"GET","/api/admin/summary","").Code;got!=403{t.Fatalf("user metrics=%d",got)}
  if got:=call(teacher,"GET","/api/admin/users","").Code;got!=403{t.Fatalf("user directory=%d",got)}
  if got:=call("","GET","/api/admin/summary","").Code;got!=401{t.Fatalf("anonymous admin=%d",got)}
- if got:=call(manager,"GET","/api/admin/summary","").Code;got!=200{t.Fatalf("admin metrics=%d",got)}
+ summaryReply:=call(manager,"GET","/api/admin/summary","")
+ if summaryReply.Code!=200{t.Fatalf("admin metrics=%d",summaryReply.Code)}
+ var metrics adminSummaryRecord
+ if err:=json.Unmarshal(summaryReply.Body.Bytes(),&metrics);err!=nil{t.Fatal(err)}
+ if metrics.Total!=2||metrics.Active!=2||metrics.Queued!=2||metrics.Running!=0||metrics.MaxConcurrent!=2{
+  t.Fatalf("incorrect sanitized queue and worker totals: %+v",metrics)
+ }
+ if metrics.Storage!=nil&&(metrics.Storage.TotalBytes==0||metrics.Storage.UsedBytes>metrics.Storage.TotalBytes){
+  t.Fatal("invalid admin-only filesystem counters")
+ }
  if got:=call(manager,"GET","/api/admin/jobs?limit=1000","").Code;got!=400{t.Fatalf("unbounded query=%d",got)}
  list:=call(manager,"GET","/api/admin/jobs?limit=2","")
  if list.Code!=200 || strings.Contains(list.Body.String(),"https://") || strings.Contains(list.Body.String(),"downloadReady"){
