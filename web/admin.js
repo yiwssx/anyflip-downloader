@@ -58,6 +58,20 @@
     $('adminActive').textContent = data.active;
     $('adminCompleted').textContent = data.completed;
     $('adminFailed').textContent = data.failed;
+    const queued = Number(data.queued) || 0;
+    const running = Number(data.running) || 0;
+    const reservations = Number(data.activeReservations) || 0;
+    const maxConcurrent = Number(data.maxConcurrent) || 0;
+    let storageText = 'พื้นที่จัดเก็บ: ไม่มีข้อมูลจากระบบปฏิบัติการ';
+    const storage = data.storage;
+    if (storage && Number.isFinite(storage.totalBytes) && storage.totalBytes > 0 &&
+        Number.isFinite(storage.usedBytes) && Number.isFinite(storage.availableBytes)) {
+      const gib = value => (value / (1024 ** 3)).toLocaleString('th-TH', {maximumFractionDigits:2});
+      storageText = 'พื้นที่จัดเก็บ: ใช้ '+gib(storage.usedBytes)+' / '+gib(storage.totalBytes)+
+        ' GiB ('+Number(storage.usedPercent)+'%) · เหลือ '+gib(storage.availableBytes)+' GiB';
+    }
+    $('adminStorageStatus').textContent = storageText+' · รอคิว '+queued+
+      ' · กำลังทำ '+running+' · จองทรัพยากร '+reservations+'/'+maxConcurrent;
   }
   function renderJobs() {
     const search = $('adminJobSearch').value.trim().toLowerCase();
@@ -83,7 +97,7 @@
         ownerCode.title=item.owner || '';
         owner.appendChild(ownerCode);
         tr.appendChild(owner);
-        tr.appendChild(node('td',jobNames[item.stage] || item.stage));
+        tr.appendChild(node('td',(jobNames[item.stage] || item.stage) + (item.errorCode ? ' · '+item.errorCode : '')));
         tr.appendChild(node('td',String(item.completed)+' / '+String(item.total)));
         tr.appendChild(node('td',dateText(item.created)));
         const action = node('td');

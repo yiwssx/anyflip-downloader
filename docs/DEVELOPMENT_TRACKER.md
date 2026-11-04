@@ -14,18 +14,18 @@
 
 ## P5-ADMIN — Admin Console + Google Workspace RBAC (NEW, 2026-11-03)
 
-**Epic:** [#69 — Admin Console + RBAC](https://github.com/yiwssx/anyflip-downloader/issues/69) · **Status:** CODE MERGED to `main` (#79, #80, #81), operator acceptance pending (#68 / #77); **no Admin/RBAC code deployed to the Ubuntu host**. This is a Google Workspace-backed RBAC design, **not** the abandoned local account/password/Admin modules of PRs #57–#59.
+**Epic:** [#69 — Admin Console + RBAC](https://github.com/yiwssx/anyflip-downloader/issues/69) · **Status:** CODE MERGED to `main` (#79–#83), 6/8 child issues completed; #74 metrics PR #84 in review and #77/#68 production acceptance pending; **no Admin/RBAC code deployed to the Ubuntu host**. This is a Google Workspace-backed RBAC design, **not** the abandoned local account/password/Admin modules of PRs #57–#59.
 
 **Roles:** `user` (own jobs), `admin` (institution-wide metrics/job metadata and audited cancellation), `super_admin` (app-role management + admin oversight). Admin and Super Admin **do not** receive cross-user PDF download access by default. The app-level `super_admin` is NOT a Google Workspace domain Super Admin. A verified `@rcat.ac.th` Google OIDC identity is required for every role; bind permissions to Google `iss+sub`, not to email text or browser-only visibility.
 
 ### Subtasks and sequence
-- [ ] [RBAC-0 #70 — Permission matrix, threat model and API contracts](https://github.com/yiwssx/anyflip-downloader/issues/70)
-- [ ] [RBAC-1 #71 — Persistent role assignments + safe Super Admin bootstrap](https://github.com/yiwssx/anyflip-downloader/issues/71)
-- [ ] [RBAC-2 #72 — Server-side permission enforcement and object-level isolation](https://github.com/yiwssx/anyflip-downloader/issues/72)
-- [ ] [RBAC-3 #73 — User directory and Super Admin role management API](https://github.com/yiwssx/anyflip-downloader/issues/73)
+- [x] [RBAC-0 #70 — Permission matrix, threat model and API contracts](https://github.com/yiwssx/anyflip-downloader/issues/70)
+- [x] [RBAC-1 #71 — Persistent role assignments + safe Super Admin bootstrap](https://github.com/yiwssx/anyflip-downloader/issues/71)
+- [x] [RBAC-2 #72 — Server-side permission enforcement and object-level isolation](https://github.com/yiwssx/anyflip-downloader/issues/72)
+- [x] [RBAC-3 #73 — User directory and Super Admin role management API](https://github.com/yiwssx/anyflip-downloader/issues/73)
 - [ ] [RBAC-4 #74 — Admin job oversight, metrics and safe cancellation](https://github.com/yiwssx/anyflip-downloader/issues/74)
-- [ ] [RBAC-5 #75 — Responsive Admin Dashboard, role-based navigation](https://github.com/yiwssx/anyflip-downloader/issues/75)
-- [ ] [RBAC-6 #76 — Security audit, redaction, privileged-action safeguards](https://github.com/yiwssx/anyflip-downloader/issues/76)
+- [x] [RBAC-5 #75 — Responsive Admin Dashboard, role-based navigation](https://github.com/yiwssx/anyflip-downloader/issues/75)
+- [x] [RBAC-6 #76 — Security audit, redaction, privileged-action safeguards](https://github.com/yiwssx/anyflip-downloader/issues/76)
 - [ ] [RBAC-7 #77 — Unit/race/browser/security CI, production gate, backup and rollback](https://github.com/yiwssx/anyflip-downloader/issues/77)
 
 **Development order:** #70 → #71 → #72 → #73/#74/#76 → #75 → #77. One reviewed PR per bounded unit, update issue acceptance evidence per milestone.
@@ -35,11 +35,19 @@
 - **PR #79** (`feature/rbac-foundation-70-71`): #70/#71 permission matrix, durable role registry and operator-only bootstrap. Merged into `main` at `65f1cc61`; PR CI passed.
 - **PR #80** (`feature/rbac-admin-api-72-74-76`): #72–74/#76 owner isolation, super-admin role management, redacted metrics/cancellation and private audit. Merged at `a0927fe0`; PR CI passed.
 - **PR #81** (`feature/rbac-admin-console-75`): #75 responsive Admin Console, browser tests and #77 operator runbook. Merged at `6219cef3`; PR CI passed.
-- **Follow-up RBAC hardening** (`fix/rbac-operator-restore-consistency`): prevent the in-memory role cache from overwriting an external operator restore/revocation, reject stale mutations and fail closed if the directory cannot be read; add regression tests. This remains subject to PR CI and review.
+- **Follow-up RBAC hardening** (`fix/rbac-operator-restore-consistency`): prevent the in-memory role cache from overwriting an external operator restore/revocation, reject stale mutations and fail closed if the directory cannot be read; add regression tests. Merged as [PR #82](https://github.com/yiwssx/anyflip-downloader/pull/82) with Go/Docker CI PASS.
 - **Not yet accepted:** production SSO #68, host preflight, 3-role real-account acceptance, negative Gmail test, Quota/Tunnel/restart/backup/restore/rollback checks #77. Additional safe app-settings policy and quota telemetry may require separate approved scope. The mere presence of code in `main` does not authorize production enablement.
  **Production dependency:** [#68 — Google Workspace-only login cutover](https://github.com/yiwssx/anyflip-downloader/issues/68); do not make Admin available publicly until the real `@rcat.ac.th` SSO/host acceptance is complete.
 
 **Non-negotiable release criteria:** no arbitrary first-user admin, no self-promotion, no loss of last Super Admin, no cross-user PDFs or insecure API privileges, persistent role backups/restore, auditable privilege changes without secrets in logs. Preserve `10.10.1.100:8094`, `compose.quota.yaml`, `anyflip-quota.service`, existing PDF volume, Tunnel and `www.rcat.ac.th`; no Docker volume deletion or silent production deployment.
+
+
+### Code milestone — 2026-11-04
+
+- **Merged and verified:** #79–#83; #70, #71, #72, #73, #75, #76 closed for code-only acceptance (synthetic Go/Docker/Chromium checks).
+- **PR #83:** concurrent last-super-admin denial, audit file rollover/restart/concurrency, denied role-change events and desktop/mobile Admin read-only role coverage all passed CI.
+- **PR #84:** adds status breakdown, queue/reservation counters, Linux filesystem usage without paths, classified job error codes and UI. This is subject to PR CI/merge and requires actual server 6 GiB mount verification before production claims.
+- **Still open:** #68 Google SSO production authorization; #77 real Workspace/Gmail identity QA, hard-quota Docker overlay, backup/restore/restart and Tunnel/regression tests. Safe Admin application settings await an approved, bounded policy. Do not automatically enable RBAC.
 
 ---
 

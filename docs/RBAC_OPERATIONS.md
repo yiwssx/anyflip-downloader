@@ -41,6 +41,12 @@ This creates the store **only if it does not exist**. It will not replace a malf
 
 After validating the store and backup, set the private environment `ANYFLIP_RBAC_ENABLED=1`. The operator then plans an approved maintenance window to rebuild/recreate only the Web container with **both existing Compose files**, preserving its quota data and ports. Never use `docker compose down -v` or deploy a stock Compose file on this customized host.
 
+## Admin utilization metrics (privacy and correctness)
+
+The role-protected `GET /api/admin/summary` reports queued/running job counts, current reserved running-job slots and their concurrency ceiling. On Linux it also reports the total, used and available bytes of the filesystem containing `ANYFLIP_JOB_DIR` using `statfs`; it never includes device names, host filesystem paths or users' source URLs. If the filesystem cannot be read, `storage` is omitted and the UI explicitly shows unavailable information. On non-Linux builds, storage is unavailable rather than guessed.
+
+**Do not confuse reported filesystem capacity with an independently validated hard quota.** It represents the actual filesystem that the running Web process sees. The operator must confirm that the mounted `/data/jobs` is the intended dedicated approximately 6 GiB hard-quota volume before interpreting these totals as the quota. Verify mount and volume mapping under #77 before production acceptance.
+
 ## Minimum production acceptance matrix
 
 - Login: two verified `@rcat.ac.th` accounts, one Gmail/non-Workspace negative case, expired/invalid session, logout.
