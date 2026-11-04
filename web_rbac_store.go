@@ -107,6 +107,18 @@ func openRBACStore(root string) (*rbacStore,error) {
  return s,nil
 }
 
+// Refresh the authoritative file before any mutation or directory read.
+// An operator restore or another writer must never be silently overwritten by
+// a stale snapshot retained by this process.
+func (s *rbacStore) reloadMembersLocked() error {
+ doc,err:=readRBACDocument(s.root)
+ if err!=nil{return err}
+ fresh:=make(map[string]rbacMember,len(doc.Members))
+ for _,member:=range doc.Members{fresh[member.ID]=member}
+ s.members=fresh
+ return nil
+}
+
 func encodeRBAC(members map[string]rbacMember) ([]byte,error) {
  doc:=rbacDocument{Version:1,Members:make([]rbacMember,0,len(members))}
  for _,m:=range members{doc.Members=append(doc.Members,m)}
@@ -171,17 +183,30 @@ func (s *rbacStore) currentRole(identityRef string)(string,bool) {
  return "",false
 }
 
-func (s *rbacStore) snapshotMembers() []rbacMember {
+func (s *rbacStore) snapshotMembers() ([]rbacMember,error) {
  s.mu.Lock();defer s.mu.Unlock()
+ if err:=s.reloadMembersLocked();err!=nil{return nil,err}
  result:=make([]rbacMember,0,len(s.members))
  for _,m:=range s.members{result=append(result,m)}
  sort.Slice(result,func(i,j int)bool{return result[i].ID<result[j].ID})
- return result
+ return result,nil
 }
 
 func (s *rbacStore) persistLocked(members map[string]rbacMember)error{
  body,err:=encodeRBAC(members);if err!=nil{return err}
- if _,err:=readRBACDocument(s.root);err!=nil{return fmt.Errorf("RBAC primary was modified unsafely: %w",err)}
+ // Reject an unexpected on-disk change between the mutation's initial
+ // read and its commit, instead of clobbering a newer operator restore.
+ doc,err:=readRBACDocument(s.root)
+ if err!=nil{return fmt.Errorf("RBAC primary was modified unsafely: %w",err)}
+ if len(doc.Members)!=len(s.members){return errors.New("RBAC primary changed during operation")}
+ for _,member:=range doc.Members{
+  previous,ok:=s.members[member.ID]
+  if !ok || previous.ID!=member.ID || previous.Email!=member.Email ||
+   previous.Role!=member.Role || previous.Disabled!=member.Disabled ||
+   !previous.LastSeen.Equal(member.LastSeen) {
+   return errors.New("RBAC primary changed during operation")
+  }
+ }
  // Keep previous complete image, not an automatically trusted recovery source.
  old,err:=os.ReadFile(s.path)
  if err!=nil{return err}
@@ -198,6 +223,7 @@ func (s *rbacStore) registerVerifiedUser(u googleUser)error {
   return errors.New("unverified Workspace identity")
  }
  s.mu.Lock();defer s.mu.Unlock()
+ if err:=s.reloadMembersLocked();err!=nil{return err}
  current,exists:=s.members[u.Owner]
  if exists && current.Disabled{return errors.New("disabled Workspace role")}
  if !exists && len(s.members)>=rbacMaxMembers{return errors.New("RBAC user limit")}
@@ -215,6 +241,7 @@ func (s *rbacStore) registerVerifiedUser(u googleUser)error {
 func (s *rbacStore) changeRole(actor,target,role string)error{
  if !validRBACRole(role){return errors.New("unknown role")}
  s.mu.Lock();defer s.mu.Unlock()
+ if err:=s.reloadMembersLocked();err!=nil{return err}
  admin,ok:=s.members[actor]
  if !ok || admin.Disabled || admin.Role!=roleSuperAdmin{return errors.New("super admin required")}
  m,exists:=s.members[target]
