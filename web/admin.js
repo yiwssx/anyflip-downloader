@@ -97,7 +97,7 @@
         ownerCode.title=item.owner || '';
         owner.appendChild(ownerCode);
         tr.appendChild(owner);
-        tr.appendChild(node('td',jobNames[item.stage] || item.stage));
+        tr.appendChild(node('td',(jobNames[item.stage] || item.stage) + (item.errorCode ? ' · '+item.errorCode : '')));
         tr.appendChild(node('td',String(item.completed)+' / '+String(item.total)));
         tr.appendChild(node('td',dateText(item.created)));
         const action = node('td');
