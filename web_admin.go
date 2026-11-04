@@ -14,6 +14,7 @@ type adminJobRecord struct {
  ID string `json:"id"`
  Owner string `json:"owner"`
  Stage string `json:"stage"`
+ ErrorCode string `json:"errorCode,omitempty"`
  Completed int `json:"completed"`
  Total int `json:"total"`
  Created time.Time `json:"created"`
@@ -94,12 +95,12 @@ func (s *webServer) adminJobRecords()[]adminJobRecord{
  s.mu.Lock();defer s.mu.Unlock()
  records:=make([]adminJobRecord,0,len(s.jobs)+len(s.history))
  for _,j:=range s.jobs{
-  records=append(records,adminJobRecord{ID:j.id,Owner:j.owner,Stage:j.stage,Completed:j.completed,Total:j.total,Created:j.created})
+  records=append(records,adminJobRecord{ID:j.id,Owner:j.owner,Stage:j.stage,ErrorCode:j.errorCode,Completed:j.completed,Total:j.total,Created:j.created})
  }
  for _,h:=range s.history{
   if _,exists:=s.jobs[h.Response.ID];exists{continue}
   v:=h.Response
-  records=append(records,adminJobRecord{ID:v.ID,Owner:v.Owner,Stage:v.Stage,Completed:v.Completed,Total:v.Total,Created:h.Finished,Archived:true})
+  records=append(records,adminJobRecord{ID:v.ID,Owner:v.Owner,Stage:v.Stage,ErrorCode:v.ErrorCode,Completed:v.Completed,Total:v.Total,Created:h.Finished,Archived:true})
  }
  sort.Slice(records,func(i,j int)bool{
   if records[i].Created.Equal(records[j].Created){return records[i].ID>records[j].ID}
