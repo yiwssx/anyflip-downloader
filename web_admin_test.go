@@ -85,7 +85,7 @@ func TestRBACAdminRoutesAndOwnerIsolation(t *testing.T){
  }
  if got:=call(teacher,"GET","/api/admin/audit","").Code;got!=403{t.Fatalf("ordinary audit=%d",got)}
  audit:=call(super,"GET","/api/admin/audit","")
- if audit.Code!=200 || !strings.Contains(audit.Body.String(),"job_cancel") || !strings.Contains(audit.Body.String(),otherID) || !strings.Contains(audit.Body.String(),"role_change_intent"){
+ if audit.Code!=200 || !strings.Contains(audit.Body.String(),"job_cancel") || !strings.Contains(audit.Body.String(),otherID) || !strings.Contains(audit.Body.String(),"role_change_intent") || !strings.Contains(audit.Body.String(),"role_change_denied"){
   t.Fatalf("privileged audit missing: %d %s",audit.Code,audit.Body.String())
  }
  if got:=call(super,"POST","/api/admin/jobs/"+ownID+"/cancel",`{"reason":"untrusted-user-prose"}`).Code;got!=400{

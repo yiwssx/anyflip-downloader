@@ -150,8 +150,13 @@ func (s *webServer) adminSetRole(w http.ResponseWriter,r *http.Request){
   http.Error(w,"invalid role change",400);return
  }
  actor:=rbacPrincipal(r).Owner
- if actor==target {http.Error(w,"cannot modify your own role",http.StatusForbidden);return}
+ if actor==target {
+  _ = s.google.rbac.audit("role_change_denied",actor,target,"")
+  http.Error(w,"cannot modify your own role",http.StatusForbidden);return
+ }
  if err:=s.google.rbac.changeRole(actor,target,body.Role);err!=nil{
+  // Record denied privilege changes without disclosing target existence.
+  _ = s.google.rbac.audit("role_change_denied",actor,target,"")
   // Keep existence, disabling and last-super-admin policy private.
   http.Error(w,"role change denied or unavailable",http.StatusConflict);return
  }

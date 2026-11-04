@@ -135,3 +135,50 @@ test('Workspace Admin Console: role-aware pages, responsive layout and confirmed
   }
  }finally{await browser.close()}
 });
+
+
+test('Workspace Admin: read-only users and no privileged audit controls on desktop or mobile',async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  for(const viewport of [{width:1365,height:900},{width:390,height:844}]){
+   const context=await browser.newContext({viewport,isMobile:viewport.width<600,hasTouch:viewport.width<600});
+   const page=await context.newPage();
+   const errors=[];
+   let auditRequested=false;
+   page.on('pageerror',e=>errors.push(e.message));
+   const adminRef='g-'+'1'.repeat(64),otherRef='g-'+'2'.repeat(64);
+   await page.route('**/auth/me',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({email:'admin@rcat.ac.th',role:'admin',identityRef:adminRef})
+   }));
+   await page.route('**/api/jobs',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify({jobs:[]})
+   }));
+   await page.route('**/api/admin/**',route=>{
+    const url=new URL(route.request().url());
+    if(url.pathname==='/api/admin/audit') {
+     auditRequested=true;
+     return route.fulfill({status:403,body:'forbidden'});
+    }
+    let body={};
+    if(url.pathname==='/api/admin/summary')body={total:1,active:0,completed:1,failed:0};
+    else if(url.pathname==='/api/admin/jobs')body={total:0,jobs:[]};
+    else if(url.pathname==='/api/admin/users')body={users:[
+     {identityRef:adminRef,email:'admin@rcat.ac.th',role:'admin'},
+     {identityRef:otherRef,email:'teacher@rcat.ac.th',role:'user'}
+    ]};
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
+   });
+   await page.goto(base+'/',{waitUntil:'networkidle'});
+   await page.locator('#adminConsole').waitFor({state:'visible'});
+   await page.waitForFunction(()=>Array.from(document.querySelectorAll('#adminUserRows tr')).some(row=>row.textContent.includes('teacher@rcat.ac.th')));
+   assert.equal(await page.locator('#adminNav').isVisible(),true);
+   assert.equal(await page.locator('#adminAuditSection').isVisible(),false);
+   assert.equal(await page.locator('#adminUserRows select').count(),0);
+   assert.equal(auditRequested,false,'Admin must not request Super Admin audit');
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2),false);
+   assert.deepEqual(errors,[]);
+   await context.close();
+  }
+ }finally{await browser.close()}
+});
