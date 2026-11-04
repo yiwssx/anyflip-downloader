@@ -46,7 +46,8 @@
 
 - **Merged and verified:** #79–#83; #70, #71, #72, #73, #75, #76 closed for code-only acceptance (synthetic Go/Docker/Chromium checks).
 - **PR #83:** concurrent last-super-admin denial, audit file rollover/restart/concurrency, denied role-change events and desktop/mobile Admin read-only role coverage all passed CI.
-- **PR #84:** adds status breakdown, queue/reservation counters, Linux filesystem usage without paths, classified job error codes and UI. This is subject to PR CI/merge and requires actual server 6 GiB mount verification before production claims.
+- **PR #84:** status breakdown, queue/reservation counters, path-free Linux filesystem metrics and classified error codes merged at `b6938fa9` with Go/Docker/Chromium CI PASS. Real 6 GiB mount remains a #77 requirement.
+- **Follow-up PR #85:** make ordinary/Admin cancellation idempotent, audit at most one admin cancellation for concurrent requests and expose a pending flag to the Admin UI; Go race test is required before #74 can close.
 - **Still open:** #68 Google SSO production authorization; #77 real Workspace/Gmail identity QA, hard-quota Docker overlay, backup/restore/restart and Tunnel/regression tests. Safe Admin application settings await an approved, bounded policy. Do not automatically enable RBAC.
 
 ---
