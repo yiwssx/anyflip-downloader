@@ -1,6 +1,6 @@
 # Google Workspace RBAC — Security design and API contract
 
-**Issues:** #69 parent, #70 policy, #71 persistence. **Status:** implementation on a feature branch; NOT production-enabled. Google SSO operator cutover #68 remains a separate mandatory gate.
+**Issues:** #69 parent, #70 policy, #71 persistence. **Status:** code merged to `main` via PRs #79–#85; NOT production-enabled. Google SSO operator cutover #68 remains a separate mandatory gate.
 
 ## Identity and privilege boundaries
 
@@ -28,7 +28,7 @@
 
 All privileged operations use dedicated `/api/admin/*` endpoints. Normal job routes stay owner-scoped even for super_admin. Cross-account status/retry/download on normal routes must return 404 to avoid ID enumeration. Unauthenticated APIs return 401; authenticated insufficient role returns 403; unknown roles fail closed.
 
-**Planned API contracts** (implemented in RBAC-3/4/6 rather than on this foundation branch): `GET /api/admin/summary`; `GET /api/admin/jobs?limit=50&offset=0`; `POST /api/admin/jobs/{id}/cancel` with bounded reason category; `GET /api/admin/users`; `PUT /api/admin/users/{identityRef}/role` with validated role; `GET /api/admin/audit` with a bounded, redacted result. All mutations require same-origin protections and reliable audit before committing the privileged action.
+**Implemented API contracts** (PRs #80, #84 and #85): `GET /api/admin/summary`; `GET /api/admin/jobs?limit=50&offset=0`; `POST /api/admin/jobs/{id}/cancel` with bounded reason category; `GET /api/admin/users`; `PUT /api/admin/users/{identityRef}/role` with validated role; `GET /api/admin/audit` with a bounded, redacted result. All mutations require same-origin protections and reliable audit before committing the privileged action.
 
 ## Store architecture and security
 
@@ -57,4 +57,4 @@ All privileged operations use dedicated `/api/admin/*` endpoints. Normal job rou
 - **Privacy:** privileged audit logs (RBAC-6) may include event type, actor/target identity reference and time, but must omit passwords, secrets, OAuth codes, source URLs and PDF content.
 - **Release:** require Go build/vet/unit/race/security, Docker/Compose and desktop/mobile RBAC E2E, two real institutional accounts and negative Gmail checks, operator backup/restore drill, last-admin recovery, quota persistence, preserved `10.10.1.100:8094`, Cloudflare Tunnel and `www.rcat.ac.th`. None of these host checks can be proven by code review alone.
 
-**Release gate:** #68 must be accepted before RBAC is turned on in production. No host deployment, `.env` mutation, quota migration or Google credentials were performed by this feature branch.
+**Release gate:** #68 must be accepted before RBAC is turned on in production. No host deployment, `.env` mutation, quota migration or Google credential changes were performed by the RBAC repository implementation.
