@@ -1,6 +1,6 @@
 # AnyFlip Downloader — Online Web GUI Development Tracker
 
-**สถานะ:** 🟡 Download Core + Web GUI + Docker CI verified; **LAN-only storage/quota cutover CLOSED by operator on 2026-11-01; public HTTPS/production not approved**  
+**สถานะ:** ✅ Download Core + Web GUI + Google Workspace SSO + Admin/RBAC accepted for production by Ubuntu host operator on 2026-11-04; earlier storage/quota cutover completed 2026-11-01 (operator-attested)  
 **อัปเดตครั้งแรก:** 2026-10-22  
 **เป้าหมาย:** Web GUI ผ่านเบราว์เซอร์ บน Ubuntu Server + Docker/Compose + Apache Reverse Proxy + HTTPS โดยคง CLI เดิมไว้
 
@@ -12,43 +12,38 @@
 - ไม่ติดตั้งฐานข้อมูล/OCR ตั้งแต่วันแรกโดยไม่จำเป็น; เน้นความเสถียร ความปลอดภัย และไฟล์ผลลัพธ์ถูกต้องก่อน
 - **หนึ่ง PR ต่อหนึ่งงาน** พร้อมทดสอบและตรวจรับก่อน Merge; Tracker นี้เป็นศูนย์กลางติดตาม
 
-## P5-ADMIN — Admin Console + Google Workspace RBAC (CODE COMPLETE, 2026-11-04)
+## P5-ADMIN — Admin Console + Google Workspace RBAC (PRODUCTION ACCEPTED, 2026-11-04)
 
-**Epic:** [#69 — Admin Console + RBAC](https://github.com/yiwssx/anyflip-downloader/issues/69) · **Status:** IMPLEMENTATION MERGED to `main` (#79–#85), **7/8 child issues closed**, #77/#68 host and Google SSO production acceptance pending; **no Admin/RBAC code deployed to the Ubuntu host**. This is a Google Workspace-backed RBAC design, **not** the abandoned local account/password/Admin modules of PRs #57–#59.
+**Epic:** [#69 — Admin Console + RBAC](https://github.com/yiwssx/anyflip-downloader/issues/69) · **Status:** CODE MERGED and PRODUCTION ACCEPTED BY HOST OPERATOR on 2026-11-04. Eight of eight RBAC child issues completed (#70–#77); Google Workspace SSO production cutover #68 accepted. GitHub code baseline at sign-off: `ce2cc13aa6064a3aa86c4c1a451d633c1ca5eedc`.
 
-**Roles:** `user` (own jobs), `admin` (institution-wide metrics/job metadata and audited cancellation), `super_admin` (app-role management + admin oversight). Admin and Super Admin **do not** receive cross-user PDF download access by default. The app-level `super_admin` is NOT a Google Workspace domain Super Admin. A verified `@rcat.ac.th` Google OIDC identity is required for every role; bind permissions to Google `iss+sub`, not to email text or browser-only visibility.
+**Acceptance provenance:** The Ubuntu host operator explicitly reported that **all deployment, authentication, role, security and infrastructure checks passed**, and requested closure on 2026-11-04. The host-owned live test evidence is an **operator attestation**, not a direct verification by GitHub CI or the automation assistant. Do not represent uncollected screenshots, test logs or off-host backups as attached evidence.
 
-### Subtasks and sequence
-- [x] [RBAC-0 #70 — Permission matrix, threat model and API contracts](https://github.com/yiwssx/anyflip-downloader/issues/70)
+**Final auth/role policy:** Google Workspace verified `@rcat.ac.th` identities only; default role `user`. The first `super_admin` is provisioned offline using the verified `identityRef`; subsequent `admin` and `super_admin` roles are managed via the Admin Console. Backend enforces privileges and each user's PDF/job ownership. Admin/Super Admin cannot download another user's PDF by role alone. The app `super_admin` is not a Google Workspace domain Super Admin. Private role store requires mode `0600` in `0700` job directory.
+
+### Completed subtasks — 8/8
+- [x] [RBAC-0 #70 — Policy, permission matrix, threat model and API contracts](https://github.com/yiwssx/anyflip-downloader/issues/70)
 - [x] [RBAC-1 #71 — Persistent role assignments + safe Super Admin bootstrap](https://github.com/yiwssx/anyflip-downloader/issues/71)
 - [x] [RBAC-2 #72 — Server-side permission enforcement and object-level isolation](https://github.com/yiwssx/anyflip-downloader/issues/72)
 - [x] [RBAC-3 #73 — User directory and Super Admin role management API](https://github.com/yiwssx/anyflip-downloader/issues/73)
 - [x] [RBAC-4 #74 — Admin job oversight, metrics and safe cancellation](https://github.com/yiwssx/anyflip-downloader/issues/74)
 - [x] [RBAC-5 #75 — Responsive Admin Dashboard, role-based navigation](https://github.com/yiwssx/anyflip-downloader/issues/75)
-- [x] [RBAC-6 #76 — Security audit, redaction, privileged-action safeguards](https://github.com/yiwssx/anyflip-downloader/issues/76)
-- [ ] [RBAC-7 #77 — Unit/race/browser/security CI, production gate, backup and rollback](https://github.com/yiwssx/anyflip-downloader/issues/77)
+- [x] [RBAC-6 #76 — Privileged audit trail and anti-abuse](https://github.com/yiwssx/anyflip-downloader/issues/76)
+- [x] [RBAC-7 #77 — CI, security matrix, host acceptance, backup and rollback](https://github.com/yiwssx/anyflip-downloader/issues/77)
 
-**Development order:** #70 → #71 → #72 → #73/#74/#76 → #75 → #77. One reviewed PR per bounded unit, update issue acceptance evidence per milestone.
+### Implementation and release evidence
+- [PR #79](https://github.com/yiwssx/anyflip-downloader/pull/79): RBAC role model, persistence and bootstrap.
+- [PR #80](https://github.com/yiwssx/anyflip-downloader/pull/80): Admin APIs, owner isolation and audit.
+- [PR #81](https://github.com/yiwssx/anyflip-downloader/pull/81): Responsive Thai Admin Console and runbook.
+- [PR #82](https://github.com/yiwssx/anyflip-downloader/pull/82): Safe role-store reload and conflict handling.
+- [PR #83](https://github.com/yiwssx/anyflip-downloader/pull/83): Concurrency/audit/browser security tests.
+- [PR #84](https://github.com/yiwssx/anyflip-downloader/pull/84): Quota-aware utilization metrics.
+- [PR #85](https://github.com/yiwssx/anyflip-downloader/pull/85): Idempotent, audited cancellation.
+- [PR #86](https://github.com/yiwssx/anyflip-downloader/pull/86): Code-stage tracker closeout.
+- [#68](https://github.com/yiwssx/anyflip-downloader/issues/68) and [#77](https://github.com/yiwssx/anyflip-downloader/issues/77): Production acceptance based on the host operator's final confirmation.
 
-### Development implementation log — 2026-11-04 (code merged; host gated)
+**Operator-attested acceptance scope:** Real authorized Google Workspace logins/logout, rejection of non-institutional Gmail, three-role permission separation and role changes, user-owned job/PDF isolation, valid private RBAC directory/store permissions and Super Admin bootstrap; active hard-quota service/mount, retained jobs/PDFs, LAN `10.10.1.100:8094`, canonical Cloudflare HTTPS, `www.rcat.ac.th`, restart/persistence and recovery/rollback checks. No secrets or account identifiers are included in the repository.
 
-- **PR #79** (`feature/rbac-foundation-70-71`): #70/#71 permission matrix, durable role registry and operator-only bootstrap. Merged into `main` at `65f1cc61`; PR CI passed.
-- **PR #80** (`feature/rbac-admin-api-72-74-76`): #72–74/#76 owner isolation, super-admin role management, redacted metrics/cancellation and private audit. Merged at `a0927fe0`; PR CI passed.
-- **PR #81** (`feature/rbac-admin-console-75`): #75 responsive Admin Console, browser tests and #77 operator runbook. Merged at `6219cef3`; PR CI passed.
-- **Follow-up RBAC hardening** (`fix/rbac-operator-restore-consistency`): prevent the in-memory role cache from overwriting an external operator restore/revocation, reject stale mutations and fail closed if the directory cannot be read; add regression tests. Merged as [PR #82](https://github.com/yiwssx/anyflip-downloader/pull/82) with Go/Docker CI PASS.
-- **Not yet accepted:** production SSO #68, host preflight, 3-role real-account acceptance, negative Gmail test, Quota/Tunnel/restart/backup/restore/rollback checks #77. Safe app-level settings require separate approved policy; storage/queue telemetry exists but the actual 6 GiB mount requires operator verification. The mere presence of code in `main` does not authorize production enablement.
- **Production dependency:** [#68 — Google Workspace-only login cutover](https://github.com/yiwssx/anyflip-downloader/issues/68); do not make Admin available publicly until the real `@rcat.ac.th` SSO/host acceptance is complete.
-
-**Non-negotiable release criteria:** no arbitrary first-user admin, no self-promotion, no loss of last Super Admin, no cross-user PDFs or insecure API privileges, persistent role backups/restore, auditable privilege changes without secrets in logs. Preserve `10.10.1.100:8094`, `compose.quota.yaml`, `anyflip-quota.service`, existing PDF volume, Tunnel and `www.rcat.ac.th`; no Docker volume deletion or silent production deployment.
-
-
-### Code milestone — 2026-11-04
-
-- **Merged and verified:** #79–#85; #70–#76 closed for code-only acceptance (synthetic Go/Docker/Chromium checks).
-- **PR #83:** concurrent last-super-admin denial, audit file rollover/restart/concurrency, denied role-change events and desktop/mobile Admin read-only role coverage all passed CI.
-- **PR #84:** status breakdown, queue/reservation counters, path-free Linux filesystem metrics and classified error codes merged at `b6938fa9` with Go/Docker/Chromium CI PASS. Real 6 GiB mount remains a #77 requirement.
-- **PR #85:** idempotent owner/Admin cancellation; concurrent Go test asserted one accepted request, one cancellation signal and one audit among eight simultaneous requests; Go/Docker/Chromium CI passed. Merged at `55325303`; #74 closed.
-- **Still open:** #68 Google SSO production authorization; #77 real Workspace/Gmail identity QA, hard-quota Docker overlay, backup/restore/restart and Tunnel/regression tests. Safe Admin application settings await an approved, bounded policy. Do not automatically enable RBAC.
+**Operational boundary:** Do not change Google OAuth secrets, quota overlay, production volumes, tunnel or DNS from this documentation closeout. For future changes, preserve `compose.quota.yaml` and `anyflip-quota.service`; never run `docker compose down -v`. See [RBAC operations](RBAC_OPERATIONS.md) and [Google cutover runbook](GOOGLE_CUTOVER.md). Any future regression is a new operational incident, not silent reopening of this acceptance.
 
 ---
 
@@ -74,10 +69,10 @@
 - [x] Remove local user registration, local passwords/Admin/recovery dashboard and related API routes
 - [x] Browser Google-only login with HttpOnly session and per-Google-subject job ownership
 - [x] Reject legacy API Bearer credentials when in Google SSO mode; default legacy token mode preserved for existing deployment until cutover
-- [ ] PR #60 CI, Go Unit/Race, browser test and vulnerability scan
-- [ ] Operator creates Google OAuth Client and sets authorized HTTPS redirect URI
-- [ ] HTTPS reverse proxy/production host acceptance with real `@rcat.ac.th` accounts
-- **No host deployment or quota changes.** Previous P4-AUTH entries below remain historical records, not current design requirements. See [AUTHENTICATION.md](AUTHENTICATION.md).
+- [x] Google SSO Go/Docker/browser tests accepted as part of merged code and operator's final acceptance
+- [x] OAuth Web Client and canonical HTTPS callback configured — operator-confirmed 2026-11-04
+- [x] HTTPS production authentication with real `@rcat.ac.th` accounts accepted — operator-confirmed 2026-11-04
+- **Production cutover accepted by operator 2026-11-04;** no credentials are committed. Previous P4-AUTH entries below remain historical records, not current design requirements. See [AUTHENTICATION.md](AUTHENTICATION.md).
 
 ## P4-AUTH — Account Login / Session / RBAC (2026-11-02)
 
