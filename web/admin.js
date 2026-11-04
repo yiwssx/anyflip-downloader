@@ -101,7 +101,7 @@
         tr.appendChild(node('td',String(item.completed)+' / '+String(item.total)));
         tr.appendChild(node('td',dateText(item.created)));
         const action = node('td');
-        if (['queued','preparing','downloading','converting'].includes(item.stage)) {
+        if (['queued','preparing','downloading','converting'].includes(item.stage) && !item.cancelRequested) {
           const cancel = node('button','ระงับงาน','button-quiet');
           cancel.type='button';
           cancel.addEventListener('click',async () => {
@@ -120,7 +120,7 @@
           });
           action.appendChild(cancel);
         } else {
-          action.textContent='—';
+          action.textContent=item.cancelRequested ? 'ร้องขอยกเลิกแล้ว' : '—';
         }
         // Put the intervention control first for keyboard and mobile access.
         tr.insertBefore(action,tr.firstChild);

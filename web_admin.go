@@ -15,6 +15,7 @@ type adminJobRecord struct {
  Owner string `json:"owner"`
  Stage string `json:"stage"`
  ErrorCode string `json:"errorCode,omitempty"`
+ CancelRequested bool `json:"cancelRequested,omitempty"`
  Completed int `json:"completed"`
  Total int `json:"total"`
  Created time.Time `json:"created"`
@@ -95,7 +96,7 @@ func (s *webServer) adminJobRecords()[]adminJobRecord{
  s.mu.Lock();defer s.mu.Unlock()
  records:=make([]adminJobRecord,0,len(s.jobs)+len(s.history))
  for _,j:=range s.jobs{
-  records=append(records,adminJobRecord{ID:j.id,Owner:j.owner,Stage:j.stage,ErrorCode:j.errorCode,Completed:j.completed,Total:j.total,Created:j.created})
+  records=append(records,adminJobRecord{ID:j.id,Owner:j.owner,Stage:j.stage,ErrorCode:j.errorCode,CancelRequested:j.cancelRequested,Completed:j.completed,Total:j.total,Created:j.created})
  }
  for _,h:=range s.history{
   if _,exists:=s.jobs[h.Response.ID];exists{continue}
@@ -199,11 +200,15 @@ func (s *webServer) adminCancelJob(w http.ResponseWriter,r *http.Request){
  if job.stage=="completed"||job.stage=="failed"||job.stage=="cancelled"{
   s.mu.Unlock();http.Error(w,"job is already terminal",http.StatusConflict);return
  }
+ if job.cancelRequested {
+  s.mu.Unlock();http.Error(w,"cancellation already requested",http.StatusConflict);return
+ }
  actor:=rbacPrincipal(r).Owner
  if err:=s.google.rbac.auditJobCancellation(actor,job.owner,job.id,body.Reason);err!=nil{
   s.mu.Unlock()
   http.Error(w,"audit unavailable; cancellation blocked",http.StatusServiceUnavailable);return
  }
+ job.cancelRequested=true
  job.cancel()
  response:=map[string]any{"id":job.id,"accepted":true}
  s.mu.Unlock()
