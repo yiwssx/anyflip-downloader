@@ -29,9 +29,21 @@ type adminUserRecord struct {
 type adminSummaryRecord struct {
  Total int `json:"total"`
  Active int `json:"active"`
+ Queued int `json:"queued"`
+ Running int `json:"running"`
  Completed int `json:"completed"`
  Failed int `json:"failed"`
  Cancelled int `json:"cancelled"`
+ ActiveReservations int `json:"activeReservations"`
+ MaxConcurrent int `json:"maxConcurrent"`
+ Storage *adminStorageRecord `json:"storage,omitempty"`
+}
+// Safe operational aggregates only. Never include host paths or private files.
+type adminStorageRecord struct {
+ TotalBytes uint64 `json:"totalBytes"`
+ UsedBytes uint64 `json:"usedBytes"`
+ AvailableBytes uint64 `json:"availableBytes"`
+ UsedPercent int `json:"usedPercent"`
 }
 
 func rbacPrincipal(r *http.Request)googlePrincipal {
@@ -104,9 +116,15 @@ func (s *webServer) adminSummary(w http.ResponseWriter,r *http.Request){
   case "completed":result.Completed++
   case "failed":result.Failed++
   case "cancelled":result.Cancelled++
-  default:result.Active++
+  case "queued":result.Active++;result.Queued++
+  default:result.Active++;result.Running++
   }
  }
+ s.mu.Lock()
+ result.ActiveReservations=s.activeReservations
+ result.MaxConcurrent=cap(s.sem)
+ s.mu.Unlock()
+ result.Storage=readAdminStorage(s.root)
  sendJSON(w,http.StatusOK,result)
 }
 func (s *webServer) adminListJobs(w http.ResponseWriter,r *http.Request){
