@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html web/style.css web/app.js web/google.html web/google.js web/favicon.svg web/logo.svg
+//go:embed web/index.html web/style.css web/app.js web/google.html web/google.js web/admin.js web/favicon.svg web/logo.svg
 var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -142,6 +142,12 @@ func (s *webServer) handler() http.Handler {
 		}
 	})
 	if s.google != nil {
+        // The asset itself is public; RBAC still protects all admin data APIs.
+        // Serve in Google mode even when the role feature is disabled so the
+        // bundled SSO page never requests a missing script.
+        mux.HandleFunc("GET /admin.js",func(w http.ResponseWriter,_ *http.Request) {
+            serveEmbeddedWebAsset(w,"web/admin.js","text/javascript; charset=utf-8")
+        })
 		mux.HandleFunc("GET /auth/google", s.google.start)
 		mux.HandleFunc("GET /auth/google/callback", s.google.callback)
 		mux.HandleFunc("GET /auth/me", s.google.me)

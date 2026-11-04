@@ -32,7 +32,10 @@ jobs:
       run: go mod verify
 
     - name: Check embedded Web JavaScript syntax
-      run: node --check web/app.js
+      run: |
+        node --check web/app.js
+        node --check web/google.js
+        node --check web/admin.js
 
     - name: Vet
       run: go vet ./...
