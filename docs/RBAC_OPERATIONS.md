@@ -1,6 +1,6 @@
 # RCAT AnyFlip — RBAC operator enablement, recovery and rollback
 
-**Status: CODE REVIEW / QA ONLY. No production activation is authorized.** See #68 for Google SSO cutover, #69 for the epic, and #77 for host acceptance.
+**Status: PRODUCTION ACCEPTED BY HOST OPERATOR (2026-11-04).** The operator reports all relevant checks passed and requested closure of #68, #77 and #69. This is operator-attested, not independently observed by CI or the assistant. Preserve these runbook steps for subsequent deployments and recovery.
 
 ## Feature-gate behavior
 
@@ -67,6 +67,6 @@ For approved last-admin recovery, stop privileged writes, recover a reviewed pri
 
 **Important limitation:** Application sessions expire after up to 12 hours and Google Workspace account suspension is not actively polled by this project. Disabling a Workspace account may not immediately invalidate a previously issued in-memory session; application-level disabled records and role changes are enforced at request time.
 
-## No automatic deployment
+## Production operation and evidence boundary
 
-These instructions are a handoff. Neither the RBAC feature branches nor the Github CI have modified the real Ubuntu host, DNS/Tunnel, Google OAuth credentials, local `.env` or production RBAC roles. Production activation remains blocked until #68 and #77 are explicitly accepted.
+Initial production activation was performed by the Ubuntu host operator, who attested that all acceptance checks passed on 2026-11-04. GitHub CI validates code but does not independently observe the host. This documentation-only closeout makes no production host, DNS/Tunnel, secret, quota or role changes. Apply preflight and the backup/rollback controls before future deployments.
