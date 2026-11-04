@@ -36,6 +36,7 @@ type webJob struct {
 	created   time.Time
 	finished  time.Time
 	cancel    context.CancelFunc
+	cancelRequested bool // protected by webServer.mu; cancellation is idempotent
 	spec      webJobSpec // in-memory only; never serialized in API output
 	owner     string // stable hashed Google subject; empty for legacy jobs
 }
@@ -351,7 +352,8 @@ func (s *webServer) cancelJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.mu.Lock()
-	if job.stage != "completed" && job.stage != "failed" && job.stage != "cancelled" {
+	if job.stage != "completed" && job.stage != "failed" && job.stage != "cancelled" && !job.cancelRequested {
+		job.cancelRequested = true
 		job.cancel()
 	}
 	value := s.snapshot(job)
