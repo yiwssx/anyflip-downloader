@@ -14,7 +14,7 @@
 
 ## P5-ADMIN — Admin Console + Google Workspace RBAC (NEW, 2026-11-03)
 
-**Epic:** [#69 — Admin Console + RBAC](https://github.com/yiwssx/anyflip-downloader/issues/69) · **Status:** PLANNED, 0/8 child tasks complete; **no Admin/RBAC code deployed**. This is a NEW Google Workspace-backed RBAC design, **not** the abandoned local account/password/Admin modules of PRs #57–#59.
+**Epic:** [#69 — Admin Console + RBAC](https://github.com/yiwssx/anyflip-downloader/issues/69) · **Status:** CODE MERGED to `main` (#79, #80, #81), operator acceptance pending (#68 / #77); **no Admin/RBAC code deployed to the Ubuntu host**. This is a Google Workspace-backed RBAC design, **not** the abandoned local account/password/Admin modules of PRs #57–#59.
 
 **Roles:** `user` (own jobs), `admin` (institution-wide metrics/job metadata and audited cancellation), `super_admin` (app-role management + admin oversight). Admin and Super Admin **do not** receive cross-user PDF download access by default. The app-level `super_admin` is NOT a Google Workspace domain Super Admin. A verified `@rcat.ac.th` Google OIDC identity is required for every role; bind permissions to Google `iss+sub`, not to email text or browser-only visibility.
 
@@ -30,12 +30,13 @@
 
 **Development order:** #70 → #71 → #72 → #73/#74/#76 → #75 → #77. One reviewed PR per bounded unit, update issue acceptance evidence per milestone.
 
-### Development implementation log — 2026-11-03 (code-only, feature branches)
+### Development implementation log — 2026-11-04 (code merged; host gated)
 
-- **PR #79** (`feature/rbac-foundation-70-71`): #70 policy and threat model; #71 private durable roles and controlled bootstrap. **Go/Docker/Chromium CI PASS** at `4bc8c50b`; PR is Ready for Review, not merged.
-- **PR #80** (`feature/rbac-admin-api-72-74-76`): #72 owner-scoped authorization; #73 directory/role APIs; #74 metrics and safe job cancellation; #76 durable sanitized audit (including admin sign-in and job identifiers). **Go/Docker/Chromium CI PASS** at `6b9d91e4`; PR is Ready for Review, not merged.
-- **PR #81** (`feature/rbac-admin-console-75`): #75 Thai desktop/mobile Admin Console and Playwright role/UI coverage. `docs/RBAC_OPERATIONS.md` is the #77 operator handoff. **Go/Docker/Chromium CI PASS** at `426a9382`; PR is Ready for Review, not merged.
-- All PRs are **READY FOR REVIEW and stacked, but unmerged**: do not close child issues or activate production before merge, security review and #68 Google SSO acceptance. #77 additionally requires real accounts, host quota/mount tests, recovery drill and operator acceptance. This status log is implementation evidence, **not a claim that the host or Google identity configuration was changed**.
+- **PR #79** (`feature/rbac-foundation-70-71`): #70/#71 permission matrix, durable role registry and operator-only bootstrap. Merged into `main` at `65f1cc61`; PR CI passed.
+- **PR #80** (`feature/rbac-admin-api-72-74-76`): #72–74/#76 owner isolation, super-admin role management, redacted metrics/cancellation and private audit. Merged at `a0927fe0`; PR CI passed.
+- **PR #81** (`feature/rbac-admin-console-75`): #75 responsive Admin Console, browser tests and #77 operator runbook. Merged at `6219cef3`; PR CI passed.
+- **Follow-up RBAC hardening** (`fix/rbac-operator-restore-consistency`): prevent the in-memory role cache from overwriting an external operator restore/revocation, reject stale mutations and fail closed if the directory cannot be read; add regression tests. This remains subject to PR CI and review.
+- **Not yet accepted:** production SSO #68, host preflight, 3-role real-account acceptance, negative Gmail test, Quota/Tunnel/restart/backup/restore/rollback checks #77. Additional safe app-settings policy and quota telemetry may require separate approved scope. The mere presence of code in `main` does not authorize production enablement.
  **Production dependency:** [#68 — Google Workspace-only login cutover](https://github.com/yiwssx/anyflip-downloader/issues/68); do not make Admin available publicly until the real `@rcat.ac.th` SSO/host acceptance is complete.
 
 **Non-negotiable release criteria:** no arbitrary first-user admin, no self-promotion, no loss of last Super Admin, no cross-user PDFs or insecure API privileges, persistent role backups/restore, auditable privilege changes without secrets in logs. Preserve `10.10.1.100:8094`, `compose.quota.yaml`, `anyflip-quota.service`, existing PDF volume, Tunnel and `www.rcat.ac.th`; no Docker volume deletion or silent production deployment.

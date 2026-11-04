@@ -122,7 +122,8 @@ func (s *webServer) adminListJobs(w http.ResponseWriter,r *http.Request){
 }
 func (s *webServer) adminListUsers(w http.ResponseWriter,r *http.Request){
  if !s.requireAdmin(w,r,false){return}
- list:=s.google.rbac.snapshotMembers()
+ list,err:=s.google.rbac.snapshotMembers()
+ if err!=nil{http.Error(w,"RBAC directory unavailable",http.StatusServiceUnavailable);return}
  result:=make([]adminUserRecord,0,len(list))
  for _,member:=range list{
   result=append(result,adminUserRecord{

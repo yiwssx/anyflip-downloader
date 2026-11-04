@@ -92,3 +92,31 @@ func TestRBACConcurrentRegistrations(t *testing.T){
  again,err:=openRBACStore(root);if err!=nil{t.Fatal(err)}
  if len(again.members)!=21{t.Fatalf("concurrent updates lost: %d",len(again.members))}
 }
+
+// A process may stay alive while an operator restores its private role file.
+// New sign-ins must not silently resurrect old grants or overwrite newer data.
+func TestRBACReloadPreservesExternalRoleChanges(t *testing.T) {
+ root:=rbacTestRoot(t)
+ owner:=rbacTestIdentity("operator")
+ member:=rbacTestIdentity("member")
+ newcomer:=rbacTestIdentity("newcomer")
+ if err:=bootstrapRBACStore(root,owner);err!=nil{t.Fatal(err)}
+ app,err:=openRBACStore(root);if err!=nil{t.Fatal(err)}
+ if err:=app.registerVerifiedUser(googleUser{Owner:member,Email:"member@rcat.ac.th"});err!=nil{t.Fatal(err)}
+ operator,err:=openRBACStore(root);if err!=nil{t.Fatal(err)}
+ if err:=operator.changeRole(owner,member,roleAdmin);err!=nil{t.Fatal(err)}
+ // App still holds an old in-memory user snapshot at this point.
+ if err:=app.registerVerifiedUser(googleUser{Owner:newcomer,Email:"new@rcat.ac.th"});err!=nil{t.Fatal(err)}
+ if role,ok:=app.currentRole(member);!ok||role!=roleAdmin{t.Fatal("external role grant overwritten by later sign-in")}
+ users,err:=app.snapshotMembers();if err!=nil{t.Fatal(err)}
+ var sawAdmin bool
+ for _,u:=range users{if u.ID==member&&u.Role==roleAdmin{sawAdmin=true}}
+ if !sawAdmin{t.Fatal("admin directory returned a stale role")}
+ if err:=operator.changeRole(owner,member,roleUser);err!=nil{t.Fatal(err)}
+ if err:=app.registerVerifiedUser(googleUser{Owner:member,Email:"member@rcat.ac.th"});err!=nil{t.Fatal(err)}
+ if role,ok:=app.currentRole(member);!ok||role!=roleUser{t.Fatal("external role revocation overwritten by sign-in")}
+ // Invalid on-disk permissions deny both subsequent mutations and directory reads.
+ if err:=os.Chmod(filepath.Join(root,rbacFilename),0644);err!=nil{t.Fatal(err)}
+ if err:=app.registerVerifiedUser(googleUser{Owner:newcomer,Email:"new@rcat.ac.th"});err==nil{t.Fatal("login accepted after store permissions compromised")}
+ if _,err:=app.snapshotMembers();err==nil{t.Fatal("directory exposed a stale snapshot after store tampering")}
+}
