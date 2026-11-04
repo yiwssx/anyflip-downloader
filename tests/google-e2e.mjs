@@ -99,7 +99,7 @@ test('Workspace Admin Console: role-aware pages, responsive layout and confirmed
    await page.route('**/api/admin/**',route=>{
     const url=new URL(route.request().url()),method=route.request().method();
     let body={};
-    if (url.pathname.endsWith('/summary')) body={total:2,active:1,completed:1,failed:0};
+    if (url.pathname.endsWith('/summary')) body={total:2,active:1,queued:1,running:0,completed:1,failed:0,activeReservations:1,maxConcurrent:2,storage:{totalBytes:6*1024**3,usedBytes:1*1024**3,availableBytes:5*1024**3,usedPercent:17}};
     else if (url.pathname==='/api/admin/jobs') body={total:1,jobs:[{
       id:jobId,owner:otherRef,stage:'queued',completed:0,total:5,created:new Date().toISOString()
     }]};
@@ -118,6 +118,8 @@ test('Workspace Admin Console: role-aware pages, responsive layout and confirmed
    await page.waitForFunction(()=>document.querySelector('#adminTotal')?.textContent==='2');
    assert.equal(await page.locator('#adminNav').isVisible(),true);
    assert.equal(await page.locator('#adminTotal').textContent(),'2');
+   assert.match(await page.locator('#adminStorageStatus').textContent(),/6 GiB/);
+   assert.match(await page.locator('#adminStorageStatus').textContent(),/จองทรัพยากร 1\/2/);
    assert.equal(await page.locator('#adminUserRows tr').count(),2);
    assert.equal(await page.locator('#adminJobRows tr').count(),1);
    assert.equal(await page.locator('#adminAuditSection').isVisible(),true);
