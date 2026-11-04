@@ -171,7 +171,7 @@ test('Workspace Admin: read-only users and no privileged audit controls on deskt
    });
    await page.goto(base+'/',{waitUntil:'networkidle'});
    await page.locator('#adminConsole').waitFor({state:'visible'});
-   await page.waitForFunction(()=>document.querySelector('#adminUserRows tr')?.textContent.includes('teacher@rcat.ac.th'));
+   await page.waitForFunction(()=>Array.from(document.querySelectorAll('#adminUserRows tr')).some(row=>row.textContent.includes('teacher@rcat.ac.th')));
    assert.equal(await page.locator('#adminNav').isVisible(),true);
    assert.equal(await page.locator('#adminAuditSection').isVisible(),false);
    assert.equal(await page.locator('#adminUserRows select').count(),0);
