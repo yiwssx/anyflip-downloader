@@ -264,6 +264,10 @@ test('responsive readability: text hierarchy, touch controls and overflow at 320
           inputHeight: height('#bookURL'),
           buttonHeight: height('#startButton'),
           navigationHeight: height('.nav-link'),
+          overflowing: [...document.querySelectorAll('body *')]
+            .map(el => ({ tag: el.tagName.toLowerCase(), cls: typeof el.className === 'string' ? el.className.slice(0, 45) : '', right: Math.round(el.getBoundingClientRect().right) }))
+            .filter(el => el.right > innerWidth + 2)
+            .slice(0, 8),
         };
       });
       assert.ok(measurements.scrollWidth <= measurements.viewport + 2,
