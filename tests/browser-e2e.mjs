@@ -231,3 +231,53 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
     assert.ok(await page.locator('.nav-link[href="#batch"]').isVisible());
   });
 });
+
+
+test('responsive readability: text hierarchy, touch controls and overflow at 320–1365px', { timeout: 90_000 }, async () => {
+  for (const width of [320, 390, 768, 1365]) {
+    await withPage({
+      viewport: { width, height: 900 },
+      ...(width < 600 ? { isMobile: true, hasTouch: true } : {}),
+    }, async page => {
+      await page.route('**/api/**', route => respond(route, 200, { jobs: [] }));
+      await page.goto(baseURL + '/', { waitUntil: 'networkidle' });
+      const measurements = await page.evaluate(() => {
+        const size = selector => {
+          const element = document.querySelector(selector);
+          if (!element) throw new Error('Missing required element: ' + selector);
+          return Number.parseFloat(getComputedStyle(element).fontSize);
+        };
+        const height = selector => document.querySelector(selector).getBoundingClientRect().height;
+        return {
+          viewport: innerWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          body: size('body'),
+          nav: size('.nav-link'),
+          heading: size('#newJobTitle'),
+          intro: size('#createJob .section-heading p'),
+          fieldLabel: size('label[for="bookURL"]'),
+          fieldInput: size('#bookURL'),
+          primaryButton: size('#startButton'),
+          qualityHint: size('.quality-toggle small'),
+          historyNote: size('.history-footnote'),
+          noticeCopy: size('.notice p'),
+          inputHeight: height('#bookURL'),
+          buttonHeight: height('#startButton'),
+          navigationHeight: height('.nav-link'),
+        };
+      });
+      assert.ok(measurements.scrollWidth <= measurements.viewport + 2,
+        'Horizontal page overflow: ' + JSON.stringify(measurements));
+      for (const key of ['body', 'intro', 'fieldLabel', 'fieldInput', 'primaryButton']) {
+        assert.ok(measurements[key] >= 16, key + ' too small: ' + JSON.stringify(measurements));
+      }
+      for (const key of ['nav', 'qualityHint', 'historyNote', 'noticeCopy']) {
+        assert.ok(measurements[key] >= 14, key + ' too small: ' + JSON.stringify(measurements));
+      }
+      assert.ok(measurements.heading >= 22, 'Heading hierarchy too small: ' + JSON.stringify(measurements));
+      assert.ok(measurements.inputHeight >= 48, 'Form input too small: ' + JSON.stringify(measurements));
+      assert.ok(measurements.buttonHeight >= 44, 'Primary touch target too small: ' + JSON.stringify(measurements));
+      assert.ok(measurements.navigationHeight >= 44, 'Navigation touch target too small: ' + JSON.stringify(measurements));
+    });
+  }
+});
