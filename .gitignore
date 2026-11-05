@@ -22,3 +22,29 @@
 !.env.example
 .anyflip-web-jobs/
 .data/
+
+# Developer-only dependencies, artifacts and diagnostics
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.log
+*.tmp
+.cache/
+.venv/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+
+# Private credentials; examples without real values belong in .env.example
+.envrc
+.secrets/
+*.pem
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+oauth-client*.json
+
