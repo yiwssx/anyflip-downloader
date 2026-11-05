@@ -265,6 +265,8 @@ body { font-size: 1rem; line-height: 1.65; background: #f2f6f3; color: var(--tex
 .side-help strong { font-size: .9375rem; color: #254b39; }
 .sidebar-version { font-size: .8125rem; color: #647c6d; }
 .workspace-main { padding: 30px 36px 22px; }
+.workspace-main, .content-grid, .panel, .welcome, .metrics, .metric { min-width: 0; }
+.welcome > div:first-child { min-width: 0; flex: 1 1 0; }
 .top-utility { margin-bottom: 20px; min-height: 38px; min-width: 0; }
 .account-pill { padding: 7px; min-width: 0; max-width: 100%; }
 .avatar { width: 38px; height: 38px; flex: none; font-size: 1rem; }
@@ -406,6 +408,9 @@ footer { font-size: .875rem; color: #587363; }
   .nav-links { gap: 9px; }
   .nav-link { min-height: 48px; padding: 10px 14px; }
   .workspace-main { padding: 22px; }
+  .welcome { gap: 18px; padding: 30px 28px; }
+  .hero-symbol { width: 105px; height: 105px; border-radius: 22px; }
+  .hero-symbol img { width: 96px; height: 96px; }
   .login-stage { margin: 34px auto; }
   .login-visual { padding: 36px 32px; }
   .login-visual h2 { font-size: 1.625rem; }
