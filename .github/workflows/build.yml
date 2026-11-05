@@ -81,6 +81,7 @@ jobs:
         bash scripts/test-tunnel-ingress.sh
         bash -n scripts/preflight-google-cutover.sh
         bash -n scripts/gh-repo-standards.sh
+        bash -n scripts/gh-security-hardening.sh
         python3 -m py_compile scripts/check-google-auth-compose.py scripts/test-google-auth-compose.py
         python3 scripts/test-google-auth-compose.py
         node --check web/google.js
