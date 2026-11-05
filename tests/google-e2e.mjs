@@ -184,3 +184,40 @@ test('Workspace Admin: read-only users and no privileged audit controls on deskt
   }
  }finally{await browser.close()}
 });
+
+
+test('Google Workspace entry: readable sign-in and controls from 320px to desktop', async () => {
+ const browser=await chromium.launch({headless:true});
+ try{
+  for(const width of [320,390,768,1365]){
+   const context=await browser.newContext({
+    viewport:{width,height:900},
+    ...(width<600?{isMobile:true,hasTouch:true}:{})
+   });
+   const page=await context.newPage();
+   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+   await page.locator('#loginPanel').waitFor({state:'visible'});
+   const info=await page.evaluate(()=>{
+    const css=s=>Number.parseFloat(getComputedStyle(document.querySelector(s)).fontSize);
+    const height=s=>document.querySelector(s).getBoundingClientRect().height;
+    return {
+     viewport:innerWidth,
+     scroll:document.documentElement.scrollWidth,
+     title:css('#loginTitle'),
+     lead:css('.login-form .lead'),
+     domain:css('.domain-note'),
+     buttonFont:css('#googleSignIn'),
+     buttonHeight:height('#googleSignIn'),
+     feature:css('.feature-row span')
+    };
+   });
+   assert.ok(info.scroll<=info.viewport+2,'Google login overflows: '+JSON.stringify(info));
+   assert.ok(info.title>=30,'Sign-in heading too small: '+JSON.stringify(info));
+   assert.ok(info.lead>=16,'Sign-in description too small: '+JSON.stringify(info));
+   assert.ok(info.domain>=14,'Account domain note too small: '+JSON.stringify(info));
+   assert.ok(info.buttonFont>=16&&info.buttonHeight>=48,'Google sign-in touch target too small: '+JSON.stringify(info));
+   assert.ok(info.feature>=14,'Feature labels too small: '+JSON.stringify(info));
+   await context.close();
+  }
+ }finally{await browser.close()}
+});
