@@ -1,0 +1,8 @@
+# CODEOWNERS provides ownership discovery; mandatory approvals require a second
+# eligible maintainer (the PR author cannot approve their own change).
+* @yiwssx
+/.github/ @yiwssx
+/scripts/ @yiwssx
+/deploy/ @yiwssx
+/docs/ @yiwssx
+/web/ @yiwssx

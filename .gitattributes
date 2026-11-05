@@ -1,0 +1,10 @@
+# Normalize text across Windows, macOS and Linux without touching binary assets.
+* text=auto
+*.go text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.ps1 text eol=crlf
