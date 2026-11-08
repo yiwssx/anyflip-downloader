@@ -54,3 +54,8 @@ Existing tests include Go HTTP/CSP/auth/RBAC checks and mock-origin Playwright C
 - The GitHub Browser E2E fixture now audits serious/critical WCAG 2.x/2.2 violations not only on anonymous login and token mode but also on authenticated Workspace and Super Admin UI (synthetic data).
 - Malformed status payload injection verifies a visible error, automatic bounded recovery and preserved final job state without unhandled page errors.
 - These automated checks are **not** a claim of full manual WCAG compliance, production security or live account acceptance; retain UIH-07 as a separate gate.
+
+
+## UIH-05 — browser recovery matrix (code-only)
+This changeset adds synthetic regression cases for transient HTTP 429 (bounded exponential backoff), legacy-token HTTP 401 (terminate polling, hide actions, allow correcting credentials), and rapid selection of another job while an old request is unresolved (AbortController + generation guard). Combined with the existing 503/malformed status/Google 401/Admin 403 tests, these exercise core resilience paths without live institution accounts or publisher content.
+**Unverified host acceptance:** real Wi-Fi offline, reverse proxy timeouts, production OAuth expiry, quota pressure and physical touch/screen-reader checks stay behind UIH-07 #101.

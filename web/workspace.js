@@ -70,7 +70,12 @@
     } catch(e) {
       if (version !== generation || currentJob !== jobID) return;
       if (e.authExpired) {
+        // The token workspace remains visible: let the user correct credentials.
+        // Google mode already hides this workspace via its authentication adapter.
         stopPolling();
+        $('startButton').disabled = false;
+        $('cancelButton').hidden = true;
+        $('downloadButton').hidden = true;
         error($('jobError'), e.message);
       } else {
         failures += 1;
