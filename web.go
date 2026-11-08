@@ -135,6 +135,9 @@ func (s *webServer) handler() http.Handler {
 	mux.HandleFunc("GET /style.css", func(w http.ResponseWriter, _ *http.Request) {
 		serveEmbeddedWebAsset(w, "web/style.css", "text/css; charset=utf-8")
 	})
+	mux.HandleFunc("GET /workspace.js", func(w http.ResponseWriter, _ *http.Request) {
+		serveEmbeddedWebAsset(w, "web/workspace.js", "text/javascript; charset=utf-8")
+	})
 	mux.HandleFunc("GET /app.js", func(w http.ResponseWriter, _ *http.Request) {
 		if s.google != nil {
 			serveEmbeddedWebAsset(w, "web/google.js", "text/javascript; charset=utf-8")
