@@ -30,7 +30,7 @@ function respond(route, status, data) {
   });
 }
 
-async function withPage(contextOptions, run) {
+async function withPage(contextOptions, run, allowConsoleError = () => false) {
   const browser = await browserType.launch({ headless: true });
   const errors = [];
   try {
@@ -53,7 +53,7 @@ async function withPage(contextOptions, run) {
     });
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', entry => {
-      if (entry.type() === 'error') errors.push(entry.text()+' @ '+JSON.stringify(entry.location()));
+      if (entry.type() === 'error' && !allowConsoleError(entry)) errors.push(entry.text()+' @ '+JSON.stringify(entry.location()));
     });
     await run(page);
     const violations = await page.evaluate(() => window.__cspViolations || []);
@@ -374,8 +374,8 @@ test('WCAG automated audit: token workspace has no critical/serious violations',
 });
 
 test('transient 503 status recovers using bounded polling retries', {timeout:22000}, async () => {
+  const id='f'.repeat(32);
   await withPage({ viewport:{width:390,height:844},isMobile:true,hasTouch:true }, async page => {
-    const id='f'.repeat(32);
     let polls=0;
     await page.route('**/api/**', async route => {
       const request=route.request();
@@ -398,5 +398,11 @@ test('transient 503 status recovers using bounded polling retries', {timeout:220
     await page.waitForFunction(()=>document.querySelector('#jobState')?.textContent==='สำเร็จ',null,{timeout:13000});
     assert.equal(polls,2,'503 should retry exactly once before completion');
     assert.equal(await page.locator('#percent').textContent(),'100%');
+  }, entry => {
+    // Expected one isolated HTTP 503 response; do not hide unrelated console/CSP errors.
+    const location=entry.location();
+    return entry.type()==='error' &&
+      /\b503\b/.test(entry.text()) &&
+      location.url.includes('/api/jobs/'+id);
   });
 });

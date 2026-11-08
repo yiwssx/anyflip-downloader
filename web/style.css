@@ -68,7 +68,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .account-pill{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:100px;padding:6px 6px 6px 10px;max-width:100%}
 .avatar{width:31px;height:31px;border-radius:50%;background:#e7f2eb;color:#23754d;display:grid;place-items:center;font-weight:800}
 .account-name{font-size:12px;color:#345345;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.environment-pill{color:#5c7968;font-size:12px;font-weight:700}
+.environment-pill{color:#365846;font-size:12px;font-weight:700}
 .welcome{display:flex;justify-content:space-between;align-items:center;gap:20px;position:relative;overflow:hidden;background:linear-gradient(113deg,#0a3427 0%,#13513a 67%,#1b674a 100%);color:#fff;padding:37px 42px;border-radius:21px;min-height:205px;margin-bottom:22px}
 .welcome:before{content:"";position:absolute;right:-130px;top:-205px;width:390px;height:390px;border:1px solid #ffffff24;border-radius:50%;box-shadow:0 0 0 60px #ffffff05,0 0 0 124px #ffffff05}
 .welcome h1{position:relative;font-size:clamp(25px,3vw,36px);letter-spacing:-.9px;line-height:1.24;margin:13px 0}
@@ -271,14 +271,14 @@ body { font-size: 1rem; line-height: 1.65; background: #f2f6f3; color: var(--tex
 #primaryContent { max-width: 1520px; }
 .workspace-shell { grid-template-columns: 264px minmax(0, 1fr); min-height: calc(100vh - 88px); }
 .sidebar { top: 100px; padding: 32px 18px 24px 24px; gap: 20px; min-height: calc(100vh - 112px); }
-.sidebar-label { font-size: .75rem; color: #617b6d; letter-spacing: .105em; margin-left: 16px; }
+.sidebar-label { font-size: .75rem; color: #365846; letter-spacing: .105em; margin-left: 16px; }
 .nav-links { gap: 8px; }
 .nav-link { min-height: 52px; gap: 12px; padding: 11px 13px; font-size: 1rem; font-weight: 690; line-height: 1.35; border-radius: 13px; }
 .nav-link.is-current { color: #145d40; background: #e1f1e7; }
 .nav-icon { width: 32px; height: 32px; font-size: 1.25rem; border-radius: 9px; }
 .side-help { padding: 18px; font-size: .875rem; line-height: 1.65; color: #476353; }
 .side-help strong { font-size: .9375rem; color: #254b39; }
-.sidebar-version { font-size: .8125rem; color: #647c6d; }
+.sidebar-version { font-size: .8125rem; color: #365846; }
 .workspace-main { padding: 30px 36px 22px; }
 .workspace-main, .content-grid, .panel, .welcome, .metrics, .metric { min-width: 0; }
 .welcome > div:first-child { min-width: 0; flex: 1 1 0; }
