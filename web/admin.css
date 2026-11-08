@@ -1,0 +1,42 @@
+/* Google Workspace RBAC Admin Console: no second application required. */
+#adminNav[hidden], #adminConsole[hidden], #adminAuditSection[hidden] { display:none!important; }
+.admin-console { margin:1.5rem 0; }
+.admin-console h3 { font-size:1.12rem; margin:0 0 .35rem; }
+.admin-console p { line-height:1.65; }
+.admin-kpis { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin:1.25rem 0 1.5rem; }
+.admin-kpis > div { background:#f3f8f5;border:1px solid #dbe8de;border-radius:14px;padding:1rem;display:flex;flex-direction:column;gap:.35rem; }
+.admin-kpis span { font-size:.84rem;color:#557366; }
+.admin-kpis strong { font-size:1.75rem;color:#134e3d;font-variant-numeric:tabular-nums; }
+.admin-section { margin-top:1.75rem;padding-top:1.4rem;border-top:1px solid #e2eae6; }
+.admin-section-heading { display:flex;justify-content:space-between;gap:1rem; }
+.admin-section-heading p { color:#667f72;margin:.25rem 0 .8rem; }
+.admin-tools { display:flex;gap:.75rem;flex-wrap:wrap;margin:.8rem 0;align-items:flex-end; }
+.admin-tools label { display:flex;flex-direction:column;gap:.3rem;flex:1 1 230px;font-size:.85rem;color:#466556;font-weight:600; }
+.admin-tools input,.admin-tools select { min-width:0;width:100%; }
+.admin-scroll { max-width:100%;overflow-x:auto;border:1px solid #e2eae6;border-radius:12px; }
+.admin-scroll:focus-visible { outline:3px solid #176d56;outline-offset:3px; }
+.admin-table { width:100%;min-width:660px;border-collapse:collapse;text-align:left; }
+.admin-table th { background:#f1f7f4;color:#2a5645;font-weight:700;white-space:nowrap; }
+.admin-table th,.admin-table td { padding:.75rem .85rem;border-bottom:1px solid #e7efeb;vertical-align:middle;font-size:.87rem; }
+.admin-table tr:last-child td { border-bottom:0; }
+/* Keep the most important intervention controls reachable on mobile. */
+#adminJobRows td:first-child { white-space:nowrap; }
+#adminJobRows td:first-child button { white-space:nowrap; }
+
+.admin-table code { font-size:.78rem;white-space:nowrap; }
+.admin-table select { min-width:140px;max-width:190px; }
+.admin-table .admin-empty { text-align:center;padding:1.4rem;color:#708679; }
+.admin-pagination { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.75rem;color:#637c70;font-size:.83rem; }
+.admin-pagination button:disabled { opacity:.45;cursor:not-allowed; }
+.admin-audit-list { margin:.7rem 0 0;padding:0;list-style:none;max-height:270px;overflow-y:auto; }
+.admin-audit-list li { padding:.65rem .2rem;border-bottom:1px solid #e8efec;font-size:.83rem;overflow-wrap:anywhere; }
+.admin-audit-list li span { color:#728b7f; }
+@media(max-width:900px) { .admin-kpis {grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media(max-width:630px) {
+ .admin-console {padding:1rem;}
+ .admin-kpis {gap:.5rem;}
+ .admin-kpis > div {padding:.75rem;}
+ .admin-kpis strong {font-size:1.35rem;}
+ .admin-tools {flex-direction:column;align-items:stretch;}
+ .admin-pagination {gap:.3rem;flex-wrap:wrap;}
+}
