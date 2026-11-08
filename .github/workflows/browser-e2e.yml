@@ -51,7 +51,7 @@ jobs:
       ANYFLIP_WEB_TOKEN: ci-browser-token-for-synthetic-tests-only
       BROWSER_TEST_BASE_URL: http://127.0.0.1:8094
       BROWSER_TEST_ENGINE: ${{ matrix.engine }}
-      BROWSER_VISUAL_ARTIFACT_DIR: ${{ runner.temp }}/uih-screenshots
+      BROWSER_VISUAL_ARTIFACT_DIR: ${{ github.workspace }}/.uih-ci-screenshots
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -134,6 +134,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: uih-visual-${{ matrix.engine }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/uih-screenshots/
+          path: ${{ github.workspace }}/.uih-ci-screenshots/
           if-no-files-found: ignore
           retention-days: 7
