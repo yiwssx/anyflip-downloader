@@ -40,3 +40,12 @@ Existing tests include Go HTTP/CSP/auth/RBAC checks and mock-origin Playwright C
 2. Accessibility automation, visual baselines and Firefox/WebKit remain **UIH-03/06** work; do not claim WCAG 2.2 AA compliance from basic ARIA or Chromium checks alone.
 3. Admin presentation separation, confirmation UX and cross-role browser coverage remain **UIH-04**; backend RBAC enforcement must not change.
 4. After code-only CI, **UIH-07** still requires separately authorized host/browser acceptance and rollback rehearsal.
+
+
+## Implementation and verification addendum — UIH quality gates (2026-11-08)
+
+- [PR #105](https://github.com/yiwssx/anyflip-downloader/pull/105) extracts canonical `web/tokens.css` and the Google-mode `web/admin-api.js` transport. Both authentication modes load `tokens.css` before `style.css`; Google mode loads `admin-api.js` before its Admin UI.
+- A small Node policy check guards against accidental inline handlers/styles, asset load order changes, competing token roots, missing Go-embedded assets and weakening the source-level CSP. It supplements, not replaces, Go HTTP security tests.
+- Chromium, Firefox and compatibility-pinned WebKit CI collect **synthetic only** screenshots for named login/workspace/admin viewports and upload them for seven days. Reviewers must inspect the actual artifacts; **this is evidence capture, not automatic golden-image regression**.
+- Additional negative browser paths exercise Google session expiry during polling and Admin API role revocation. CI test credentials and email addresses are synthetic, never actual Workspace users.
+- A successful automated axe audit only establishes the scope of the selected rules and pages, **not full WCAG 2.2 AA compliance**. Actual accessibility on screen readers, physical Android/iOS and HTTPS reverse-proxy and quota checks are separately gated by `docs/UIH_RELEASE_ACCEPTANCE.md` (UIH-07 #101).
