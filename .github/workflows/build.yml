@@ -46,6 +46,7 @@ jobs:
 
     - name: Check embedded Web JavaScript syntax
       run: |
+        node --check web/workspace.js
         node --check web/app.js
         node --check web/google.js
         node --check web/admin.js

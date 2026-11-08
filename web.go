@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html web/style.css web/app.js web/google.html web/google.js web/admin.js web/favicon.svg web/logo.svg
+//go:embed web/index.html web/style.css web/workspace.js web/app.js web/google.html web/google.js web/admin.js web/favicon.svg web/logo.svg
 var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -134,6 +134,9 @@ func (s *webServer) handler() http.Handler {
 	})
 	mux.HandleFunc("GET /style.css", func(w http.ResponseWriter, _ *http.Request) {
 		serveEmbeddedWebAsset(w, "web/style.css", "text/css; charset=utf-8")
+	})
+	mux.HandleFunc("GET /workspace.js", func(w http.ResponseWriter, _ *http.Request) {
+		serveEmbeddedWebAsset(w, "web/workspace.js", "text/javascript; charset=utf-8")
 	})
 	mux.HandleFunc("GET /app.js", func(w http.ResponseWriter, _ *http.Request) {
 		if s.google != nil {

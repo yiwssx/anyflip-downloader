@@ -285,3 +285,43 @@ test('responsive readability: text hierarchy, touch controls and overflow at 320
     });
   }
 });
+
+test('single-flight status polling: slow responses never overlap', { timeout: 25_000 }, async () => {
+  await withPage({ viewport: { width: 390, height: 844 }, isMobile:true, hasTouch:true }, async page => {
+    const jobID = 'e'.repeat(32);
+    let active = 0, maximum = 0, requests = 0;
+    await page.route('**/api/**', async route => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+      if (pathname === '/api/jobs' && request.method() === 'POST') {
+        return respond(route, 202, { id:jobID, stage:'queued', completed:0, total:2, downloadReady:false });
+      }
+      if (pathname === '/api/jobs' && request.method() === 'GET') {
+        return respond(route, 200, { jobs:[] });
+      }
+      if (pathname === '/api/jobs/'+jobID && request.method() === 'GET') {
+        active++;
+        maximum = Math.max(maximum, active);
+        requests++;
+        await new Promise(resolve => setTimeout(resolve, 1450));
+        active--;
+        return respond(route, 200, {
+          id: jobID, stage: requests >= 2 ? 'completed' : 'downloading',
+          completed: requests >= 2 ? 2 : 1, total: 2, downloadReady: requests >= 2,
+        });
+      }
+      return respond(route, 200, {});
+    });
+    await page.goto(baseURL+'/', { waitUntil:'networkidle' });
+    await page.locator('#token').fill(token);
+    await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
+    await page.locator('#startButton').click();
+    await page.waitForFunction(
+      () => document.querySelector('#jobState')?.textContent === 'สำเร็จ',
+      null, { timeout: 12000 }
+    );
+    assert.ok(requests >= 2, 'test must observe more than one status check');
+    assert.equal(maximum, 1, 'polling requests must never overlap');
+    assert.equal(await page.locator('#percent').textContent(), '100%');
+  });
+});

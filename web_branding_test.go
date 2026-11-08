@@ -48,7 +48,7 @@ func TestBrandingAssetsAreSelfContainedAndServedInBothModes(t *testing.T) {
   handler.ServeHTTP(w,httptest.NewRequest(http.MethodGet,"http://"+pageHost+"/",nil))
   if w.Code!=http.StatusOK{t.Fatalf("unexpected page status: %d",w.Code)}
   body:=w.Body.String()
-  for _,needle:=range []string{`rel="icon" type="image/svg+xml" href="/favicon.svg"`,`class="brand-logo" src="/logo.svg"`,`RCAT AnyFlip Downloader`} {
+  for _,needle:=range []string{`rel="icon" type="image/svg+xml" href="/favicon.svg"`,`class="brand-logo" src="/logo.svg"`,`src="/workspace.js"`,`RCAT AnyFlip Downloader`} {
    if !strings.Contains(body,needle){t.Fatalf("google=%v missing branding %q",google,needle)}
   }
  }
