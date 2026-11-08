@@ -37,12 +37,25 @@ async function withPage(contextOptions, run) {
     if (engine === 'firefox') delete options.isMobile;
     const context = await browser.newContext(options);
     const page = await context.newPage();
+    await page.addInitScript(() => {
+      window.__cspViolations = [];
+      document.addEventListener('securitypolicyviolation', event => {
+        window.__cspViolations.push({
+          effectiveDirective:event.effectiveDirective,
+          blockedURI:event.blockedURI,
+          sourceFile:event.sourceFile,
+          lineNumber:event.lineNumber,
+          sample:event.sample,
+        });
+      });
+    });
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', entry => {
-      if (entry.type() === 'error') errors.push(entry.text());
+      if (entry.type() === 'error') errors.push(entry.text()+' @ '+JSON.stringify(entry.location()));
     });
     await run(page);
-    assert.deepEqual(errors, [], 'JavaScript console or CSP errors were observed');
+    const violations = await page.evaluate(() => window.__cspViolations || []);
+    assert.deepEqual(errors, [], 'JavaScript console or CSP errors were observed; violations='+JSON.stringify(violations));
     await context.close();
   } finally {
     await browser.close();
