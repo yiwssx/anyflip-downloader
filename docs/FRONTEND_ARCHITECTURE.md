@@ -49,3 +49,8 @@ Existing tests include Go HTTP/CSP/auth/RBAC checks and mock-origin Playwright C
 - Chromium and Firefox CI collect **synthetic only** screenshots for named login/workspace/admin viewports (WebKit still runs functional/axe tests but screenshots are skipped because Playwright injects CSP-blocked inline styles) and upload them for seven days. Reviewers must inspect the actual artifacts; **this is evidence capture, not automatic golden-image regression**.
 - Additional negative browser paths exercise Google session expiry during polling and Admin API role revocation. CI test credentials and email addresses are synthetic, never actual Workspace users.
 - A successful automated axe audit only establishes the scope of the selected rules and pages, **not full WCAG 2.2 AA compliance**. Actual accessibility on screen readers, physical Android/iOS and HTTPS reverse-proxy and quota checks are separately gated by `docs/UIH_RELEASE_ACCEPTANCE.md` (UIH-07 #101).
+
+## Extended authenticated accessibility and malformed-response regression
+- The GitHub Browser E2E fixture now audits serious/critical WCAG 2.x/2.2 violations not only on anonymous login and token mode but also on authenticated Workspace and Super Admin UI (synthetic data).
+- Malformed status payload injection verifies a visible error, automatic bounded recovery and preserved final job state without unhandled page errors.
+- These automated checks are **not** a claim of full manual WCAG compliance, production security or live account acceptance; retain UIH-07 as a separate gate.

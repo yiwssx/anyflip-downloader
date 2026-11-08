@@ -19,6 +19,7 @@
   --surface: #fff;
   --shadow: 0 12px 32px rgb(18 57 38 / 7%);
   --focus-ring: #eebc35;
+  --status-pending-text: #40576b; /* 6.75:1 against queued #f0f3f5 */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;

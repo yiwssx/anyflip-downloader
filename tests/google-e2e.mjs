@@ -74,6 +74,13 @@ test('Google workspace dashboard: responsive authenticated experience and histor
    assert.equal(await page.locator('.nav-link:visible').count(),4);
    assert.equal(await page.locator('#adminNav').isVisible(),false);
    assert.equal(await page.locator('#adminConsole').isVisible(),false);
+   const audit = await new AxeBuilder({page})
+     .withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa'])
+     .analyze();
+   assert.deepEqual(audit.violations
+     .filter(v => ['critical','serious'].includes(v.impact))
+     .map(v => ({id:v.id, impact:v.impact, target:v.nodes.map(n=>n.target)})),[],
+     'No high-impact WCAG violations in the authenticated interface');
    assert.equal(await page.locator('#token').count(),0);
    assert.equal(await page.locator('#adminPanel').count(),0);
    await page.locator('#historyFilter').selectOption('completed');
@@ -137,6 +144,13 @@ test('Workspace Admin Console: role-aware pages, responsive layout and confirmed
    assert.equal(await page.locator('#adminUserRows tr').count(),2);
    assert.equal(await page.locator('#adminJobRows tr').count(),1);
    assert.equal(await page.locator('#adminAuditSection').isVisible(),true);
+   const audit = await new AxeBuilder({page})
+     .withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa'])
+     .analyze();
+   assert.deepEqual(audit.violations
+     .filter(v => ['critical','serious'].includes(v.impact))
+     .map(v => ({id:v.id, impact:v.impact, target:v.nodes.map(n=>n.target)})),[],
+     'No high-impact WCAG violations in the authenticated interface');
    await page.locator('#adminUserRows select').selectOption('admin');
    await page.waitForTimeout(100);
    assert.equal(requests.some(r=>r.method==='PUT'&&r.payload.role==='admin'),true);

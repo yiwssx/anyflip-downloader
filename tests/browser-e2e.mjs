@@ -408,3 +408,37 @@ test('transient 503 status recovers using bounded polling retries', {timeout:220
       location.url.includes('/api/jobs/'+id);
   });
 });
+
+test('malformed status payload is contained and recovers on subsequent poll', {timeout:22000}, async () => {
+  const id='9'.repeat(32);
+  await withPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true}, async page => {
+    let statusRequests=0;
+    await page.route('**/api/**', route=>{
+      const pathname=new URL(route.request().url()).pathname;
+      if(pathname==='/api/jobs' && route.request().method()==='POST')
+        return respond(route,202,{id,stage:'queued',completed:0,total:1,downloadReady:false});
+      if(pathname==='/api/jobs' && route.request().method()==='GET')
+        return respond(route,200,{jobs:[]});
+      if(pathname==='/api/jobs/'+id){
+        statusRequests++;
+        if(statusRequests===1)return route.fulfill({
+          status:200,contentType:'application/json',body:'{malformed-json'
+        });
+        return respond(route,200,{id,stage:'completed',completed:1,total:1,downloadReady:true});
+      }
+      return respond(route,200,{});
+    });
+    await page.goto(baseURL+'/',{waitUntil:'networkidle'});
+    await page.locator('#token').fill(token);
+    await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
+    await page.locator('#startButton').click();
+    await page.waitForFunction(
+      ()=>document.querySelector('#jobError')?.textContent?.length>0,
+      null,{timeout:6000});
+    await page.waitForFunction(
+      ()=>document.querySelector('#jobState')?.textContent==='สำเร็จ',
+      null,{timeout:12000});
+    assert.equal(statusRequests,2,'malformed response must be retried once, without overlapping polls');
+    assert.equal(await page.locator('#percent').textContent(),'100%');
+  });
+});
