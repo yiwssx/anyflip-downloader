@@ -11,6 +11,7 @@ on:
       - 'web_csp_test.go'
       - 'tests/browser-e2e.mjs'
       - 'tests/google-e2e.mjs'
+      - 'tests/uih-visual.mjs'
       - '.github/workflows/browser-e2e.yml'
       - 'go.mod'
       - 'go.sum'
@@ -24,6 +25,7 @@ on:
       - 'web_csp_test.go'
       - 'tests/browser-e2e.mjs'
       - 'tests/google-e2e.mjs'
+      - 'tests/uih-visual.mjs'
       - '.github/workflows/browser-e2e.yml'
       - 'go.mod'
       - 'go.sum'
@@ -49,6 +51,7 @@ jobs:
       ANYFLIP_WEB_TOKEN: ci-browser-token-for-synthetic-tests-only
       BROWSER_TEST_BASE_URL: http://127.0.0.1:8094
       BROWSER_TEST_ENGINE: ${{ matrix.engine }}
+      BROWSER_VISUAL_ARTIFACT_DIR: ${{ runner.temp }}/uih-screenshots
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -125,3 +128,12 @@ jobs:
           fi
           node --check tests/google-e2e.mjs
           node --test tests/google-e2e.mjs
+
+      - name: Preserve synthetic browser screenshots for review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: uih-visual-${{ matrix.engine }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/uih-screenshots/
+          if-no-files-found: ignore
+          retention-days: 7
