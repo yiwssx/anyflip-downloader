@@ -24,7 +24,7 @@ Code merge and synthetic CI are not production acceptance. Only a designated ope
 | Post-release monitoring and verified rollback | Pending |
 
 ## Before rollout
-1. Record immutable commit SHA, PRs and successful GitHub CI run URLs. Review synthetic Chromium/Firefox/WebKit screenshots for layout differences. Screenshot artifacts are **not** golden-image comparisons, actual phones or WCAG certification.
+1. Record immutable commit SHA, PRs and successful GitHub CI run URLs. Review synthetic Chromium/Firefox screenshots for layout differences; WebKit functional/axe CI remains mandatory, while WebKit screenshot capture is deferred due to Playwright CSP-injected styles. Screenshot artifacts are **not** golden-image comparisons, actual phones or WCAG certification.
 2. Verify backups, persistent mount permissions, `0600` RBAC store, quota service, rollback image and clean deployment configuration without copying private tokens into logs/Issues.
 3. Verify Google Workspace OAuth allowed domains and canonical callback with the operator. Do not manipulate production credentials or DNS to satisfy tests.
 

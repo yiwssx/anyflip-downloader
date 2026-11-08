@@ -130,7 +130,7 @@ jobs:
           node --test tests/google-e2e.mjs
 
       - name: Preserve synthetic browser screenshots for review
-        if: always()
+        if: always() && matrix.engine != 'webkit'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: uih-visual-${{ matrix.engine }}-${{ github.run_attempt }}
