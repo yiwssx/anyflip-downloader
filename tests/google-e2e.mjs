@@ -1,12 +1,20 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {chromium} from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
+const engine = process.env.BROWSER_TEST_ENGINE || 'chromium';
+const browserType = { chromium, firefox, webkit }[engine];
+if (!browserType) throw new Error('Unsupported BROWSER_TEST_ENGINE: '+engine);
+function createContext(browser, settings) {
+ const options={...settings};
+ if(engine==='firefox') delete options.isMobile;
+ return browser.newContext(options);
+}
 
 const base=process.env.BROWSER_TEST_BASE_URL||'http://127.0.0.1:8094';
 test('Google-only sign-in: no local passwords, token field or anonymous jobs',async()=>{
- const browser=await chromium.launch({headless:true});
+ const browser=await browserType.launch({headless:true});
  try{
-  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  const context=await createContext(browser,{viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   const page=await context.newPage();
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#loginPanel').waitFor({state:'visible'});
@@ -34,10 +42,10 @@ test('Google-only sign-in: no local passwords, token field or anonymous jobs',as
 
 
 test('Google workspace dashboard: responsive authenticated experience and history controls',async()=>{
- const browser=await chromium.launch({headless:true});
+ const browser=await browserType.launch({headless:true});
  try{
   for(const viewport of [{width:1365,height:900},{width:390,height:844}]){
-   const context=await browser.newContext({viewport,isMobile:viewport.width<600,hasTouch:viewport.width<600});
+   const context=await createContext(browser,{viewport,isMobile:viewport.width<600,hasTouch:viewport.width<600});
    const page=await context.newPage();
    const failures=[];
    page.on('pageerror',e=>failures.push(e.message));
@@ -80,10 +88,10 @@ test('Google workspace dashboard: responsive authenticated experience and histor
 
 
 test('Workspace Admin Console: role-aware pages, responsive layout and confirmed privileged actions',async()=>{
- const browser=await chromium.launch({headless:true});
+ const browser=await browserType.launch({headless:true});
  try{
   for(const viewport of [{width:1365,height:900},{width:390,height:844}]){
-   const context=await browser.newContext({viewport,isMobile:viewport.width<600,hasTouch:viewport.width<600});
+   const context=await createContext(browser,{viewport,isMobile:viewport.width<600,hasTouch:viewport.width<600});
    const page=await context.newPage();
    const requests=[];
    page.on('dialog',dialog=>dialog.accept());
@@ -140,10 +148,10 @@ test('Workspace Admin Console: role-aware pages, responsive layout and confirmed
 
 
 test('Workspace Admin: read-only users and no privileged audit controls on desktop or mobile',async()=>{
- const browser=await chromium.launch({headless:true});
+ const browser=await browserType.launch({headless:true});
  try{
   for(const viewport of [{width:1365,height:900},{width:390,height:844}]){
-   const context=await browser.newContext({viewport,isMobile:viewport.width<600,hasTouch:viewport.width<600});
+   const context=await createContext(browser,{viewport,isMobile:viewport.width<600,hasTouch:viewport.width<600});
    const page=await context.newPage();
    const errors=[];
    let auditRequested=false;
@@ -187,10 +195,10 @@ test('Workspace Admin: read-only users and no privileged audit controls on deskt
 
 
 test('Google Workspace entry: readable sign-in and controls from 320px to desktop', async () => {
- const browser=await chromium.launch({headless:true});
+ const browser=await browserType.launch({headless:true});
  try{
   for(const width of [320,390,768,1365]){
-   const context=await browser.newContext({
+   const context=await createContext(browser,{
     viewport:{width,height:900},
     ...(width<600?{isMobile:true,hasTouch:true}:{})
    });

@@ -3,7 +3,10 @@
 // Run only against an isolated local CI instance, never against the operator's LAN host.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
+const engine = process.env.BROWSER_TEST_ENGINE || 'chromium';
+const browserType = { chromium, firefox, webkit }[engine];
+if (!browserType) throw new Error('Unsupported BROWSER_TEST_ENGINE: '+engine);
 
 const baseURL = process.env.BROWSER_TEST_BASE_URL || 'http://127.0.0.1:8094';
 const token = process.env.ANYFLIP_WEB_TOKEN || 'ci-browser-test-token-strong-only';
@@ -26,10 +29,13 @@ function respond(route, status, data) {
 }
 
 async function withPage(contextOptions, run) {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await browserType.launch({ headless: true });
   const errors = [];
   try {
-    const context = await browser.newContext(contextOptions);
+    const options = { ...contextOptions };
+    // Playwright Firefox does not support mobile viewport emulation mode.
+    if (engine === 'firefox') delete options.isMobile;
+    const context = await browser.newContext(options);
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', entry => {
@@ -323,5 +329,18 @@ test('single-flight status polling: slow responses never overlap', { timeout: 25
     assert.ok(requests >= 2, 'test must observe more than one status check');
     assert.equal(maximum, 1, 'polling requests must never overlap');
     assert.equal(await page.locator('#percent').textContent(), '100%');
+  });
+});
+
+test('keyboard skip link and stable accessible progress announcements', async () => {
+  await withPage({ viewport:{width:390,height:844}, isMobile:true, hasTouch:true }, async page => {
+    await page.route('**/api/**', route => respond(route,200,{jobs:[]}));
+    await page.goto(baseURL+'/',{waitUntil:'networkidle'});
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('.skip-link').evaluate(el => document.activeElement === el),true,
+      'Skip-to-content must be first keyboard stop');
+    assert.equal(await page.locator('#jobDescription').getAttribute('role'),'status');
+    assert.equal(await page.locator('#jobDescription').getAttribute('aria-live'),'polite');
+    assert.equal(await page.locator('#jobDescription').getAttribute('aria-atomic'),'true');
   });
 });

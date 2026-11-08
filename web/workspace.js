@@ -44,10 +44,12 @@
         step.classList.toggle('is-current', index === currentStage);
         step.classList.toggle('is-done', j.stage === 'completed' || (currentStage > index && index >= 0));
       });
-      $('jobDescription').textContent = j.stage==='completed' ? 'สร้าง Image-based PDF สำเร็จแล้ว พร้อมดาวน์โหลด'
+      const description = j.stage==='completed' ? 'สร้าง Image-based PDF สำเร็จแล้ว พร้อมดาวน์โหลด'
         : j.stage==='failed' ? 'งานนี้ไม่สำเร็จ'
         : j.stage==='cancelled' ? 'งานถูกยกเลิก'
         : 'ระบบกำลังดำเนินการ: '+(labels[j.stage] || j.stage);
+      // Only announce a changed stage; repeating it every poll floods live regions.
+      if ($('jobDescription').textContent !== description) $('jobDescription').textContent = description;
       $('progressFill').style.width = progress+'%';
       $('progressTrack').setAttribute('aria-valuenow', String(progress));
       $('pageCount').textContent = completed+' / '+total+' หน้า';

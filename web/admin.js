@@ -104,6 +104,7 @@
         if (['queued','preparing','downloading','converting'].includes(item.stage) && !item.cancelRequested) {
           const cancel = node('button','ระงับงาน','button-quiet');
           cancel.type='button';
+          cancel.setAttribute('aria-label','ระงับงาน '+item.id.slice(0,12));
           cancel.addEventListener('click',async () => {
             const reason = $('adminCancelReason').value;
             if (!window.confirm('ยืนยันการยกเลิกงาน #'+item.id.slice(0,12)+' ?')) return;
@@ -115,6 +116,7 @@
               });
               report('');
               await refreshAll();
+              $('adminJobsTitle').focus();
             } catch(e) {report(e.message)}
             finally {cancel.disabled=false}
           });
@@ -160,6 +162,7 @@
       if (me.role==='super_admin' && u.identityRef!==me.identityRef && !u.disabled) {
         const select=node('select');
         select.setAttribute('aria-label','เปลี่ยนบทบาท '+(u.email || u.identityRef));
+        select.dataset.identityRef=u.identityRef;
         for (const role of ['user','admin','super_admin']) {
           const option=node('option',roleNames[role]);
           option.value=role;
@@ -178,6 +181,9 @@
               report('');
               await refreshUsers();
               await refreshAudit();
+              const replacement=Array.from($('adminUserRows').querySelectorAll('select'))
+                .find(el=>el.dataset.identityRef===u.identityRef);
+              if(replacement) replacement.focus();
             } catch(e) {report(e.message);select.value=u.role}
           } else select.value=u.role;
           select.disabled=false;
@@ -213,9 +219,16 @@
   async function refreshAll() {
     if (!me) return;
     report('');
+    const refreshButton=$('adminRefresh');
+    refreshButton.disabled=true;
+    refreshButton.setAttribute('aria-busy','true');
     try {
       await Promise.all([refreshSummary(),refreshJobs(),refreshUsers(),refreshAudit()]);
     } catch(e) {report(e.message)}
+    finally {
+      refreshButton.disabled=false;
+      refreshButton.removeAttribute('aria-busy');
+    }
   }
   async function checkRole() {
     try {

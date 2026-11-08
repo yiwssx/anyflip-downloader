@@ -37,13 +37,18 @@ permissions:
   contents: read
 
 jobs:
-  chromium:
-    name: Chromium desktop/mobile smoke
+  browser:
+    name: ${{ matrix.engine }} desktop/mobile E2E
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, firefox, webkit]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       ANYFLIP_WEB_TOKEN: ci-browser-token-for-synthetic-tests-only
       BROWSER_TEST_BASE_URL: http://127.0.0.1:8094
+      BROWSER_TEST_ENGINE: ${{ matrix.engine }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -55,10 +60,10 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install pinned Playwright Chromium
+      - name: Install pinned Playwright browser (${{ matrix.engine }})
         run: |
           npm install --no-save --ignore-scripts playwright@1.64.1
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps ${{ matrix.engine }}
 
       - name: Compile and run local isolated Web GUI for browser checks
         shell: bash
