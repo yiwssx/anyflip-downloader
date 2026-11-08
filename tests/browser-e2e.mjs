@@ -442,3 +442,106 @@ test('malformed status payload is contained and recovers on subsequent poll', {t
     assert.equal(await page.locator('#percent').textContent(),'100%');
   });
 });
+
+test('transient HTTP 429 status backs off then recovers', {timeout:22000}, async () => {
+  const id='8'.repeat(32);
+  await withPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true},async page=>{
+    let polls=0;
+    await page.route('**/api/**',route=>{
+      const pathname=new URL(route.request().url()).pathname;
+      if(pathname==='/api/jobs' && route.request().method()==='POST')
+        return respond(route,202,{id,stage:'queued',completed:0,total:1,downloadReady:false});
+      if(pathname==='/api/jobs' && route.request().method()==='GET')
+        return respond(route,200,{jobs:[]});
+      if(pathname==='/api/jobs/'+id) {
+        polls++;
+        if(polls===1) return respond(route,429,{error:'rate limited'});
+        return respond(route,200,{id,stage:'completed',completed:1,total:1,downloadReady:true});
+      }
+      return respond(route,200,{});
+    });
+    await page.goto(baseURL+'/',{waitUntil:'networkidle'});
+    await page.locator('#token').fill(token);
+    await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
+    await page.locator('#startButton').click();
+    await page.waitForFunction(()=>document.querySelector('#jobState')?.textContent==='สำเร็จ',
+      null,{timeout:12000});
+    assert.equal(polls,2,'429 must cause bounded retry, not terminal failure');
+    assert.equal(await page.locator('#percent').textContent(),'100%');
+  },entry=>entry.type()==='error' && /\b429\b/.test(entry.text()) &&
+    entry.location().url.includes('/api/jobs/'+id));
+});
+
+test('legacy token 401 stops polling and permits credential correction', {timeout:17000},async()=>{
+  const id='7'.repeat(32);
+  await withPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true},async page=>{
+    let polls=0;
+    await page.route('**/api/**',route=>{
+      const path=new URL(route.request().url()).pathname;
+      if(path==='/api/jobs' && route.request().method()==='POST')
+        return respond(route,202,{id,stage:'queued',completed:0,total:1,downloadReady:false});
+      if(path==='/api/jobs' && route.request().method()==='GET')
+        return respond(route,200,{jobs:[]});
+      if(path==='/api/jobs/'+id) {
+        polls++;
+        return route.fulfill({status:401,contentType:'text/plain',body:'unauthorized'});
+      }
+      return respond(route,200,{});
+    });
+    await page.goto(baseURL+'/',{waitUntil:'networkidle'});
+    await page.locator('#token').fill(token);
+    await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
+    await page.locator('#startButton').click();
+    await page.waitForFunction(()=>document.querySelector('#jobError')?.textContent?.includes('Access Token'),
+      null,{timeout:6000});
+    assert.equal(await page.locator('#startButton').isEnabled(),true);
+    assert.equal(await page.locator('#cancelButton').isVisible(),false);
+    assert.equal(await page.locator('#downloadButton').isVisible(),false);
+    await page.waitForTimeout(1500);
+    assert.equal(polls,1,'401 must terminate polling');
+  },entry=>entry.type()==='error' && /\b401\b/.test(entry.text()) &&
+    entry.location().url.includes('/api/jobs/'+id));
+});
+
+test('superseded job request cannot overwrite later selected job', {timeout:18000}, async () => {
+  const first='4'.repeat(32),second='5'.repeat(32);
+  await withPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true},async page=>{
+    let oldRequests=0;
+    await page.route('**/api/**',async route=>{
+      const path=new URL(route.request().url()).pathname;
+      if(path==='/api/jobs' && route.request().method()==='GET') {
+        return respond(route,200,{jobs:[
+          {id:first,stage:'downloading',completed:1,total:8,downloadReady:false},
+          {id:second,stage:'completed',completed:5,total:5,downloadReady:true}
+        ]});
+      }
+      if(path==='/api/jobs/'+first) {
+        oldRequests++;
+        await new Promise(resolve=>setTimeout(resolve,1250));
+        try {
+          await respond(route,200,{id:first,stage:'downloading',completed:1,total:8,downloadReady:false});
+        } catch(_) { /* request aborted because the user selected another job */ }
+        return;
+      }
+      if(path==='/api/jobs/'+second)
+        return respond(route,200,{id:second,stage:'completed',completed:5,total:5,downloadReady:true});
+      return respond(route,200,{});
+    });
+    await page.goto(baseURL+'/',{waitUntil:'networkidle'});
+    await page.locator('#token').fill(token);
+    await page.locator('#refreshHistory').click();
+    await page.locator('.historyRow').first().waitFor();
+    await page.locator('.historyRow').first().getByRole('button').click();
+    await page.locator('.historyRow').last().getByRole('button').click();
+    await page.waitForFunction(id=>document.querySelector('#jobReference')?.textContent?.includes(id),
+      second,{timeout:6000});
+    await page.waitForFunction(()=>document.querySelector('#jobState')?.textContent==='สำเร็จ',
+      null,{timeout:6000});
+    await page.waitForTimeout(1500);
+    assert.ok(oldRequests>=1,'must exercise superseded status request');
+    assert.match(await page.locator('#jobReference').textContent(),new RegExp(second));
+    assert.equal(await page.locator('#percent').textContent(),'100%');
+  },entry=>entry.type()==='error' &&
+    /abort|cancel/i.test(entry.text()) &&
+    entry.location().url.includes('/api/jobs/'+first));
+});
