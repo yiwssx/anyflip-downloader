@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html web/style.css web/workspace.js web/app.js web/google.html web/google.js web/admin.js web/favicon.svg web/logo.svg
+//go:embed web/index.html web/tokens.css web/style.css web/workspace.js web/app.js web/google.html web/google.js web/admin-api.js web/admin.js web/favicon.svg web/logo.svg
 var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -132,6 +132,9 @@ func (s *webServer) handler() http.Handler {
 	mux.HandleFunc("GET /logo.svg", func(w http.ResponseWriter, _ *http.Request) {
 		serveEmbeddedWebAsset(w, "web/logo.svg", "image/svg+xml")
 	})
+	mux.HandleFunc("GET /tokens.css", func(w http.ResponseWriter, _ *http.Request) {
+		serveEmbeddedWebAsset(w, "web/tokens.css", "text/css; charset=utf-8")
+	})
 	mux.HandleFunc("GET /style.css", func(w http.ResponseWriter, _ *http.Request) {
 		serveEmbeddedWebAsset(w, "web/style.css", "text/css; charset=utf-8")
 	})
@@ -149,6 +152,9 @@ func (s *webServer) handler() http.Handler {
         // The asset itself is public; RBAC still protects all admin data APIs.
         // Serve in Google mode even when the role feature is disabled so the
         // bundled SSO page never requests a missing script.
+        mux.HandleFunc("GET /admin-api.js",func(w http.ResponseWriter,_ *http.Request) {
+            serveEmbeddedWebAsset(w,"web/admin-api.js","text/javascript; charset=utf-8")
+        })
         mux.HandleFunc("GET /admin.js",func(w http.ResponseWriter,_ *http.Request) {
             serveEmbeddedWebAsset(w,"web/admin.js","text/javascript; charset=utf-8")
         })

@@ -49,6 +49,7 @@ jobs:
         node --check web/workspace.js
         node --check web/app.js
         node --check web/google.js
+        node --check web/admin-api.js
         node --check web/admin.js
 
     - name: Vet
