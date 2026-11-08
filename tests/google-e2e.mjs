@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import { chromium, firefox, webkit } from 'playwright';
+import { captureVisual } from './uih-visual.mjs';
 import axeModule from '@axe-core/playwright';
 const AxeBuilder = axeModule.AxeBuilder || axeModule.default || axeModule;
 const engine = process.env.BROWSER_TEST_ENGINE || 'chromium';
@@ -20,6 +21,7 @@ test('Google-only sign-in: no local passwords, token field or anonymous jobs',as
   const page=await context.newPage();
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#loginPanel').waitFor({state:'visible'});
+  await captureVisual(page,engine,'google-login-390');
   assert.equal(await page.locator('#token').count(),0);
   assert.equal(await page.locator('#password').count(),0);
   assert.equal(await page.locator('#adminPanel').count(),0);
@@ -66,6 +68,7 @@ test('Google workspace dashboard: responsive authenticated experience and histor
    assert.equal(await page.locator('#loginPanel').isVisible(),false);
    assert.equal(await page.locator('#signedInUser').textContent(),'person@rcat.ac.th');
    await page.waitForFunction(()=>document.querySelector('#statTotal')?.textContent==='3');
+   await captureVisual(page,engine,'workspace-'+viewport.width);
    assert.equal(await page.locator('#statActive').textContent(),'1');
    assert.equal(await page.locator('#statDone').textContent(),'1');
    assert.equal(await page.locator('.nav-link:visible').count(),4);
@@ -126,6 +129,7 @@ test('Workspace Admin Console: role-aware pages, responsive layout and confirmed
    await page.locator('#workArea').waitFor({state:'visible'});
    await page.locator('#adminConsole').waitFor({state:'visible'});
    await page.waitForFunction(()=>document.querySelector('#adminTotal')?.textContent==='2');
+   await captureVisual(page,engine,'admin-'+viewport.width);
    assert.equal(await page.locator('#adminNav').isVisible(),true);
    assert.equal(await page.locator('#adminTotal').textContent(),'2');
    assert.match(await page.locator('#adminStorageStatus').textContent(),/6 GiB/);
@@ -247,4 +251,72 @@ test('WCAG automated audit: Workspace sign-in has no critical/serious violations
    'Resolve high-impact sign-in accessibility violations before release');
   await context.close();
  } finally {await browser.close();}
+});
+
+test('Google 401 during active job stops polling and returns to sign-in', {timeout:20000}, async () => {
+ const browser=await browserType.launch({headless:true}), id='e'.repeat(32);
+ try{
+  const context=await createContext(browser,{viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  const page=await context.newPage();
+  let polls=0;
+  await page.route('**/auth/me',route=>route.fulfill({
+   status:200,contentType:'application/json',
+   body:JSON.stringify({email:'staff@rcat.ac.th',role:'user',identityRef:'g-'+'a'.repeat(64)})
+  }));
+  await page.route('**/api/jobs',route=>{
+   if(route.request().method()==='POST')return route.fulfill({status:202,contentType:'application/json',body:JSON.stringify({
+    id,stage:'queued',completed:0,total:2,downloadReady:false
+   })});
+   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({jobs:[]})});
+  });
+  await page.route('**/api/jobs/'+id,route=>{
+   polls++;
+   return route.fulfill({status:401,contentType:'text/plain',body:'unauthorized'});
+  });
+  await page.goto(base+'/',{waitUntil:'networkidle'});
+  await page.locator('#workArea').waitFor({state:'visible'});
+  await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
+  await page.locator('#startButton').click();
+  await page.locator('#loginPanel').waitFor({state:'visible'});
+  assert.equal(await page.locator('#workArea').isVisible(),false);
+  await page.waitForTimeout(1500);
+  assert.equal(polls,1,'expired Google session must not keep polling');
+  await context.close();
+ }finally{await browser.close()}
+});
+
+test('Admin 403 revocation hides privileged navigation immediately', {timeout:20000}, async () => {
+ const browser=await browserType.launch({headless:true});
+ try {
+  const context=await createContext(browser,{viewport:{width:390,height:844},hasTouch:true});
+  const page=await context.newPage();
+  let revoked=false,denied=0;
+  await page.route('**/auth/me',route=>route.fulfill({
+   status:200,contentType:'application/json',
+   body:JSON.stringify({email:'admin@rcat.ac.th',role:'admin',identityRef:'g-'+'a'.repeat(64)})
+  }));
+  await page.route('**/api/jobs',route=>route.fulfill({
+   status:200,contentType:'application/json',body:JSON.stringify({jobs:[]})
+  }));
+  await page.route('**/api/admin/**',route=>{
+   const pathname=new URL(route.request().url()).pathname;
+   if(revoked&&pathname==='/api/admin/summary') {
+    denied++;
+    return route.fulfill({status:403,contentType:'text/plain',body:'forbidden'});
+   }
+   let data={};
+   if(pathname==='/api/admin/summary')data={total:0,active:0,completed:0,failed:0};
+   if(pathname==='/api/admin/jobs')data={total:0,jobs:[]};
+   if(pathname==='/api/admin/users')data={users:[]};
+   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+  });
+  await page.goto(base+'/',{waitUntil:'networkidle'});
+  await page.locator('#adminConsole').waitFor({state:'visible'});
+  revoked=true;
+  await page.locator('#adminRefresh').click();
+  await page.waitForFunction(()=>document.querySelector('#adminNav')?.hidden===true);
+  assert.equal(await page.locator('#adminConsole').isVisible(),false);
+  assert.ok(denied>=1);
+  await context.close();
+ }finally{await browser.close()}
 });

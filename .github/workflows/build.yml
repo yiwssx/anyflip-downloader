@@ -44,6 +44,9 @@ jobs:
     - name: Validate repository governance policy
       run: python3 scripts/check-repository-policy.py
 
+    - name: Enforce frontend asset and CSP invariants
+      run: node scripts/check-frontend-policy.mjs
+
     - name: Check embedded Web JavaScript syntax
       run: |
         node --check web/workspace.js

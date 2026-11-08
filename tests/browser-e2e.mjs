@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { chromium, firefox, webkit } from 'playwright';
+import { captureVisual } from './uih-visual.mjs';
 import axeModule from '@axe-core/playwright';
 const AxeBuilder = axeModule.AxeBuilder || axeModule.default || axeModule;
 const engine = process.env.BROWSER_TEST_ENGINE || 'chromium';
@@ -262,6 +263,7 @@ test('responsive readability: text hierarchy, touch controls and overflow at 320
     }, async page => {
       await page.route('**/api/**', route => respond(route, 200, { jobs: [] }));
       await page.goto(baseURL + '/', { waitUntil: 'networkidle' });
+      await captureVisual(page,engine,'token-'+width);
       const measurements = await page.evaluate(() => {
         const size = selector => {
           const element = document.querySelector(selector);
