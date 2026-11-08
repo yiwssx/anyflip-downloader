@@ -6,6 +6,7 @@
   let workspace = null;
   function showLogin() {
     if (workspace) workspace.stop();
+    $('signedInUser').textContent = '';
     $('jobPanel').hidden = true;
     $('workArea').hidden = true;
     $('loginPanel').hidden = false;
