@@ -12,6 +12,21 @@
 - ไม่ติดตั้งฐานข้อมูล/OCR ตั้งแต่วันแรกโดยไม่จำเป็น; เน้นความเสถียร ความปลอดภัย และไฟล์ผลลัพธ์ถูกต้องก่อน
 - **หนึ่ง PR ต่อหนึ่งงาน** พร้อมทดสอบและตรวจรับก่อน Merge; Tracker นี้เป็นศูนย์กลางติดตาม
 
+
+## UIH — Frontend Architecture & UI/UX Hardening (2026-11-08)
+
+**Epic:** [#93](https://github.com/yiwssx/anyflip-downloader/issues/93) · [UIH-00 #94](https://github.com/yiwssx/anyflip-downloader/issues/94) → [UIH-01 #95](https://github.com/yiwssx/anyflip-downloader/issues/95) → [UIH-02 #96](https://github.com/yiwssx/anyflip-downloader/issues/96) → [UIH-03 #97](https://github.com/yiwssx/anyflip-downloader/issues/97) / [UIH-04 #98](https://github.com/yiwssx/anyflip-downloader/issues/98) / [UIH-05 #99](https://github.com/yiwssx/anyflip-downloader/issues/99) → [UIH-06 #100](https://github.com/yiwssx/anyflip-downloader/issues/100) → [UIH-07 #101](https://github.com/yiwssx/anyflip-downloader/issues/101).
+
+### Code deliveries
+- [x] [PR #102](https://github.com/yiwssx/anyflip-downloader/pull/102) **merged**: baseline architecture ADR, canonical CSS token root (legacy breakpoint overrides remain), shared token/Google workspace controller, no-overlap polling, AbortController and retry/backoff. Go build/vet/unit/race/security, Docker smoke and Chromium Browser E2E passed.
+- [x] [PR #103](https://github.com/yiwssx/anyflip-downloader/pull/103) **merged**: accessible progress descriptions, native progress without inline style, Admin focus/busy feedback and Chromium/Firefox/WebKit matrix. Three browser engines, Go checks and Docker smoke passed. WebKit is pinned to Playwright 1.63.0 due a known WebKit 27.2 CSP false-positive for native `select`; do not relax CSP.
+- [ ] **UIH-00/01/02/03/04/05/06 closeout pending**: PR merge does not imply every acceptance criterion is satisfied. Remaining areas: visual baseline review, legacy CSS cascade cleanup, full WCAG/keyboard review, enhanced Admin modularity, broader network-failure matrix, additional accessibility automation and screenshot regression.
+- [ ] **UIH-07 production gate remains OPEN**: real Google Workspace accounts, Chrome/Firefox/Safari and Android/iOS devices, actual HTTPS proxy/CSP headers, quotas/backup/rollback and operator approval. No production deployment, OAuth/DNS/Tunnel or volume change was performed by these PRs.
+
+See [Frontend architecture and trust boundaries](FRONTEND_ARCHITECTURE.md). All new code paths retain Go-owned RBAC, same-origin assets and public API contracts.
+
+---
+
 ## P5-ADMIN — Admin Console + Google Workspace RBAC (PRODUCTION ACCEPTED, 2026-11-04)
 
 **Epic:** [#69 — Admin Console + RBAC](https://github.com/yiwssx/anyflip-downloader/issues/69) · **Status:** CODE MERGED and PRODUCTION ACCEPTED BY HOST OPERATOR on 2026-11-04. Eight of eight RBAC child issues completed (#70–#77); Google Workspace SSO production cutover #68 accepted. GitHub code baseline at sign-off: `ce2cc13aa6064a3aa86c4c1a451d633c1ca5eedc`.

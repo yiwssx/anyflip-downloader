@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import { chromium, firefox, webkit } from 'playwright';
+import axeModule from '@axe-core/playwright';
+const AxeBuilder = axeModule.AxeBuilder || axeModule.default || axeModule;
 const engine = process.env.BROWSER_TEST_ENGINE || 'chromium';
 const browserType = { chromium, firefox, webkit }[engine];
 if (!browserType) throw new Error('Unsupported BROWSER_TEST_ENGINE: '+engine);
@@ -228,4 +230,21 @@ test('Google Workspace entry: readable sign-in and controls from 320px to deskto
    await context.close();
   }
  }finally{await browser.close()}
+});
+
+test('WCAG automated audit: Workspace sign-in has no critical/serious violations', {timeout:30000}, async () => {
+ const browser=await browserType.launch({headless:true});
+ try {
+  const context=await createContext(browser,{viewport:{width:390,height:844},hasTouch:true});
+  const page=await context.newPage();
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#loginPanel').waitFor({state:'visible'});
+  const results=await new AxeBuilder({page})
+   .withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa'])
+   .analyze();
+  const violations=results.violations.filter(v=>['serious','critical'].includes(v.impact));
+  assert.deepEqual(violations.map(v=>({id:v.id,impact:v.impact,selectors:v.nodes.map(n=>n.target)})),[],
+   'Resolve high-impact sign-in accessibility violations before release');
+  await context.close();
+ } finally {await browser.close();}
 });
