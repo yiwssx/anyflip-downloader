@@ -13,8 +13,8 @@ export async function captureVisual(page, engine, name) {
   await page.screenshot({
     path: join(directory, name+'.png'),
     fullPage: true,
-    animations: 'disabled',
-    caret: 'hide',
+    animations: 'allow',
+    caret: 'initial',
     timeout: 15000,
   });
 }
