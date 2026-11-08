@@ -1,5 +1,29 @@
 /* RCAT AnyFlip Downloader · unified responsive design system */
-/* Canonical design tokens are declared once at the beginning of this file. */
+:root {
+  font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+  font-size: 16px;
+  line-height: 1.625;
+  color: #203c30;
+  background: #f2f6f3;
+  font-synthesis: none;
+  --forest: #103d2e;
+  --forest2: #15533c;
+  --green: #176747;
+  --mint: #eaf5ee;
+  --gold: #efc34b;
+  --text: #203c30;
+  --muted: #4c675b;
+  --border: #dce7df;
+  --surface: #fff;
+  --shadow: 0 12px 32px rgb(18 57 38 / 7%);
+  --focus-ring: #eebc35;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+}
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:96px}
 body{margin:0;min-width:0;min-height:100vh}
@@ -229,19 +253,7 @@ footer{margin:26px 0 0;padding:19px 0;text-align:center;border-top:1px solid var
  * This final section intentionally supersedes legacy compact breakpoints.
  * Keep the official RCAT brand artwork untouched.
  */
-:root {
-  font-size: 16px;
-  line-height: 1.625;
-  --forest: #103d2e;
-  --forest2: #15533c;
-  --green: #176747;
-  --mint: #eaf5ee;
-  --text: #203c30;
-  --muted: #4c675b;
-  --border: #dce7df;
-  --surface: #fff;
-  --shadow: 0 12px 32px rgb(18 57 38 / 7%);
-}
+/* Design tokens were consolidated at the top; responsive rules below remain under review. */
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: 110px; }
 body { font-size: 1rem; line-height: 1.65; background: #f2f6f3; color: var(--text); }
 .site-header { background: #fff; border-color: #dce8df; }
