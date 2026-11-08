@@ -33,3 +33,23 @@ func TestAdminClientEmbeddedOnlyInGoogleMode(t *testing.T) {
     }
   }
 }
+
+func TestAdminStylesheetIsGoogleModeOnly(t *testing.T) {
+  for _, google :=range []bool{false,true} {
+    s,err:=newWebServer(testWebToken,t.TempDir())
+    if err!=nil {t.Fatal(err)}
+    if google {
+      s.google,err=newGoogleAuth("client","secret","https://rcat.example/auth/google/callback")
+      if err!=nil {t.Fatal(err)}
+    }
+    w:=httptest.NewRecorder()
+    s.handler().ServeHTTP(w,httptest.NewRequest(http.MethodGet,"http://rcat.example/admin.css",nil))
+    expected:=http.StatusNotFound
+    if google {expected=http.StatusOK}
+    if w.Code!=expected {t.Fatalf("google=%v /admin.css HTTP %d expected %d",google,w.Code,expected)}
+    if google {
+      if got:=w.Header().Get("Content-Type");got!="text/css; charset=utf-8" {t.Fatalf("admin CSS content type %q",got)}
+      if !strings.Contains(w.Body.String(),".admin-") {t.Fatal("missing Admin component styles")}
+    }
+  }
+}

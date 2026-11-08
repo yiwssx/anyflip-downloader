@@ -1,0 +1,251 @@
+/*
+ * Readable workspace v3 — shared token, Workspace SSO and Admin Console.
+ * Typographic hierarchy follows a 16px body / 14px secondary-text floor.
+ * This final section intentionally supersedes legacy compact breakpoints.
+ * Keep the official RCAT brand artwork untouched.
+ */
+/* Design tokens were consolidated at the top; responsive rules below remain under review. */
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 110px; }
+body { font-size: 1rem; line-height: 1.65; background: #f2f6f3; color: var(--text); }
+.site-header { background: #fff; border-color: #dce8df; }
+.header-inner { max-width: 1520px; min-height: 88px; padding: 14px 32px; }
+.header-brand { gap: 14px; min-width: 0; }
+.brand-logo { width: 60px; height: 60px; }
+.brand-copy { gap: 3px; }
+.brand-copy strong { font-size: 1.375rem; line-height: 1.2; letter-spacing: -.025em; }
+.brand-copy small { font-size: .8125rem; line-height: 1.4; letter-spacing: .065em; color: #526e5e; }
+.header-tag { font-size: .9375rem; color: #526a5d; }
+.header-badge { font-size: .75rem; letter-spacing: .045em; padding: 10px 13px; }
+#primaryContent { max-width: 1520px; }
+.workspace-shell { grid-template-columns: 264px minmax(0, 1fr); min-height: calc(100vh - 88px); }
+.sidebar { top: 100px; padding: 32px 18px 24px 24px; gap: 20px; min-height: calc(100vh - 112px); }
+.sidebar-label { font-size: .75rem; color: #365846; letter-spacing: .105em; margin-left: 16px; }
+.nav-links { gap: 8px; }
+.nav-link { min-height: 52px; gap: 12px; padding: 11px 13px; font-size: 1rem; font-weight: 690; line-height: 1.35; border-radius: 13px; }
+.nav-link.is-current { color: #145d40; background: #e1f1e7; }
+.nav-icon { width: 32px; height: 32px; font-size: 1.25rem; border-radius: 9px; }
+.side-help { padding: 18px; font-size: .875rem; line-height: 1.65; color: #476353; }
+.side-help strong { font-size: .9375rem; color: #254b39; }
+.sidebar-version { font-size: .8125rem; color: #365846; }
+.workspace-main { padding: 30px 36px 22px; }
+.workspace-main, .content-grid, .panel, .welcome, .metrics, .metric { min-width: 0; }
+.welcome > div:first-child { min-width: 0; flex: 1 1 0; }
+.top-utility { margin-bottom: 20px; min-height: 38px; min-width: 0; }
+.account-pill { padding: 7px; min-width: 0; max-width: 100%; }
+.avatar { width: 38px; height: 38px; flex: none; font-size: 1rem; }
+.account-name { min-width: 0; font-size: .9375rem; max-width: 270px; }
+.environment-pill { font-size: .875rem; }
+.welcome {
+  min-height: 220px;
+  padding: 36px 40px;
+  margin-bottom: 24px;
+  border-radius: 22px;
+  background: linear-gradient(119deg, #103c2d, #175a3f 76%, #247350);
+}
+.welcome h1 { font-size: clamp(2rem, 3.25vw, 2.75rem); line-height: 1.23; letter-spacing: -.025em; margin: 12px 0 14px; }
+.welcome h1 .highlight { margin-left: .3em; }
+.welcome p { font-size: 1.125rem; line-height: 1.65; color: #e5f4e9; max-width: 620px; margin-bottom: 22px; }
+.eyebrow, .section-eyebrow { font-size: .75rem; line-height: 1.35; letter-spacing: .095em; }
+.eyebrow { color: #e2f5e7; }
+.jump-link { min-height: 48px; padding: 12px 20px; font-size: 1rem; gap: 14px; border-radius: 12px; }
+.hero-symbol { width: 142px; height: 142px; border-radius: 28px; }
+.hero-symbol img { width: 124px; height: 124px; }
+.metrics { gap: 16px; margin-bottom: 24px; }
+.metric { gap: 16px; padding: 20px; border-radius: 18px; }
+.metric-icon { width: 48px; height: 48px; border-radius: 13px; font-size: 1.5rem; }
+.metric span { font-size: .9375rem; color: #52695d; line-height: 1.4; }
+.metric strong { font-size: 2rem; line-height: 1.1; }
+.content-grid { grid-template-columns: minmax(0, 1.24fr) minmax(310px, .76fr); gap: 20px; }
+.primary-column, .secondary-column { gap: 20px; }
+.panel { padding: 30px; border-radius: 20px; box-shadow: var(--shadow); }
+.section-heading { gap: 16px; margin-bottom: 24px; }
+.section-heading.compact { margin-bottom: 17px; }
+.section-icon { width: 48px; height: 48px; border-radius: 13px; font-size: 1.75rem; }
+.section-eyebrow { font-size: .75rem; color: #206f4a; }
+h2 { font-size: 1.5rem; line-height: 1.35; letter-spacing: -.02em; }
+h3 { font-size: 1.25rem; line-height: 1.4; }
+.section-heading p, .lead, .sub { font-size: 1rem; line-height: 1.65; color: var(--muted); }
+label { font-size: 1rem; line-height: 1.5; margin-bottom: 9px; color: #294b39; }
+.field { margin-bottom: 23px; }
+.fields { grid-template-columns: minmax(0, 1fr) minmax(165px, 190px); gap: 16px; }
+input:not([type=checkbox]), select, textarea {
+  min-height: 52px;
+  height: 52px;
+  font-size: 1rem;
+  line-height: 1.4;
+  padding: 12px 15px;
+  border-radius: 12px;
+  border-color: #bfcfc4;
+  color: var(--text);
+  background: #fff;
+}
+textarea { height: auto; min-height: 160px; line-height: 1.6; padding: 14px 15px; }
+input::placeholder, textarea::placeholder { color: #657b6f; }
+input[type=checkbox] { width: 22px; height: 22px; margin-top: 1px; }
+input:not([type=checkbox]):focus, select:focus, textarea:focus { border-color: #287454; box-shadow: 0 0 0 4px #d9f0e0; }
+.hint { font-size: .875rem; line-height: 1.65; color: #536f5f; }
+.optional { color: #5a7465; }
+.quality-box { padding: 18px; margin-bottom: 22px; border-radius: 14px; background: #f5faf6; }
+.quality-toggle { gap: 13px; line-height: 1.55; }
+.quality-toggle strong { font-size: 1rem; }
+.quality-toggle small { font-size: .875rem; line-height: 1.55; margin-top: 4px; color: #506a5b; }
+button, .primary, .secondary, .danger, .button-quiet, .google-button {
+  min-height: 48px; padding: 11px 18px; font-size: 1rem; line-height: 1.4;
+  font-weight: 700; border-radius: 12px;
+}
+.primary { background: #166748; color: #fff; }
+.primary:hover:not(:disabled) { background: #104c36; }
+.secondary { background: #e8f4ec; border-color: #c4dfcd; color: #195c40; }
+.button-quiet { min-height: 44px; padding: 9px 13px; }
+.action-hint { font-size: .875rem; color: #536f5f; }
+.error { font-size: .9375rem; line-height: 1.65; border-radius: 12px; padding: 13px 15px; }
+.pill { font-size: .875rem; padding: 9px 13px; }
+.progress-steps { gap: 8px; margin: 20px 0; }
+.progress-steps span { font-size: .875rem; line-height: 1.35; padding: 11px 7px; border-radius: 9px; }
+.track { height: 13px; }
+.meta { margin: 13px 0 20px; font-size: .9375rem; color: #52695d; }
+.meta strong { font-size: 1.125rem; }
+.job-ref { font-size: .875rem; line-height: 1.5; padding: 10px 12px; }
+.batch-footer { gap: 14px; }
+.history-tools { gap: 10px; margin-bottom: 19px; }
+.history-tools select { width: 150px; }
+.historyRow { gap: 13px; padding: 18px 0; }
+.history-id { font-size: .9375rem; line-height: 1.5; overflow-wrap: anywhere; }
+.history-pages { font-size: .875rem; color: #526e60; }
+.historyRow button { font-size: .875rem; min-height: 44px; padding: 9px 14px; }
+.status-chip { font-size: .8125rem; padding: 8px 10px; }
+.empty-state { padding: 38px 16px; gap: 11px; }
+.empty-state strong { font-size: 1rem; }
+.empty-state p { font-size: .875rem; line-height: 1.6; color: #526c5d; }
+.history-footnote { font-size: .875rem; color: #536e60; line-height: 1.7; }
+.notice { padding: 20px 22px; border-left: 4px solid #c39b43; background: #fffaf0; }
+.notice strong { font-size: 1rem; color: #6d5625; }
+.notice p { font-size: .9375rem; color: #665a3d; }
+.access-card { padding: 22px 28px; border-radius: 18px; }
+.access-card .section-heading h2 { font-size: 1.25rem; }
+.mini-icon { width: 36px; height: 36px; font-size: 1.25rem; }
+footer { font-size: .875rem; color: #587363; }
+.login-stage { max-width: 1180px; }
+.login-card { min-height: 540px; border-radius: 24px; }
+.login-visual { padding: 46px 50px; }
+.login-visual h2 { font-size: 1.875rem; line-height: 1.4; }
+.login-visual p:not(.eyebrow) { font-size: 1.0625rem; line-height: 1.7; }
+.feature-row span { font-size: .875rem; line-height: 1.45; padding: 9px 12px; }
+.login-form { padding: 50px 54px; }
+.secure-label { font-size: .8125rem; letter-spacing: .09em; color: #276e4b; }
+.login-form h1 { font-size: clamp(2rem, 3vw, 2.5rem); line-height: 1.2; }
+.login-form .lead { font-size: 1.0625rem; line-height: 1.7; }
+.google-button { min-height: 56px; padding: 14px 18px; font-size: 1.0625rem; }
+.domain-note { font-size: .9375rem; line-height: 1.6; padding: 15px; }
+.login-footnote { font-size: .875rem; line-height: 1.7; color: #536f60; }
+.admin-console { padding: 30px; }
+.admin-console h3 { font-size: 1.25rem; }
+.admin-kpis { gap: 14px; }
+.admin-kpis > div { padding: 19px; }
+.admin-kpis span { font-size: .9375rem; }
+.admin-kpis strong { font-size: 2rem; }
+.admin-section-heading p { font-size: .9375rem; color: #4e695c; }
+.admin-tools label { font-size: 1rem; gap: 8px; }
+.admin-table { min-width: 760px; }
+.admin-table th, .admin-table td { font-size: .9375rem; padding: 15px 16px; line-height: 1.5; }
+.admin-table code { font-size: .875rem; }
+.admin-table .admin-empty { font-size: 1rem; }
+.admin-pagination { font-size: .9375rem; }
+.admin-audit-list li { font-size: .9375rem; padding: 12px 4px; line-height: 1.55; }
+.admin-scroll { max-width: 100%; overscroll-behavior-x: contain; }
+.admin-scroll th:first-child { position: sticky; left: 0; z-index: 2; background: #eef5f0; }
+.admin-scroll td:first-child { position: sticky; left: 0; z-index: 1; background: #fff; box-shadow: 1px 0 0 #dce7df; }
+.admin-scroll tr:hover td:first-child { background: #f7faf8; }
+.admin-table select { min-width: 145px; }
+.panel, .welcome, #history, #adminConsole, #batch { scroll-margin-top: 112px; }
+
+/* Responsive hierarchy: never shrink informative copy into miniature text. */
+@media (max-width: 1150px) {
+  .workspace-main { padding: 26px; }
+  .sidebar { padding: 26px 14px 24px; }
+  .content-grid, .primary-column, .secondary-column { gap: 20px; }
+}
+@media (max-width: 850px) {
+  .workspace-shell { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { position: static; padding: 16px 22px; min-height: 0; min-width: 0; }
+  .nav-links { gap: 9px; min-width: 0; max-width: 100%; }
+  .nav-link { min-height: 48px; padding: 10px 14px; }
+  .workspace-main { padding: 22px; }
+  .welcome { gap: 18px; padding: 30px 28px; }
+  .hero-symbol { width: 105px; height: 105px; border-radius: 22px; }
+  .hero-symbol img { width: 96px; height: 96px; }
+  .login-stage { margin: 34px auto; }
+  .login-visual { padding: 36px 32px; }
+  .login-visual h2 { font-size: 1.625rem; }
+  .login-form { padding: 36px 32px; }
+}
+@media (max-width: 630px) {
+  .header-inner { padding: 12px 16px; gap: 10px; min-height: 72px; }
+  .brand-logo { width: 46px; height: 46px; }
+  .brand-copy strong { font-size: 1.125rem; }
+  .brand-copy small, .header-tag { display: none; }
+  .header-badge { font-size: .6875rem; letter-spacing: 0; padding: 8px 9px; }
+  .sidebar { padding: 13px 15px; }
+  .nav-links { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; overflow: visible; }
+  .nav-link { white-space: normal; min-height: 52px; padding: 9px 10px; font-size: .9375rem; gap: 8px; }
+  .nav-icon { width: 29px; height: 29px; font-size: 1.125rem; }
+  .workspace-main { padding: 18px 15px; }
+  .welcome { min-height: 0; padding: 28px 24px; margin-bottom: 18px; border-radius: 17px; }
+  .welcome h1 { font-size: clamp(1.875rem, 6vw, 2.125rem); margin: 13px 0; }
+  .welcome p { font-size: 1rem; line-height: 1.65; }
+  .hero-symbol { display: none; }
+  .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
+  .metric { flex-direction: row; align-items: center; padding: 15px; gap: 12px; border-radius: 14px; }
+  .metric:first-child { grid-column: 1 / -1; }
+  .metric-icon { width: 42px; height: 42px; font-size: 1.25rem; flex: none; }
+  .metric span { font-size: .875rem; min-height: 0; }
+  .metric strong { font-size: 1.75rem; }
+  .panel { padding: 22px 19px; border-radius: 16px; }
+  .fields { grid-template-columns: 1fr; gap: 0; }
+  .section-heading { gap: 12px; }
+  .section-icon { width: 43px; height: 43px; }
+  h2 { font-size: 1.375rem; }
+  .section-heading p { font-size: 1rem; }
+  .form-actions { flex-direction: column; align-items: stretch; }
+  .form-actions .primary { width: 100%; }
+  .action-hint { text-align: center; }
+  .progress-steps { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+  .progress-steps span { font-size: .875rem; padding: 11px 6px; }
+  .history-tools { flex-direction: column; }
+  .history-tools input, .history-tools select { width: 100%; }
+  .batch-footer { align-items: stretch; }
+  .batch-footer button { width: 100%; }
+  .account-pill { max-width: 100%; }
+  .account-name { max-width: clamp(92px, 37vw, 220px); }
+  .login-stage { margin: 20px auto; padding: 0 14px 25px; }
+  .login-card { grid-template-columns: 1fr; }
+  .login-visual { padding: 27px 25px; }
+  .login-visual h2 { font-size: 1.375rem; line-height: 1.4; }
+  .login-visual p:not(.eyebrow) { font-size: 1rem; }
+  .feature-row { gap: 8px; }
+  .feature-row span { font-size: .875rem; padding: 7px 10px; }
+  .login-form { padding: 31px 25px; }
+  .login-form h1 { font-size: 2rem; }
+  .login-form .lead { font-size: 1rem; }
+  .google-button { font-size: 1rem; }
+  .domain-note { font-size: .9375rem; }
+  .access-card { padding: 20px; }
+  .admin-console { padding: 21px 17px; }
+  .admin-kpis { gap: 10px; }
+  .admin-kpis > div { padding: 15px; }
+  .admin-kpis strong { font-size: 1.75rem; }
+  .admin-tools { flex-direction: column; align-items: stretch; }
+  .admin-pagination { gap: 8px; }
+  .admin-table th, .admin-table td { font-size: .9375rem; }
+}
+@media (max-width: 360px) {
+  .header-inner { padding: 10px 12px; }
+  .brand-copy strong { font-size: 1.0625rem; }
+  .header-badge { font-size: .625rem; }
+  .workspace-main { padding: 15px 12px; }
+  .panel { padding: 20px 15px; }
+  .welcome { padding: 24px 20px; }
+  .metric { padding: 12px; gap: 8px; }
+  .metric-icon { width: 36px; height: 36px; }
+  .nav-link { padding: 8px; font-size: .875rem; }
+}
