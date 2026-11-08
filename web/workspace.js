@@ -50,7 +50,8 @@
         : 'ระบบกำลังดำเนินการ: '+(labels[j.stage] || j.stage);
       // Only announce a changed stage; repeating it every poll floods live regions.
       if ($('jobDescription').textContent !== description) $('jobDescription').textContent = description;
-      $('progressFill').style.width = progress+'%';
+      // Native progress value avoids CSP-blocked inline style mutations (WebKit).
+      $('progressFill').value = progress;
       $('progressTrack').setAttribute('aria-valuenow', String(progress));
       $('pageCount').textContent = completed+' / '+total+' หน้า';
       $('percent').textContent = progress+'%';

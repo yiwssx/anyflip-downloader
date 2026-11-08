@@ -128,7 +128,7 @@
           <div class="progresshead"><div><span class="section-eyebrow">JOB PROGRESS</span><h2 id="progressTitle">สถานะการดาวน์โหลด</h2></div><span class="pill" id="jobState">รอเริ่มงาน</span></div>
           <p class="sub" id="jobDescription" role="status" aria-live="polite" aria-atomic="true">กำลังรอข้อมูลจากเซิร์ฟเวอร์</p>
           <div class="progress-steps" aria-label="ขั้นตอนการทำงาน"><span data-stage="queued">เข้าคิว</span><span data-stage="preparing">เตรียมข้อมูล</span><span data-stage="downloading">ดาวน์โหลด</span><span data-stage="converting">สร้าง PDF</span></div>
-          <div class="track" role="progressbar" aria-label="ความคืบหน้าการดาวน์โหลด" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack"><div class="fill" id="progressFill"></div></div>
+          <div class="track" role="progressbar" aria-label="ความคืบหน้าการดาวน์โหลด" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack"><progress class="fill" id="progressFill" value="0" max="100" aria-hidden="true"></progress></div>
           <div class="meta"><span id="pageCount">0 / 0 หน้า</span><strong id="percent">0%</strong></div>
           <div class="actions"><button type="button" class="danger" id="cancelButton">ยกเลิกงาน</button><button type="button" class="primary" id="downloadButton" hidden>↧ ดาวน์โหลด Image-based PDF</button></div>
           <p class="error" id="jobError" role="alert" hidden></p><p class="job-ref" id="jobReference" aria-label="รหัสงานสำหรับตรวจสอบ" hidden></p>
