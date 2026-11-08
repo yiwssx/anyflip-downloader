@@ -12,23 +12,17 @@
     el.hidden = !message;
   }
   async function api(path, options) {
-    const response = await fetch(path, {
-      credentials:'same-origin', cache:'no-store',
-      ...(options || {})
-    });
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        // Do not recurse through checkRole/refreshAll on a denied API.
-        me=null;
-        $('adminNav').hidden=true;
-        $('adminConsole').hidden=true;
-        throw new Error('สิทธิ์ของบัญชีนี้ไม่อนุญาตให้ดำเนินการดังกล่าว');
+    try {
+      return await window.AnyflipAdminAPI.request(path, options);
+    } catch (e) {
+      if (e.status === 401 || e.status === 403) {
+        // Backend rejection is authoritative; avoid recursion or stale privileged UI.
+        me = null;
+        $('adminNav').hidden = true;
+        $('adminConsole').hidden = true;
       }
-      throw new Error(response.status === 429
-        ? 'ดำเนินการบ่อยเกินไป กรุณาลองอีกครั้งภายหลัง'
-        : 'คำขอไม่สำเร็จ (HTTP '+response.status+')');
+      throw e;
     }
-    return response.json();
   }
   function node(tag, text, className) {
     const el = document.createElement(tag);

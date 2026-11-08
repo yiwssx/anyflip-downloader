@@ -45,7 +45,7 @@ func TestWebStrictCSPAndEmbeddedAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 	source := string(body)
-	for _, required := range []string{`href="/style.css"`, `src="/workspace.js"`, `src="/app.js"`, `id="jobForm"`, `id="batchURLs"`, `id="historyList"`, `id="progressFill"`, `value="0" max="100"`} {
+	for _, required := range []string{`href="/tokens.css"`, `href="/style.css"`, `src="/workspace.js"`, `src="/app.js"`, `id="jobForm"`, `id="batchURLs"`, `id="historyList"`, `id="progressFill"`, `value="0" max="100"`} {
 		if !strings.Contains(source, required) {
 			t.Errorf("required Web GUI markup missing %s", required)
 		}
@@ -59,6 +59,7 @@ func TestWebStrictCSPAndEmbeddedAssets(t *testing.T) {
 	for _, asset := range []struct {
 		path, contentType, expected string
 	}{
+		{"/tokens.css", "text/css; charset=utf-8", "--forest:"},
 		{"/style.css", "text/css; charset=utf-8", "@media(max-width:630px)"},
 		{"/workspace.js", "text/javascript; charset=utf-8", "jobForm"},
 		{"/app.js", "text/javascript; charset=utf-8", "anyflip-access-token"},
