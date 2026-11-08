@@ -45,7 +45,7 @@ func TestWebStrictCSPAndEmbeddedAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 	source := string(body)
-	for _, required := range []string{`href="/style.css"`, `src="/workspace.js"`, `src="/app.js"`, `id="jobForm"`, `id="batchURLs"`, `id="historyList"`} {
+	for _, required := range []string{`href="/style.css"`, `src="/workspace.js"`, `src="/app.js"`, `id="jobForm"`, `id="batchURLs"`, `id="historyList"`, `id="progressFill"`, `value="0" max="100"`} {
 		if !strings.Contains(source, required) {
 			t.Errorf("required Web GUI markup missing %s", required)
 		}

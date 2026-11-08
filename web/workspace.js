@@ -44,11 +44,14 @@
         step.classList.toggle('is-current', index === currentStage);
         step.classList.toggle('is-done', j.stage === 'completed' || (currentStage > index && index >= 0));
       });
-      $('jobDescription').textContent = j.stage==='completed' ? 'สร้าง Image-based PDF สำเร็จแล้ว พร้อมดาวน์โหลด'
+      const description = j.stage==='completed' ? 'สร้าง Image-based PDF สำเร็จแล้ว พร้อมดาวน์โหลด'
         : j.stage==='failed' ? 'งานนี้ไม่สำเร็จ'
         : j.stage==='cancelled' ? 'งานถูกยกเลิก'
         : 'ระบบกำลังดำเนินการ: '+(labels[j.stage] || j.stage);
-      $('progressFill').style.width = progress+'%';
+      // Only announce a changed stage; repeating it every poll floods live regions.
+      if ($('jobDescription').textContent !== description) $('jobDescription').textContent = description;
+      // Native progress value avoids CSP-blocked inline style mutations (WebKit).
+      $('progressFill').value = progress;
       $('progressTrack').setAttribute('aria-valuenow', String(progress));
       $('pageCount').textContent = completed+' / '+total+' หน้า';
       $('percent').textContent = progress+'%';

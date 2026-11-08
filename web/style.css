@@ -136,7 +136,10 @@ button:hover:not(:disabled),.google-button:hover,.jump-link:hover{transform:tran
 .progress-steps span.is-done{background:#e4f6e9;border-color:#d2ead9;color:#267346}
 .progress-steps span.is-current{background:#fff4d5;border-color:#f1dfa0;color:#8f6818}
 .track{height:11px;background:#e7eeea;border-radius:20px;overflow:hidden}
-.fill{height:100%;width:0;background:linear-gradient(90deg,#1d8754,#67bd84);border-radius:20px;transition:width .25s ease}
+.fill{display:block;height:100%;width:100%;appearance:none;-webkit-appearance:none;border:0;background:transparent;border-radius:20px;overflow:hidden}
+.fill::-webkit-progress-bar{background:transparent}
+.fill::-webkit-progress-value{background:linear-gradient(90deg,#1d8754,#67bd84);border-radius:20px}
+.fill::-moz-progress-bar{background:linear-gradient(90deg,#1d8754,#67bd84);border-radius:20px}
 .meta{display:flex;justify-content:space-between;gap:12px;margin:11px 0 19px;color:#74877d;font-size:12px}
 .meta strong{font-size:14px;color:#2a784b}
 .job-ref{display:inline-block;background:#f5f8f5;border:1px solid #e2eae5;color:#71877c;border-radius:7px;font-size:11px;padding:8px 10px;margin:17px 0 0;overflow-wrap:anywhere;max-width:100%}
