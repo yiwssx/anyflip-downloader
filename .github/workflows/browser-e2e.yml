@@ -12,6 +12,8 @@ on:
       - 'tests/browser-e2e.mjs'
       - 'tests/google-e2e.mjs'
       - 'tests/uih-visual.mjs'
+      # Release sign-off docs must pass the protected branch browser gate too.
+      - 'docs/UIH_RELEASE_ACCEPTANCE.md'
       - '.github/workflows/browser-e2e.yml'
       - 'go.mod'
       - 'go.sum'
@@ -26,6 +28,8 @@ on:
       - 'tests/browser-e2e.mjs'
       - 'tests/google-e2e.mjs'
       - 'tests/uih-visual.mjs'
+      # Release sign-off docs must pass the protected branch browser gate too.
+      - 'docs/UIH_RELEASE_ACCEPTANCE.md'
       - '.github/workflows/browser-e2e.yml'
       - 'go.mod'
       - 'go.sum'
