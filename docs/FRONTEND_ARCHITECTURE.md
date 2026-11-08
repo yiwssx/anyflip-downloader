@@ -59,3 +59,6 @@ Existing tests include Go HTTP/CSP/auth/RBAC checks and mock-origin Playwright C
 ## UIH-05 — browser recovery matrix (code-only)
 This changeset adds synthetic regression cases for transient HTTP 429 (bounded exponential backoff), legacy-token HTTP 401 (terminate polling, hide actions, allow correcting credentials), and rapid selection of another job while an old request is unresolved (AbortController + generation guard). Combined with the existing 503/malformed status/Google 401/Admin 403 tests, these exercise core resilience paths without live institution accounts or publisher content.
 **Unverified host acceptance:** real Wi-Fi offline, reverse proxy timeouts, production OAuth expiry, quota pressure and physical touch/screen-reader checks stay behind UIH-07 #101.
+
+## UIH-00 full responsive baseline — six target widths (synthetic CI)
+The browser matrix now measures `320, 390, 768, 1024, 1365, 1440` CSS pixels for both token workspace and Google sign-in, with synthetic screenshots for Chromium/Firefox (WebKit remains a functional/axe gate without screenshots because Playwright screenshot injection conflicts with CSP). Actual RCAT phone/browser QA, visual reviewer approval and screen-reader signoff remain outside CI and are required for #95/#97/#100/#101. See severity, owner and mitigation in `docs/UIH_FRONTEND_RISKS.md`.

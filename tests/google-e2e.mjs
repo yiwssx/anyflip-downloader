@@ -217,7 +217,7 @@ test('Workspace Admin: read-only users and no privileged audit controls on deskt
 test('Google Workspace entry: readable sign-in and controls from 320px to desktop', async () => {
  const browser=await browserType.launch({headless:true});
  try{
-  for(const width of [320,390,768,1365]){
+  for(const width of [320,390,768,1024,1365,1440]){
    const context=await createContext(browser,{
     viewport:{width,height:900},
     ...(width<600?{isMobile:true,hasTouch:true}:{})
@@ -225,6 +225,7 @@ test('Google Workspace entry: readable sign-in and controls from 320px to deskto
    const page=await context.newPage();
    await page.goto(base+'/',{waitUntil:'domcontentloaded'});
    await page.locator('#loginPanel').waitFor({state:'visible'});
+   await captureVisual(page,engine,'google-login-'+width);
    const info=await page.evaluate(()=>{
     const css=s=>Number.parseFloat(getComputedStyle(document.querySelector(s)).fontSize);
     const height=s=>document.querySelector(s).getBoundingClientRect().height;
