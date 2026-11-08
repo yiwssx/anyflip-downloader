@@ -334,3 +334,66 @@ test('Admin 403 revocation hides privileged navigation immediately', {timeout:20
   await context.close();
  }finally{await browser.close()}
 });
+
+test('logout clears previous owner state and discards a late job response', {timeout:20000}, async()=>{
+ const browser=await browserType.launch({headless:true});
+ try {
+  const context=await createContext(browser,{viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  const page=await context.newPage();
+  const priorID='a'.repeat(32), createdID='b'.repeat(32);
+  let pendingCreate=null, statusRequests=0;
+  await page.route('**/auth/me',route=>route.fulfill({
+   status:200,contentType:'application/json',
+   body:JSON.stringify({email:'former-user@rcat.ac.th',role:'user',identityRef:'g-'+'a'.repeat(64)})
+  }));
+  await page.route('**/auth/logout',route=>route.fulfill({
+   status:200,contentType:'application/json',body:'{}'
+  }));
+  await page.route('**/api/jobs',async route=>{
+   if (route.request().method()==='POST') {
+    await new Promise(resolve=>{pendingCreate=resolve});
+    return route.fulfill({status:202,contentType:'application/json',body:JSON.stringify({
+     id:createdID,stage:'queued',completed:0,total:1,downloadReady:false
+    })});
+   }
+   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+    jobs:[{id:priorID,stage:'completed',completed:1,total:1,downloadReady:true}]
+   })});
+  });
+  await page.route('**/api/jobs/'+createdID,route=>{
+   statusRequests++;
+   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+    id:createdID,stage:'completed',completed:1,total:1,downloadReady:true
+   })});
+  });
+  await page.goto(base+'/',{waitUntil:'networkidle'});
+  await page.locator('.historyRow').waitFor({state:'visible'});
+  await page.locator('#bookURL').fill('https://anyflip.com/example/private');
+  await page.locator('#bookTitle').fill('private-document-title');
+  await page.locator('#batchURLs').fill('https://anyflip.com/example/private-batch');
+  await page.locator('#historySearch').fill(priorID.slice(0,8));
+  await page.locator('#startButton').click();
+  for (let i=0;i<80&&!pendingCreate;i++)await new Promise(resolve=>setTimeout(resolve,25));
+  assert.ok(pendingCreate,'must hold the job request while signing out');
+  await page.locator('#logoutButton').click();
+  await page.locator('#loginPanel').waitFor({state:'visible'});
+  pendingCreate();
+  await page.waitForTimeout(400);
+  assert.equal(statusRequests,0,'late response must not trigger polling after logout');
+  const state=await page.evaluate(()=>({
+   history:document.querySelector('#historyList').textContent,
+   bookURL:document.querySelector('#bookURL').value,
+   bookTitle:document.querySelector('#bookTitle').value,
+   batchURLs:document.querySelector('#batchURLs').value,
+   search:document.querySelector('#historySearch').value,
+   jobPanelHidden:document.querySelector('#jobPanel').hidden,
+   signedIn:document.querySelector('#signedInUser').textContent,
+   total:document.querySelector('#statTotal').textContent
+  }));
+  assert.ok(!state.history.includes(priorID.slice(0,8)),'previous job history retained');
+  assert.deepEqual([state.bookURL,state.bookTitle,state.batchURLs,state.search,state.signedIn],['','','','','']);
+  assert.equal(state.jobPanelHidden,true);
+  assert.equal(state.total,'—');
+  await context.close();
+ } finally {await browser.close()}
+});
