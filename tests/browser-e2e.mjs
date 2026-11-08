@@ -4,6 +4,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { chromium, firefox, webkit } from 'playwright';
+import axeModule from '@axe-core/playwright';
+const AxeBuilder = axeModule.AxeBuilder || axeModule.default || axeModule;
 const engine = process.env.BROWSER_TEST_ENGINE || 'chromium';
 const browserType = { chromium, firefox, webkit }[engine];
 if (!browserType) throw new Error('Unsupported BROWSER_TEST_ENGINE: '+engine);
@@ -355,5 +357,46 @@ test('keyboard skip link and stable accessible progress announcements', async ()
     assert.equal(await page.locator('#jobDescription').getAttribute('role'),'status');
     assert.equal(await page.locator('#jobDescription').getAttribute('aria-live'),'polite');
     assert.equal(await page.locator('#jobDescription').getAttribute('aria-atomic'),'true');
+  });
+});
+
+test('WCAG automated audit: token workspace has no critical/serious violations', {timeout:30000}, async () => {
+  await withPage({ viewport:{width:1365,height:900} }, async page => {
+    await page.route('**/api/**', route => respond(route, 200, {jobs:[]}));
+    await page.goto(baseURL+'/',{waitUntil:'networkidle'});
+    const results = await new AxeBuilder({page})
+      .withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa'])
+      .analyze();
+    const violations = results.violations.filter(v=>['serious','critical'].includes(v.impact));
+    assert.deepEqual(violations.map(v=>({id:v.id,impact:v.impact,selectors:v.nodes.map(n=>n.target)})),[],
+      'Resolve high-impact accessibility violations before release');
+  });
+});
+
+test('transient 503 status recovers using bounded polling retries', {timeout:22000}, async () => {
+  await withPage({ viewport:{width:390,height:844},isMobile:true,hasTouch:true }, async page => {
+    const id='f'.repeat(32);
+    let polls=0;
+    await page.route('**/api/**', async route => {
+      const request=route.request();
+      const path=new URL(request.url()).pathname;
+      if(path==='/api/jobs' && request.method()==='POST')
+        return respond(route,202,{id,stage:'queued',completed:0,total:1,downloadReady:false});
+      if(path==='/api/jobs' && request.method()==='GET')
+        return respond(route,200,{jobs:[]});
+      if(path==='/api/jobs/'+id && request.method()==='GET') {
+        polls++;
+        if(polls===1) return respond(route,503,{error:'temporarily unavailable'});
+        return respond(route,200,{id,stage:'completed',completed:1,total:1,downloadReady:true});
+      }
+      return respond(route,200,{});
+    });
+    await page.goto(baseURL+'/',{waitUntil:'networkidle'});
+    await page.locator('#token').fill(token);
+    await page.locator('#bookURL').fill('https://anyflip.com/demo/authorized');
+    await page.locator('#startButton').click();
+    await page.waitForFunction(()=>document.querySelector('#jobState')?.textContent==='สำเร็จ',null,{timeout:13000});
+    assert.equal(polls,2,'503 should retry exactly once before completion');
+    assert.equal(await page.locator('#percent').textContent(),'100%');
   });
 });

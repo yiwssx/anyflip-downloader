@@ -68,7 +68,7 @@ jobs:
           # https://github.com/microsoft/playwright/issues/43497
           version=1.64.1
           if [ "${{ matrix.engine }}" = "webkit" ]; then version=1.63.0; fi
-          npm install --no-save --ignore-scripts "playwright@$version"
+          npm install --no-save --ignore-scripts "playwright@$version" "@axe-core/playwright@4.14.0"
           npx playwright install --with-deps ${{ matrix.engine }}
 
       - name: Compile and run local isolated Web GUI for browser checks
