@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html web/style.css web/app.js web/google.html web/google.js web/admin.js web/favicon.svg web/logo.svg
+//go:embed web/index.html web/style.css web/workspace.js web/app.js web/google.html web/google.js web/admin.js web/favicon.svg web/logo.svg
 var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
