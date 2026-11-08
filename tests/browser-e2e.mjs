@@ -256,7 +256,7 @@ test('mobile: batch jobs, cancellation, history and retry', { timeout: 45_000 },
 
 
 test('responsive readability: text hierarchy, touch controls and overflow at 320–1365px', { timeout: 90_000 }, async () => {
-  for (const width of [320, 390, 768, 1365]) {
+  for (const width of [320, 390, 768, 1024, 1365, 1440]) {
     await withPage({
       viewport: { width, height: 900 },
       ...(width < 600 ? { isMobile: true, hasTouch: true } : {}),
