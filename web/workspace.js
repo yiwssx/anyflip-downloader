@@ -157,7 +157,7 @@
             const next=await res.json();
             selectJob(next.id);
             await loadHistory();
-          }catch(e){error($('historyError'),e.message)}
+          }catch(e){if (version === generation) error($('historyError'),e.message)}
           finally{retry.disabled=false}
         });
         controls.appendChild(retry);
@@ -214,6 +214,7 @@
     error($('batchError'),'');
     const button=$('batchStartButton');
     button.disabled=true;
+    const actionVersion = generation;
     try {
       const urls=$('batchURLs').value.split(/\r?\n/).map(url=>url.trim()).filter(Boolean);
       if(urls.length<1||urls.length>8)throw new Error('ต้องมีลิงก์ตั้งแต่ 1 ถึง 8 รายการ');
@@ -221,22 +222,26 @@
       const jobs=urls.map(url=>({url,threads:Number($('threads').value),bestQuality:$('bestQuality').checked}));
       const res=await request('/api/jobs/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jobs})});
       const accepted=await res.json();
+      if (actionVersion !== generation) return;
       selectJob(accepted.jobs[0].id);
       await loadHistory();
-    }catch(e){error($('batchError'),e.message)}
-    finally{button.disabled=false}
+    }catch(e){if (actionVersion === generation) error($('batchError'),e.message)}
+    finally{if (actionVersion === generation) button.disabled=false}
   });
   $('jobForm').addEventListener('submit',async event=>{
     event.preventDefault();error($('formError'),'');
     if(currentJob && (pollTimer !== null || activeRefresh !== null))return;
     $('startButton').disabled=true;
+    const actionVersion = generation;
     try{
       await beforeCreate();
       const res=await request('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         url:$('bookURL').value.trim(),title:$('bookTitle').value.trim(),threads:Number($('threads').value),bestQuality:$('bestQuality').checked
       })});
-      const j=await res.json();selectJob(j.id);await loadHistory();
-    }catch(e){error($('formError'),e.message);$('startButton').disabled=false;}
+      const j=await res.json();
+      if (actionVersion !== generation) return;
+      selectJob(j.id);await loadHistory();
+    }catch(e){if (actionVersion === generation) {error($('formError'),e.message);$('startButton').disabled=false;}}
   });
   $('cancelButton').addEventListener('click',async()=>{if(!currentJob)return;try{await request('/api/jobs/'+currentJob+'/cancel',{method:'POST'});await refresh();}catch(e){error($('jobError'),e.message)}});
   $('downloadButton').addEventListener('click',async()=>{
@@ -251,7 +256,31 @@
   });
 
     return {
-      stop() { stopPolling(); currentJob = null; },
+      stop() {
+        // Scrub the previous Workspace account's sensitive, owner-scoped UI
+        // and discard delayed requests after logout or expired credentials.
+        stopPolling();
+        currentJob = null;
+        historySnapshot = [];
+        $('jobPanel').hidden = true;
+        $('jobReference').hidden = true;
+        $('jobReference').textContent = '';
+        $('bookURL').value = '';
+        $('bookTitle').value = '';
+        $('batchURLs').value = '';
+        $('historySearch').value = '';
+        $('historyFilter').value = 'all';
+        $('statTotal').textContent = '—';
+        $('statActive').textContent = '—';
+        $('statDone').textContent = '—';
+        $('startButton').disabled = false;
+        $('batchStartButton').disabled = false;
+        $('downloadButton').hidden = true;
+        $('cancelButton').hidden = true;
+        for (const id of ['historyError','jobError','batchError','formError']) error($(id),'');
+        batchCount();
+        renderHistory();
+      },
       loadHistory,
     };
   }
