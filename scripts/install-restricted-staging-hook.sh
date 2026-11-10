@@ -49,6 +49,9 @@ image_id=$(docker image inspect --format '{{.Id}}' "$image") || fail "approved l
 [[ $image_id =~ ^sha256:[a-f0-9]{64}$ ]] || fail "invalid local image ID"
 [[ $(docker inspect --format '{{.Image}}' "$container") == "$image_id" ]] ||
   fail "running stage uses an unexpected image"
+ports=$(docker inspect --format '{{range $port, $hosts := .NetworkSettings.Ports}}{{if eq $port "8080/tcp"}}{{range $hosts}}{{.HostIp}}:{{.HostPort}}{{end}}{{end}}{{end}}' "$container")
+[[ "$ports" == "127.0.0.1:18094" ]] ||
+  fail "running stage is not loopback-only on the reviewed port"
 [[ $(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image") == "$source_sha" ]] ||
   fail "running stage revision label mismatch"
 [[ $(docker volume inspect --format '{{index .Labels "com.docker.compose.project"}}' rcat-anyflip-staging-jobs) == rcat-anyflip-staging ]] ||
@@ -83,7 +86,10 @@ trap 'rm -f -- "$tmp_lock"' EXIT
 printf '%s %s %s\n' "$source_sha" "$image_id" "$image" > "$tmp_lock"
 chmod 0600 "$tmp_lock"
 chown root:root "$tmp_lock"
-mv -n -- "$tmp_lock" /etc/rcat-staging/anyflip-approved-image
+# Atomic no-clobber creation: never overwrite an independently approved lock.
+ln -- "$tmp_lock" /etc/rcat-staging/anyflip-approved-image ||
+  fail "another staging image lock was installed concurrently"
+rm -f -- "$tmp_lock"
 
 echo "RESTRICTED_STAGE_HOOK_INSTALLED"
 echo "Reviewed AnyFlip code SHA: $reviewed_sha"
