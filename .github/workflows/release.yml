@@ -3,6 +3,11 @@ name: Release candidate (manual, signed provenance, no public release)
 # Releases must not be published by pushing a tag before the P1/P3 host
 # acceptance gates and operator sign-off are complete.
 on:
+  # One-time HDA-06 source-attestation pilot. Revert this push trigger as soon
+  # as the exactly named main-branch squash commit has generated its candidate.
+  push:
+    branches: [main]
+    paths: ['.github/workflows/release.yml']
   workflow_dispatch:
     inputs:
       version:
@@ -21,7 +26,7 @@ jobs:
   candidate:
     name: Validate, attest and package candidate
     # Manual RC builds may only attest reviewed main-branch source.
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'chore: one-time HDA-06 signed candidate'))) }}
     permissions:
       contents: read
       id-token: write
@@ -37,7 +42,7 @@ jobs:
           go-version-file: go.mod
       - name: Validate version format
         env:
-          CANDIDATE_VERSION: ${{ inputs.version }}
+          CANDIDATE_VERSION: ${{ inputs.version || 'v0.2.0-rc.114' }}
         shell: bash
         run: |
           [[ "$CANDIDATE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || {
@@ -57,7 +62,7 @@ jobs:
         run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
       - name: Package CLI release candidate
         env:
-          CANDIDATE_VERSION: ${{ inputs.version }}
+          CANDIDATE_VERSION: ${{ inputs.version || 'v0.2.0-rc.114' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -96,7 +101,7 @@ jobs:
       - name: Upload unapproved candidate assets
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: anyflip-candidate-${{ inputs.version }}
+          name: anyflip-candidate-${{ inputs.version || 'v0.2.0-rc.114' }}
           path: dist/
           if-no-files-found: error
           retention-days: 14
