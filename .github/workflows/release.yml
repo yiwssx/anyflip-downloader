@@ -1,4 +1,4 @@
-name: Release candidate (manual, no publication)
+name: Release candidate (manual, signed provenance, no public release)
 
 # Releases must not be published by pushing a tag before the P1/P3 host
 # acceptance gates and operator sign-off are complete.
@@ -19,7 +19,13 @@ permissions:
 
 jobs:
   candidate:
-    name: Validate and package candidate
+    name: Validate, attest and package candidate
+    # Manual RC builds may only attest reviewed main-branch source.
+    if: ${{ github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -66,6 +72,27 @@ jobs:
           ( cd dist && sha256sum anyflip-downloader_* > SHA256SUMS )
           cp docs/RELEASE_CHECKLIST.md dist/
           cp CHANGELOG.md dist/
+      - name: Attest the four built CLI binaries (no public Release or registry push)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/anyflip-downloader_*
+      - name: Verify exact candidate checksums and source-bound attestations
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(dist/anyflip-downloader_*)
+          [[ "${#files[@]}" -eq 4 ]] || { echo "Expected four release components" >&2; exit 1; }
+          ( cd dist && sha256sum -c SHA256SUMS )
+          for binary in "${files[@]}"; do
+            gh attestation verify "$binary" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --source-ref refs/heads/main \
+              --source-digest "$GITHUB_SHA" >/dev/null
+          done
       - name: Upload unapproved candidate assets
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
