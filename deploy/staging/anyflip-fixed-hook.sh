@@ -64,6 +64,9 @@ stage_id=$(docker ps -aq --filter "label=com.docker.compose.project=$project" \
   fail 'one existing dedicated staging container required'
 [ "$(docker inspect --format '{{.Image}}' "$stage_id")" = "$image_id" ] ||
   fail 'existing staging container image differs; rollback gate not accepted'
+bindings=$(docker inspect --format '{{range $port, $hosts := .NetworkSettings.Ports}}{{if eq $port "8080/tcp"}}{{range $hosts}}{{.HostIp}}:{{.HostPort}}{{end}}{{end}}{{end}}' "$stage_id")
+[ "$bindings" = "127.0.0.1:18094" ] ||
+  fail 'stage port does not match exact approved loopback-only mapping'
 [ "$(docker volume inspect --format '{{index .Labels "com.docker.compose.project"}}' "$volume")" = "$project" ] ||
   fail 'staging jobs volume not owned by approved project'
 
