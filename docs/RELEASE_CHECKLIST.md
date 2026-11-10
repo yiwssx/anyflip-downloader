@@ -64,6 +64,27 @@ The staged image is **not created or signed by these source files alone**. A *se
 
 **Operational gate:** Source delivery and CI alone do not install this stack on the RCAT IOT server. The current ChatGPT GitHub connection has no privileged Host terminal; it must not use the Read-only Diagnostics Agent to run deployment commands. A separate authorized executor identity, host preflight, saved rollback image and live staging/restore proof are still needed for HDA-04. Once the staging pilot is accepted, further deployment authorization must bind to real signed artifact bytes and a fresh approval, not an Issue-supplied tag or unsiged image label. Previous Read-only Diagnostics and existing Production acceptance are not repeated.
 
+## Restricted Staging Hook — explicit local bootstrap (not yet ChatGPT execution)
+
+The owner approved a **separate restricted Staging executor** on RCAT IOT `10.10.1.100`. This phase provides the **host-side root-owned fixed hook**, not a network listener, GitHub request consumer or authorization bypass. The existing Read-only Ops Agent and its GitHub App credentials are unchanged.
+
+The one-time operator bootstrap installs a root-owned `/usr/local/libexec/rcat-staging/anyflip-downloader-stage` plus a reviewed root-owned Compose copy. It also creates a distinct non-login `rcat-stage-exec` OS identity with **no** Docker or sudo group, and a root-only `/etc/rcat-staging/anyflip-approved-image` pin to the **already running, previously signed and approved** AnyFlip staging image. It first requires the existing stage health=200 and unauthenticated API=401, exactly `127.0.0.1:18094`, the existing dedicated project/volume and the expected source SHA. Nothing is pulled, rebuilt, restarted, deployed, deleted or granted a sudo rule during installation.
+
+From the host operator's **already accepted isolated source checkout** after the GitHub PR is merged, use a reviewed exact main commit:
+
+```bash
+SRC="$HOME/rcat-anyflip-staging-source"
+git -C "$SRC" pull --ff-only origin main
+sudo bash "$SRC/scripts/install-restricted-staging-hook.sh" \
+  --approve-restricted-staging-hook "$SRC" EXACT_MERGED_MAIN_COMMIT_SHA
+```
+
+The expected result is `RESTRICTED_STAGE_HOOK_INSTALLED`. If any precondition fails, do not reset the existing volume or change the Production Compose. This bootstrap is intentionally **one-time and no-clobber**. It does not alter `/opt/anyflip-downloader`, Production, live Staging Container, `/etc/rcat-ops`, DNS, Cloudflare or existing GitHub App credentials.
+
+The fixed hook accepts **only** `deploy <40hex source SHA> sha256:<local Docker image ID>`, and only when both exactly match its root-managed image lock. It refuses an unknown host, different image, additional staging containers or unsafe permission/port/volume conditions; when already healthy, it **does not restart**. It cannot upgrade to an unreviewed version or perform rollback. The hook is not exposed through sudoers or a service, and the dedicated user cannot invoke privileged Docker operations. `run_fixed_staging_hook` in RCAT Deployment Control remains nonexecuting unless invoked by a **separately authorized** trusted caller after independent GitHub approval, signed artifact verification, replay consumption, stage recovery and access review.
+
+**Not yet installed via this ChatGPT session.** No SSH/Host command capability is connected. After operator install, record one redacted `RESTRICTED_STAGE_HOOK_INSTALLED` result; do not repeat CI, source attestation or the previously accepted Staging startup check. Subsequent privileged ChatGPT-triggered deploy/rollback requires a distinct GitHub executor credential, an authenticated short-lived owner approval, a securely bound real artifact/image release and a tested rollback. Never grant the diagnostics service account a Docker socket, general sudo, an arbitrary command interface or access to Production.
+
 ## Physical acceptance and operator authorization
 
 - [ ] Publisher-authorized real-book complete PDF page-count/quality, crop, Thai legibility and mixed-orientation checks on at least two PDF viewers
