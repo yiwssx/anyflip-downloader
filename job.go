@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -37,6 +39,21 @@ type DownloadProgress struct {
 	Completed int
 	Total     int
 	Page      int
+}
+
+// defaultPDFOutputName treats the publisher-supplied title as one filename
+// component, never a path. Explicit OutputFile paths are selected by trusted
+// callers (the Web service uses its own generated job ID under its job root).
+// Do not rely solely on third-party filename cleanup for the security boundary.
+func defaultPDFOutputName(title string) (string, error) {
+	if title == "" || title == "." || title == ".." || len(title) > 240 ||
+		strings.Contains(title, "/") || strings.Contains(title, "\\") ||
+		strings.Contains(title, "..") || strings.ContainsAny(title, ":\x00\r\n") ||
+		filepath.IsAbs(title) || filepath.Base(title) != title ||
+		filepath.VolumeName(title) != "" {
+		return "", errors.New("unsafe PDF output name derived from book title")
+	}
+	return title + ".pdf", nil
 }
 
 // RunDownloadJob is a reusable entry point for the CLI and future job-based
@@ -88,7 +105,11 @@ func RunDownloadJob(ctx context.Context, opts DownloadJobOptions, report func(Do
 
 	outputFile := opts.OutputFile
 	if outputFile == "" {
-		outputFile = book.title + ".pdf"
+		// The remote book title must not select a directory or parent path.
+		outputFile, err = defaultPDFOutputName(book.title)
+		if err != nil {
+			return "", err
+		}
 	}
 	if _, err := os.Stat(outputFile); err == nil {
 		return "", fmt.Errorf("output PDF %q already exists", outputFile)
