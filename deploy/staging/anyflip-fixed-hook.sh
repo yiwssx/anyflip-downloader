@@ -72,6 +72,18 @@ export RCAT_STAGE_IMAGE
 docker compose --project-name "$project" -f "$compose" config --quiet ||
   fail 'approved staging configuration invalid'
 
+# Existing accepted Staging is healthy: do not modify or restart it.
+if [ "$(docker inspect --format '{{.State.Running}}' "$stage_id")" = true ]; then
+  code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+    --max-time 3 http://127.0.0.1:18094/healthz || true)
+  auth=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+    --max-time 3 http://127.0.0.1:18094/api/jobs/00000000000000000000000000000000 || true)
+  [ "$code" = 200 ] && [ "$auth" = 401 ] ||
+    fail 'running stage unhealthy; refusing to replace or restart'
+  printf '%s\n' 'RESTRICTED_STAGING_HOOK_PASS (already healthy, no redeploy)'
+  exit 0
+fi
+
 # No rebuild, no image pull, no Production access, and no --volumes or down.
 docker compose --project-name "$project" -f "$compose" up \
   --detach --no-build --no-deps --pull never anyflip-web >/dev/null ||
