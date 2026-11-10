@@ -16,7 +16,7 @@ printf '%s\n' "$image_id" | LC_ALL=C grep -Eq '^sha256:[a-f0-9]{64}$' ||
 
 command -v docker >/dev/null 2>&1 || fail 'Docker unavailable'
 command -v curl >/dev/null 2>&1 || fail 'curl unavailable'
-ip -o -4 addr show | grep -Eq 'inet 10\\.10\\.1\\.100/[0-9]+' ||
+ip -o -4 addr show | grep -Eq 'inet 10\.10\.1\.100/[0-9]+' ||
   fail 'not approved IOT host'
 
 project=rcat-anyflip-staging
