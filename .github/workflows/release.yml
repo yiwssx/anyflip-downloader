@@ -26,7 +26,8 @@ jobs:
   candidate:
     name: Validate, attest and package candidate
     # Manual RC builds may only attest reviewed main-branch source.
-    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'chore: one-time HDA-06 signed candidate'))) }}
+    if: >-
+      ${{ github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'chore: one-time HDA-06 signed candidate'))) }}
     permissions:
       contents: read
       id-token: write
