@@ -28,6 +28,9 @@ secret_file=$secret_dir/anyflip.env
 project=rcat-anyflip-staging
 
 if [ "$operation" = status ]; then
+  stage_ids=$(docker ps -q --filter "label=com.docker.compose.project=$project" \
+    --filter "label=com.docker.compose.service=anyflip-web")
+  [ -n "$stage_ids" ] || die 'no running dedicated staging container'
   docker ps --filter "label=com.docker.compose.project=$project" \
     --format '{{.ID}} {{.Status}}'
   code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
