@@ -25,13 +25,22 @@ fi
 [ -f "$binary" ] || { echo 'REFUSED: binary missing' >&2; exit 2; }
 command -v gh >/dev/null 2>&1 || { echo 'REFUSED: GitHub attestation verifier unavailable' >&2; exit 2; }
 command -v sha256sum >/dev/null 2>&1 || { echo 'REFUSED: sha256sum unavailable' >&2; exit 2; }
-actual_digest=$(sha256sum "$binary" | cut -d ' ' -f 1)
+tmp_root=$(printenv TMPDIR 2>/dev/null || true)
+[ -n "$tmp_root" ] || tmp_root=/tmp
+context=$(mktemp -d "$tmp_root/anyflip-web-stage.XXXXXXXX")
+cleanup() { if [ -n "$context" ]; then rm -rf -- "$context"; fi; }
+trap cleanup EXIT HUP INT TERM
+chmod 0700 "$context"
+# Freeze the candidate in a private context BEFORE attestation to prevent
+# validating one set of bytes then copying a changed source path.
+install -m 0555 "$binary" "$context/anyflip-downloader"
+actual_digest=$(sha256sum "$context/anyflip-downloader" | cut -d ' ' -f 1)
 if [ "sha256:$actual_digest" != "$expected_digest" ]; then
   echo 'REFUSED: candidate bytes do not match the reviewed SHA-256' >&2
   exit 2
 fi
-# Trust the signature and matching file bytes, NOT a user-provided release label.
-gh attestation verify "$binary" \
+# Authenticate the exact frozen bytes against the trusted source identity.
+gh attestation verify "$context/anyflip-downloader" \
   --repo yiwssx/anyflip-downloader \
   --signer-workflow yiwssx/anyflip-downloader/.github/workflows/release.yml \
   --source-ref refs/heads/main \
@@ -39,13 +48,6 @@ gh attestation verify "$binary" \
     echo 'REFUSED: GitHub source-bound attestation not verified' >&2
     exit 2
   }
-tmp_root=$(printenv TMPDIR 2>/dev/null || true)
-[ -n "$tmp_root" ] || tmp_root=/tmp
-context=$(mktemp -d "$tmp_root/anyflip-web-stage.XXXXXXXX")
-cleanup() { if [ -n "$context" ]; then rm -rf -- "$context"; fi; }
-trap cleanup EXIT HUP INT TERM
-chmod 0700 "$context"
-install -m 0555 "$binary" "$context/anyflip-downloader"
 printf '%s\n' "$source_sha" > "$context/SOURCE_COMMIT"
 printf '%s\n' "$expected_digest" > "$context/BINARY_SHA256"
 # Only return an isolated build context. Docker/image operations require
