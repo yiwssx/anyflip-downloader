@@ -24,11 +24,11 @@ The source identity and artifact digest are verified in the candidate job using 
 
 ```bash
 sha256sum -c SHA256SUMS
-gh attestation verify ./anyflip-downloader_vX.Y.Z_linux_amd64 \\
-  --repo yiwssx/anyflip-downloader \\
-  --signer-workflow yiwssx/anyflip-downloader/.github/workflows/release.yml \\
-  --source-ref refs/heads/main \\
-  --source-digest <exact-github-source-sha>
+gh attestation verify ./anyflip-downloader_vX.Y.Z_linux_amd64 \
+  --repo yiwssx/anyflip-downloader \
+  --signer-workflow yiwssx/anyflip-downloader/.github/workflows/release.yml \
+  --source-ref refs/heads/main \
+  --source-digest YOUR_VERIFIED_COMMIT_SHA
 ```
 
 The candidate archive itself is a transport wrapper; its ZIP hash is not the SHA-256 digest of a packaged binary. A successfully attested **CLI release candidate** is not a signed OCI Web GUI release, an approved Staging deploy, an operator health check, or proof of backup/rollback. Its existence cannot clear RCAT Deployment Control HDA-06 for other apps, HDA-04 staging/host gates or AnyFlip Production acceptance. This workflow must be explicitly dispatched from `main` for a specific candidate version; merging source changes alone does not generate a candidate artifact.
