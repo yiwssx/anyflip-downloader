@@ -41,7 +41,11 @@ services:
 
 networks:
   stage_private:
-    internal: true
+    # A private per-project bridge with explicit loopback-only host binding.
+    # Docker Engine/Compose may silently suppress published ports when a
+    # service has ONLY an internal:true bridge network. Do not use "host".
+    # This bridge allows outbound connections; it has no public ingress.
+    driver: bridge
 
 volumes:
   stage_jobs:
