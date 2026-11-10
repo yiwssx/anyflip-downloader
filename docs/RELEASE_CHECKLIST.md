@@ -33,6 +33,16 @@ gh attestation verify ./anyflip-downloader_vX.Y.Z_linux_amd64 \
 
 The candidate archive itself is a transport wrapper; its ZIP hash is not the SHA-256 digest of a packaged binary. A successfully attested **CLI release candidate** is not a signed OCI Web GUI release, an approved Staging deploy, an operator health check, or proof of backup/rollback. Its existence cannot clear RCAT Deployment Control HDA-06 for other apps, HDA-04 staging/host gates or AnyFlip Production acceptance. This workflow must be explicitly dispatched from `main` for a specific candidate version; merging source changes alone does not generate a candidate artifact.
 
+## Reuse signed CLI binary for isolated Web staging (source path only)
+
+The signed `linux-amd64` candidate from [Run #42749720972](https://github.com/yiwssx/anyflip-downloader/actions/runs/42749720972) **also contains the Web GUI**: the same Go program accepts `-web`, and `web.go` embeds all Web assets. This avoids a new Go compilation or artifact-publishing workflow merely to prove Web Mode. A disposable, isolated offline smoke of the **actual downloaded binary** at source `bc72fe9c959ca91c61557b41712ce0ed5b9e1c79` returned HTTP 200 for `/healthz` and `/`, and HTTP 401 for an unauthenticated API request. No RCAT Host was accessed.
+
+For a future **separately authorized Staging executor**, `scripts/prepare-signed-web-staging.sh` accepts only an `anyflip-downloader_v*_linux_amd64` file, a 40-hex source commit and `sha256:<64hex>` file hash. It verifies the actual binary bytes **and** the GitHub signature for this repository, the trusted `.github/workflows/release.yml`, `main`, and that exact commit with `gh attestation verify`; failure leaves no build context. Only after the signature passes does it create an isolated, temporary context containing the binary and an audit pair. It does **not** build or start Docker or read host credentials. `deploy/staging/Dockerfile.signed-web` provides the same Alpine non-root runtime, CA certificates and Web entrypoint as the existing application Dockerfile, but copies only the already-verified executable rather than rebuilding Go source.
+
+The reviewed pilot binary hash is `sha256:dc7378bcb7fbccda147c139d2f0b9f1dfcd6f03f2d5bfa64722e63f493735183` for the above source SHA. These are **historical pinned evidence**, not an instruction to redeploy old code to Production; newer source needs new release evidence.
+
+This is a **preparation recipe, not a signed OCI image**. The Alpine runtime base and built staging image still require their own reviewed immutable identity, an isolated authorized staging service/port/volume, backup/restore policy, rollback plan and post-deploy check before HDA-04 can accept a real deployment. The running Host may have operator-owned Compose/quota overlays, secrets and volumes: never overwrite them or run `docker compose down -v`. No Production, Cloudflare or DNS change is authorized by this source delivery. Maintain the existing main-only manual Release Candidate workflow; do not create a second publisher or an always-on deploy trigger.
+
 ## Physical acceptance and operator authorization
 
 - [ ] Publisher-authorized real-book complete PDF page-count/quality, crop, Thai legibility and mixed-orientation checks on at least two PDF viewers
