@@ -79,6 +79,7 @@ jobs:
     - name: Check portable deployment script syntax
       run: |
         sh -n scripts/verify-web-deployment.sh
+        sh -n scripts/prepare-signed-web-staging.sh
         sh -n scripts/verify-host-readiness.sh
         bash -n scripts/start-tunnel-ingress.sh
         bash -n scripts/verify-tunnel-ingress.sh
