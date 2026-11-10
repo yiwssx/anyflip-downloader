@@ -1,0 +1,48 @@
+# RCAT IOT 10.10.1.100 — isolated local-only AnyFlip pilot.
+# Never invoke this file with the Production compose.quota.yaml or .env.
+name: rcat-anyflip-staging
+
+services:
+  anyflip-web:
+    image: ${RCAT_STAGE_IMAGE:?Verified local rcat-anyflip-staging SHA image required}
+    pull_policy: never
+    env_file:
+      - /etc/rcat-staging/anyflip.env
+    environment:
+      ANYFLIP_AUTH_MODE: token
+      ANYFLIP_RBAC_ENABLED: "0"
+      ANYFLIP_JOB_DIR: /data/jobs
+      HOME: /data/jobs
+      XDG_CONFIG_HOME: /data/jobs/.config
+    command: ["-web", "-listen", "0.0.0.0:8080"]
+    user: "10001:10001"
+    ports:
+      - "127.0.0.1:18094:8080"
+    volumes:
+      - stage_jobs:/data/jobs
+    networks:
+      - stage_private
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 1g
+    cpus: "1.0"
+    restart: "no"
+    stop_grace_period: 35s
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  stage_private:
+    internal: true
+
+volumes:
+  stage_jobs:
+    name: rcat-anyflip-staging-jobs

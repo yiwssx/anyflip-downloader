@@ -2,6 +2,8 @@
 # executable. Prepare the context with scripts/prepare-signed-web-staging.sh.
 # This recipe alone does not authenticate artifacts, run a service or deploy.
 FROM alpine:3.22
+ARG SOURCE_COMMIT
+LABEL org.opencontainers.image.revision="${SOURCE_COMMIT}"
 RUN apk add --no-cache ca-certificates \
     && addgroup -S -g 10001 anyflip \
     && adduser -S -D -H -u 10001 -G anyflip anyflip \
