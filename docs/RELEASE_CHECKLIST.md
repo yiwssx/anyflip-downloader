@@ -43,6 +43,23 @@ The reviewed pilot binary hash is `sha256:dc7378bcb7fbccda147c139d2f0b9f1dfcd6f0
 
 This is a **preparation recipe, not a signed OCI image**. The Alpine runtime base and built staging image still require their own reviewed immutable identity, an isolated authorized staging service/port/volume, backup/restore policy, rollback plan and post-deploy check before HDA-04 can accept a real deployment. The running Host may have operator-owned Compose/quota overlays, secrets and volumes: never overwrite them or run `docker compose down -v`. No Production, Cloudflare or DNS change is authorized by this source delivery. Maintain the existing main-only manual Release Candidate workflow; do not create a second publisher or an always-on deploy trigger.
 
+## RCAT IOT isolated loopback Staging — host activation pending
+
+**Owner decision (10 November 2026):** use the existing RCAT IOT Host `10.10.1.100` for a separate Staging instance only. No change to Production, Cloudflare, DNS, Google Workspace, quota service, or existing `compose.web.yaml` / `compose.quota.yaml` is allowed.
+
+The operator-owned activation is `deploy/staging/isolated-anyflip.sh` and its dedicated `deploy/staging/compose.yaml`. It refuses any host not owning `10.10.1.100`, any preexisting Staging container/volume/network, a busy Staging port or an unrecognised local image. Its first activation generates a **new private token** under root-owned `/etc/rcat-staging/anyflip.env` (0600; containing no Production credentials). It uses only:
+
+- Docker Compose project: `rcat-anyflip-staging`, with its own private internal Docker network (no external publisher egress)
+- Host bind: `127.0.0.1:18094` exclusively; no external ingress/DNS
+- Docker volume: `rcat-anyflip-staging-jobs`, never Production `anyflip-downloader_anyflip_quota_jobs`
+- Signed Go binary repackaged as a **local-only** staging image, built with the reviewed non-root runtime Dockerfile and source revision label
+- Synthetic health/unauthenticated API probes only: 200 for `/healthz`, 401 for protected job API; no real book data
+- Fail-closed: stop **only** its own staging service if smoke fails, retain staging data volume, never use `down -v`.
+
+The staged image is **not created or signed by these source files alone**. A *separately authorized Host executor/operator* must use the signed binary from [Run #42749720972](https://github.com/yiwssx/anyflip-downloader/actions/runs/42749720972) (source SHA `bc72fe9c959ca91c61557b41712ce0ed5b9e1c79` and Linux AMD64 binary SHA-256 `dc7378bcb7fbccda147c139d2f0b9f1dfcd6f03f2d5bfa64722e63f493735183`), run `scripts/prepare-signed-web-staging.sh` to independently verify *those same bytes*, and build the local tag `rcat-anyflip-staging:sha-bc72fe9c959ca91c61557b41712ce0ed5b9e1c79` using `deploy/staging/Dockerfile.signed-web` with `--build-arg SOURCE_COMMIT=bc72fe9c959ca91c61557b41712ce0ed5b9e1c79`. The image's revision label is a local safety check, **not** a cryptographic signature of the complete OCI runtime. Record the exact local image ID before running `isolated-anyflip.sh activate <pinned-tag>` on the Host. `status` is read-only; `stop <pinned-tag>` stops the staging container without deleting volumes.
+
+**Operational gate:** Source delivery and CI alone do not install this stack on the RCAT IOT server. The current ChatGPT GitHub connection has no privileged Host terminal; it must not use the Read-only Diagnostics Agent to run deployment commands. A separate authorized executor identity, host preflight, saved rollback image and live staging/restore proof are still needed for HDA-04. Once the staging pilot is accepted, further deployment authorization must bind to real signed artifact bytes and a fresh approval, not an Issue-supplied tag or unsiged image label. Previous Read-only Diagnostics and existing Production acceptance are not repeated.
+
 ## Physical acceptance and operator authorization
 
 - [ ] Publisher-authorized real-book complete PDF page-count/quality, crop, Thai legibility and mixed-orientation checks on at least two PDF viewers
