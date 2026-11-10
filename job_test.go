@@ -167,3 +167,29 @@ func TestRunDownloadJobInvalidOptions(t *testing.T) {
 		t.Fatal("expected zero threads/chunk size to fail before accessing network")
 	}
 }
+
+// CodeQL go/path-injection: publisher metadata must never choose directories,
+// Windows drive paths or path traversal when no explicit OutputFile is supplied.
+func TestDefaultPDFOutputNameRejectsUnsafeTitles(t *testing.T) {
+	for _, title := range []string{
+		"", ".", "..", "../outside", "books/manual",
+		`books\manual`, `..\outside`, "name..pdf",
+		`C:\outside`, "a:b", "name\x00.pdf", "name\nfile",
+		strings.Repeat("a", 241),
+	} {
+		t.Run(strings.ReplaceAll(title, "/", "_"), func(t *testing.T) {
+			if got, err := defaultPDFOutputName(title); err == nil {
+				t.Fatalf("unsafe publisher title %q accepted as %q", title, got)
+			}
+		})
+	}
+}
+
+func TestDefaultPDFOutputNamePreservesSafeTitles(t *testing.T) {
+	for _, title := range []string{"My Book 2026", "manual.v2", "คู่มือเทคโนโลยี IoT", "book_name-2026"} {
+		got, err := defaultPDFOutputName(title)
+		if err != nil || got != title+".pdf" {
+			t.Fatalf("safe title %q produced %q, error %v", title, got, err)
+		}
+	}
+}
