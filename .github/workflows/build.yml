@@ -81,6 +81,8 @@ jobs:
         sh -n scripts/verify-web-deployment.sh
         sh -n scripts/prepare-signed-web-staging.sh
         sh -n deploy/staging/isolated-anyflip.sh
+        sh -n deploy/staging/anyflip-fixed-hook.sh
+        bash -n scripts/install-restricted-staging-hook.sh
         sh -n scripts/verify-host-readiness.sh
         bash -n scripts/start-tunnel-ingress.sh
         bash -n scripts/verify-tunnel-ingress.sh
