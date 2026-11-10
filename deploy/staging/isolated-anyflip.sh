@@ -6,12 +6,12 @@ set -eu
 die() { printf 'REFUSED: %s\n' "$1" >&2; exit 2; }
 
 if [ "$#" -lt 1 ]; then
-  die 'usage: sh isolated-anyflip.sh status | activate|stop <rcat-anyflip-staging:sha-40hex>'
+  die 'usage: sh isolated-anyflip.sh status | activate|retry|stop <rcat-anyflip-staging:sha-40hex>'
 fi
 operation=$1
 case "$operation" in
   status) [ "$#" -eq 1 ] || die 'status takes no image argument' ;;
-  activate|stop) [ "$#" -eq 2 ] || die 'image argument required' ;;
+  activate|retry|stop) [ "$#" -eq 2 ] || die 'image argument required' ;;
   *) die 'only status, activate and stop are supported' ;;
 esac
 
@@ -68,13 +68,46 @@ command -v ss >/dev/null 2>&1 || die 'ss (iproute2) required'
 command -v curl >/dev/null 2>&1 || die 'curl required'
 command -v openssl >/dev/null 2>&1 || die 'openssl required for isolated token'
 [ -z "$(ss -H -ltn '( sport = :18094 )')" ] || die 'loopback port 18094 is in use'
-[ -z "$(docker ps -aq --filter "label=com.docker.compose.project=$project")" ] ||
-  die 'staging project already has containers; refusing replacement'
-if docker volume inspect rcat-anyflip-staging-jobs >/dev/null 2>&1; then
-  die 'staging volume already exists; refusing replacement'
-fi
-if docker network inspect rcat-anyflip-staging_stage_private >/dev/null 2>&1; then
-  die 'staging network already exists; refusing replacement'
+
+if [ "$operation" = retry ]; then
+  # Recover only our known, STOPPED staging container from the failed
+  # first activation. Never adopt unexpected workloads or delete data.
+  stage_id=$(docker ps -aq --filter "label=com.docker.compose.project=$project" \
+    --filter 'label=com.docker.compose.service=anyflip-web')
+  all_ids=$(docker ps -aq --filter "label=com.docker.compose.project=$project")
+  [ -n "$stage_id" ] && [ "$stage_id" = "$all_ids" ] ||
+    die 'retry requires precisely one existing staging web container'
+  [ "$(docker inspect --format '{{.State.Running}}' "$stage_id")" = false ] ||
+    die 'staging container must already be stopped'
+  [ "$(docker inspect --format '{{.Config.Image}}' "$stage_id")" = "$image" ] ||
+    die 'existing staging container has a different image'
+  [ "$(docker inspect --format '{{.Name}}' "$stage_id")" = '/rcat-anyflip-staging-anyflip-web-1' ] ||
+    die 'unexpected staging container identity'
+  [ "$(docker volume inspect --format '{{index .Labels "com.docker.compose.project"}}' rcat-anyflip-staging-jobs)" = "$project" ] ||
+    die 'existing staging volume is not owned by reviewed Compose project'
+  [ "$(docker network inspect --format '{{index .Labels "com.docker.compose.project"}}' rcat-anyflip-staging_stage_private)" = "$project" ] ||
+    die 'existing staging network is not owned by reviewed Compose project'
+  [ -f "$secret_file" ] && [ "$(stat -c '%u %a' "$secret_file")" = '0 600' ] ||
+    die 'existing staging token must be root-owned mode 0600'
+  [ -d "$secret_dir" ] && [ "$(stat -c '%u %a' "$secret_dir")" = '0 700' ] ||
+    die 'existing staging secret directory must be root-owned mode 0700'
+  RCAT_STAGE_IMAGE=$image
+  export RCAT_STAGE_IMAGE
+  docker compose --project-name "$project" -f "$compose_file" config --quiet ||
+    die 'reviewed staging Compose configuration is invalid'
+  # A Docker network's internal mode is immutable. Remove ONLY this stopped
+  # staging container and its dedicated network; NEVER pass --volumes.
+  docker compose --project-name "$project" -f "$compose_file" down ||
+    die 'failed to replace staging-only network; volume remains preserved'
+else
+  [ -z "$(docker ps -aq --filter "label=com.docker.compose.project=$project")" ] ||
+    die 'staging project already has containers; use retry only for stopped known stage'
+  if docker volume inspect rcat-anyflip-staging-jobs >/dev/null 2>&1; then
+    die 'staging volume already exists; refusing replacement'
+  fi
+  if docker network inspect rcat-anyflip-staging_stage_private >/dev/null 2>&1; then
+    die 'staging network already exists; refusing replacement'
+  fi
 fi
 
 if [ -e "$secret_dir" ]; then
