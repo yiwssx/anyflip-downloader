@@ -7,6 +7,7 @@ GitHub approval, bind the exact operation, and consume replay BEFORE calling
 switch_with_authenticated_approval. No root lock changes or Production access.
 """
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -83,6 +84,12 @@ def _tag(version):
 def _approved_inputs():
     if os.geteuid() != 0:
         raise VersionedStageRefused("only the separate root-owned Stage executor may call")
+    host = subprocess.run(["/usr/sbin/ip", "-o", "-4", "addr", "show"],
+                          shell=False, env=_ENV, stdin=subprocess.DEVNULL,
+                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                          text=True, timeout=10, check=False)
+    if host.returncode != 0 or not re.search(r"\\binet 10\\.10\\.1\\.100/[0-9]+\\b", host.stdout):
+        raise VersionedStageRefused("not the approved RCAT IOT Staging host")
     for directory in (PAIR.parent, RECOVERY.parent, LOCK.parent):
         s = directory.lstat()
         if not stat.S_ISDIR(s.st_mode) or s.st_uid != 0 or stat.S_IMODE(s.st_mode) != 0o700:
@@ -97,14 +104,17 @@ def _approved_inputs():
     canonical = json.dumps(pair, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     if "sha256:" + hashlib.sha256(canonical.encode("ascii")).hexdigest() != PAIR_HASH:
         raise VersionedStageRefused("signed version pair receipt changed")
-    if (pair.get("schema_version") != 1
+    if (not isinstance(pair, dict) or set(pair) != {
+            "schema_version", "kind", "application", "environment", "from", "to"}
+            or pair.get("schema_version") != 1
             or pair.get("kind") != "rcat.anyflip.stage.signed_version_pair"
             or pair.get("environment") != "staging"
             or pair.get("application") != "anyflip-downloader"):
         raise VersionedStageRefused("wrong signed version pair")
     for label, side in (("A", "from"), ("B", "to")):
         entry = pair[side]
-        if (entry.get("source_commit"), entry.get("image_id")) != SIGNED[label]:
+        if (not isinstance(entry, dict)
+                or (entry.get("source_commit"), entry.get("image_id")) != SIGNED[label]):
             raise VersionedStageRefused("signed image does not match fixed release")
     backup = _read_json(RECOVERY / "receipt.json")
     if (backup.get("kind") != "rcat.stage.volume.snapshot"
@@ -115,9 +125,18 @@ def _approved_inputs():
             or not isinstance(backup.get("data_sha256"), str)
             or not _ID.fullmatch(backup["data_sha256"])):
         raise VersionedStageRefused("verified legacy Stage snapshot unavailable")
-    # A matching receipt is not sufficient if its data was later modified.
-    # The data comparison is performed by the separately installed recovery
-    # verifier BEFORE any versioned transaction; no restore is done here.
+    # Verify the actual root-only baseline still matches its scratch-restored
+    # receipt; do not accept a receipt for missing or altered recovery data.
+    verifier_path = Path(__file__).with_name("stopped-stage-snapshot.py")
+    spec = importlib.util.spec_from_file_location("rcat_stage_snapshot", verifier_path)
+    verifier = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(verifier)
+    try:
+        actual_hash, actual_bytes = verifier._tree_receipt(RECOVERY / "data")
+    except (OSError, ValueError):
+        raise VersionedStageRefused("legacy backup data unreadable") from None
+    if actual_hash != backup["data_sha256"] or actual_bytes != backup.get("bytes"):
+        raise VersionedStageRefused("legacy backup content changed")
     return backup
 
 
