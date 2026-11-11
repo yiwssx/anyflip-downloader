@@ -103,3 +103,25 @@ The fixed hook accepts **only** `deploy <40hex source SHA> sha256:<local Docker 
 4. Check for new/old binary state incompatibility; never assume in-memory Web jobs survive restart.
 
 See [P1 verification](P1_VERIFICATION.md), [deployment runbook](WEB_DEPLOYMENT.md) and [master tracker](DEVELOPMENT_TRACKER.md).
+
+## Manual signed Staging Docker archive — source-only release path (11 Nov 2026)
+
+The existing `.github/workflows/release.yml` **remains manual and main-only**. When the owner intentionally dispatches a NEW candidate, its existing four signed Go binaries are verified first, then the already-reviewed Staging Dockerfile packages the signed Linux AMD64 executable into a **Docker image archive**. The workflow records the archive SHA-256 and Docker image ID, signs the actual `.docker.tar` bytes via the existing GitHub attestation mechanism, independently verifies the signature/source SHA before uploading to the **same 14-day Actions candidate artifact**. No GHCR, GitHub Release, tag, package-write token, Production action, host deployment or automatic runner is added.
+
+This change is **source readiness only**: it does NOT retroactively sign the previously deployed local-only AnyFlip Staging image, and it does not prove a second candidate exists. The old signed executable evidence and existing Stage resume/health acceptance remain unchanged.
+
+To independently validate a **downloaded** candidate without Docker or privileged Host access, the operator supplies the exact reviewed source SHA, downloaded archive SHA-256 and expected image ID from the candidate receipt:
+
+```bash
+python3 scripts/verify-attested-staging-archive.py \
+  anyflip-web_vX.Y.Z_linux_amd64.docker.tar \
+  EXACT_40_HEX_MAIN_SHA \
+  sha256:REVIEWED_ARCHIVE_SHA256 \
+  sha256:REVIEWED_DOCKER_IMAGE_ID
+```
+
+This verifier freezes the input bytes before checking them; requires a GitHub attestation for the **same archive** from the trusted `main` manual release workflow and exact source commit, validates Docker `manifest.json`, the config's content-addressed image ID, platform `linux/amd64`, exact staged tag and source label. It outputs only sanitized identity details; does not call Docker or modify any container. Companion `.image-id`/`.sha256` files are **metadata to cross-check, not signatures**.
+
+**Version-to-version deployment and rollback are NOT enabled by this evidence alone.** The minimal subsequent gate is TWO independently attested, byte-verified Staging image archives at distinct reviewed source commits, both available and pinned on the isolated Host. Before any switch, obtain owner approval, a verified untouched rollback image, a protected backup/snapshot of the **dedicated** Staging jobs volume and a completed restore proof, enforce no active job/data-migration incompatibility, and define a deterministic failure rollback + health 200/unauthenticated API 401. Never reuse a previous GitHub release approval, never repoint the existing v1 `resume` Executor to a new image by altering its root lock, never delete volume or affect Production. A versioned operation requires its own reviewed fixed-hook and separate approval protocol before any execution.
+
+Keep the Stage timer disabled, the current image lock unchanged, and HDA-04/HDA-06 scoped acceptance open until independently observable new artifacts and a successful authorized cross-version transaction exist.
