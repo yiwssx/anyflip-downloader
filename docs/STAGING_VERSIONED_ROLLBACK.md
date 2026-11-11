@@ -131,3 +131,69 @@ Host authorization, and cannot start or modify Docker. A `PASS` here is a
 **Non-goals:** Production, cloud networking, DNS, OAuth, POS/Radio/PDF HUB,
 new paid service, public package publication, background polling or re-running
 accepted Diagnostics/CI/old Staging recovery evidence.
+
+## 11 Nov 2026 — bounded Host recovery and fixed version-switch SOURCE, not installed
+
+The new `deploy/staging/stopped-stage-snapshot.py` prepares one protected
+legacy Stage volume snapshot and verifies restoration into a **new, labelled,
+empty scratch Docker volume**. It is intentionally an explicit root-only Host
+operation, NOT called by `rcat-stage-executor.service`. It requires the known
+staging container ALREADY STOPPED, one exact Compose-owned named volume, the
+unchanged root-approved Legacy image lock, approved IOT IP, root-owned token,
+a trusted local Docker-volume mount path and adequate backup capacity. It
+creates a deterministic root-only backup under
+`/var/lib/rcat-staging-snapshots`, compares the source/copy/scratch file and
+ownership receipt, and removes **only its temporary scratch volume** when
+the copy is verified. Original Stage jobs volume and image/container are
+never deleted or replaced. A failed or incomplete snapshot is retained for
+operator inspection, not silently overwritten. It never stops or starts
+Stage, so the operator must obtain a real maintenance window and confirm
+no running jobs BEFORE stopping Stage.
+
+**Do NOT run the snapshot yet.** The necessary controlled Staging stop,
+backup storage choice and operator authorization must be agreed first.
+After an independently reviewed maintenance stop, the exact source-only
+invocation would be:
+
+```bash
+sudo python3 /path/to/reviewed-anyflip/deploy/staging/stopped-stage-snapshot.py \
+  --approve-stopped-stage-snapshot
+```
+
+Accept only `STAGING_STOPPED_VOLUME_SNAPSHOT_SCRATCH_RESTORE_PASS`
+and a root-only `receipt.json` with `scratch_restored: true`.
+This is NEW data recovery evidence, not a repetition of the previous
+same-image stop/start proof. Never stop the existing service just to rerun
+an earlier acceptance gate.
+
+The new `deploy/staging/anyflip-versioned-fixed-hook.py` is intentionally
+**not runnable from CLI** and is NOT installed in
+`/usr/local/libexec/rcat-staging/anyflip-downloader-stage`. It freezes the
+exact three image/source identities (Legacy local-only image and signed
+A/B archive receipts), rejects changed legacy lock and signed version pair,
+requires a still-intact legacy backup receipt, verifies image IDs/labels,
+loopback-only Stage container and volume mapping and authenticated idle
+`GET /api/jobs` with no queued/running jobs. It exposes a single private
+`switch_with_authenticated_approval` integration entry point for a future
+**separate version-scoped executor**, not for `v1 resume` or the read-only
+Agent. It rejects untrusted/manual approval JSON, unknown transitions,
+non-distinct images, and missing *already-consumed* one-time GitHub approval
+results bound to exact direction + signed image pair + legacy data receipt.
+The existing `rcat_ops.approval.audit_live_approval` result does not by
+itself contain this versioned operation binding; a separately reviewed
+version-scoped adapter and host bootstrap are STILL REQUIRED. Until then
+there is NO executable remote or local version switch.
+
+Once the separate adapter and actual signed A/B image imports are accepted,
+only fixed `Legacy→A`, `A→B`, `B→A`, `A→Legacy`, or `B→Legacy`
+transitions are allowed. On a failed switch the fixed Hook attempts to
+recreate only its exact previous Stage image; if fallback also fails it
+stops only Stage and retains recovery evidence for a human operator.
+Restoring the **image** is not proof of restoring compatible **data**; an
+actual approved Staging data restore and A→B→A evidence must still be
+observed before HDA-04 can be closed. The original legacy pin remains
+untouched and the periodic Stage timer remains disabled throughout.
+
+No Production, Port 8094, DNS/Cloudflare, current Stage secrets, GitHub
+Diagnostics Agent, or existing Staging Executor permissions change in
+this source-only PR.
