@@ -112,7 +112,7 @@ jobs:
           mkdir -p dist/staging
           archive="dist/staging/anyflip-web_${CANDIDATE_VERSION}_linux_amd64.docker.tar"
           docker image save --output "$archive" "$image"
-          sha256sum "$archive" > "$archive.sha256"
+          ( cd dist/staging && sha256sum "${archive##*/}" > "${archive##*/}.sha256" )
           actual_id="$(docker image inspect --format '{{.Id}}' "$image")"
           actual_source="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
           [[ "$actual_id" =~ ^sha256:[0-9a-f]{64}$ && "$actual_source" == "$GITHUB_SHA" ]]
