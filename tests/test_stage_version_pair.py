@@ -94,7 +94,8 @@ class PairReadOnlyTests(unittest.TestCase):
                 pair.verify_version_pair(self.path)
             fn.assert_not_called()
         self.request["to"]["filename"] = "../staging-secret.env"
-        self.save()
+        # Never create the malicious filename on disk, even in this test.
+        self.path.write_text(json.dumps(self.request))
         with patch.object(pair.archive_verifier, "verify_archive") as fn:
             with self.assertRaises(pair.VersionPairRefused):
                 pair.verify_version_pair(self.path)
