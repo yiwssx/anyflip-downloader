@@ -64,7 +64,7 @@ def _volume_mount(name):
     # tree, to a symlink, to Production storage, or to an operator mount path.
     expected = root / "volumes" / name / "_data"
     if (source != expected or source.is_symlink() or not source.is_dir()
-            or source.resolve() != expected.resolve()
+            or source != source.resolve() or root != root.resolve()
             or root.is_symlink()):
         raise SnapshotRefused("unexpected or unsafe Docker volume mountpoint")
     return source, item
@@ -162,6 +162,9 @@ def _copy_stage_tree(source, target):
             stat_info = original.stat()
             os.chown(copied, stat_info.st_uid, stat_info.st_gid)
             os.chmod(copied, stat.S_IMODE(stat_info.st_mode))
+    root_stat = source.stat()
+    os.chown(target, root_stat.st_uid, root_stat.st_gid)
+    os.chmod(target, stat.S_IMODE(root_stat.st_mode))
 
 
 def snapshot_and_scratch_restore():
@@ -218,6 +221,9 @@ def snapshot_and_scratch_restore():
             os.chown(scratch_path / item.name, s.st_uid, s.st_gid)
         else:
             raise SnapshotRefused("snapshot source unsafe")
+    root_stat = source.stat()
+    os.chown(scratch_path, root_stat.st_uid, root_stat.st_gid)
+    os.chmod(scratch_path, stat.S_IMODE(root_stat.st_mode))
     restored, _ = _tree_receipt(scratch_path)
     if restored != before:
         raise SnapshotRefused("scratch Docker volume restore failed integrity")
