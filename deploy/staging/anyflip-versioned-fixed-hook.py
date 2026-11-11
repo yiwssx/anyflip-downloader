@@ -251,6 +251,25 @@ def _check_fresh_approval(approval, replay, *, source, target, receipt):
     return op_hash
 
 
+
+def preflight_versioned_stage(source, target):
+    """New v2 approval gate may call this without consuming or writing Host data.
+
+    Returns True ONLY for the exact reviewed ready, quiescent, isolated Stage.
+    A later approved switch checks these same invariants again to avoid TOCTOU.
+    """
+    if ((source, target) not in {("legacy","A"),("A","B"),("B","A"),
+                                 ("A","legacy"),("B","legacy")}):
+        raise VersionedStageRefused("unreviewed Stage version transition")
+    _approved_inputs()
+    if _running_stage() != source:
+        raise VersionedStageRefused("actual Stage image differs from approved source")
+    _image_ready(source)
+    _image_ready(target)
+    _idle()
+    return True
+
+
 def switch_with_authenticated_approval(source, target, *, approval, replay):
     """Privileged internal entry point. NO CLI, NO v1 executor integration.
 
