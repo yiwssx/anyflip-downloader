@@ -1,6 +1,6 @@
 module github.com/Lofter1/anyflip-downloader
 
-go 1.26.10
+go 1.26.11
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
