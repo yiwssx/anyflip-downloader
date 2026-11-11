@@ -299,3 +299,10 @@ See [Frontend architecture and trust boundaries](FRONTEND_ARCHITECTURE.md). All 
 - เปลี่ยน checkbox เป็นเสร็จ **เมื่อมีหลักฐานทดสอบผ่านเท่านั้น**; ห้ามนับการเปิด PR ว่าเสร็จ
 - ใส่ลิงก์ PR/Commit และวันที่เมื่อแต่ละ Phase ผ่าน Gate
 - ไม่แก้หรือ Merge ไป `main` โดยข้ามขั้น Review/Verification
+
+## HDA-06 signed Staging image archive (11 November 2026)
+
+- **Source PR:** [#122](https://github.com/yiwssx/anyflip-downloader/pull/122) extends the **existing main-only manual candidate** to sign and verify a Staging Docker-save archive made from the previously signed Linux AMD64 Web/CLI binary, and adds one offline consumer/archive-identity test suite in existing CI. A source PR is not a signed artifact or a staging upgrade.
+- **Required CI:** exact PR-head build/Go/vet/race/govulncheck, Docker smoke, and applicable Browser E2E must all pass before merge. Initial CI discovered new `GO-2026-6859` in Go 1.26.10; the same PR updates Go modules + existing Docker builder to official fixed patch 1.26.11. No security scanner is bypassed.
+- **Accepted evidence reused:** original signed binary + independent hash proof at source `bc72fe9c959ca91c61557b41712ce0ed5b9e1c79` and the prior successful AnyFlip pinned-image owner-approved Stage resume #48. These proofs do **not** become signed image/archive evidence retroactively.
+- **Still pending:** a fresh human-dispatched signed Docker archive candidate from new reviewed main, a second distinct source-bound image archive, real Host archive/image identity proof, approved isolated Staging data snapshot/restore, a separately reviewed version-scoped switch and rollback approval, one authorized live two-version rollback acceptance. Do not trigger the release workflow or Host rollout merely by merging this PR. Existing Production, DNS, quotas, Google Workspace, Stage lock and timer must remain unchanged.
