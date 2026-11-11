@@ -114,6 +114,28 @@ class VersionedHookTests(unittest.TestCase):
         self.assertEqual(docker.call_count,2)
         self.assertEqual(docker.call_args.kwargs["image"],hook._tag("A"))
 
+    def test_preflight_is_read_only_and_matches_approved_exact_stage(self):
+        with patch.object(hook, "_approved_inputs",return_value=BACKUP) as snapshot, \
+             patch.object(hook, "_running_stage",return_value="A"), \
+             patch.object(hook, "_image_ready") as image, \
+             patch.object(hook, "_idle") as idle, \
+             patch.object(hook, "_docker") as docker:
+            self.assertIs(hook.preflight_versioned_stage("A","B"),True)
+        snapshot.assert_called_once()
+        self.assertEqual(image.call_count,2)
+        idle.assert_called_once()
+        docker.assert_not_called()
+
+    def test_preflight_refuses_wrong_running_version_before_image_change(self):
+        with patch.object(hook, "_approved_inputs",return_value=BACKUP), \
+             patch.object(hook, "_running_stage",return_value="legacy"), \
+             patch.object(hook, "_image_ready") as image, \
+             patch.object(hook, "_idle") as idle:
+            with self.assertRaises(hook.VersionedStageRefused):
+                hook.preflight_versioned_stage("A","B")
+            image.assert_not_called()
+            idle.assert_not_called()
+
     def test_running_image_must_be_actual_reviewed_stage(self):
         approval,replay=valid_evidence()
         with patch.object(hook,"_approved_inputs",return_value=BACKUP), \
