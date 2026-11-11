@@ -88,7 +88,7 @@ def _approved_inputs():
                           shell=False, env=_ENV, stdin=subprocess.DEVNULL,
                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                           text=True, timeout=10, check=False)
-    if host.returncode != 0 or not re.search(r"\\binet 10\\.10\\.1\\.100/[0-9]+\\b", host.stdout):
+    if host.returncode != 0 or not re.search(r"\binet 10\.10\.1\.100/[0-9]+\b", host.stdout):
         raise VersionedStageRefused("not the approved RCAT IOT Staging host")
     for directory in (PAIR.parent, RECOVERY.parent, LOCK.parent):
         s = directory.lstat()
