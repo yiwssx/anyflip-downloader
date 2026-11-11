@@ -93,6 +93,49 @@ jobs:
               --source-ref refs/heads/main \
               --source-digest "$GITHUB_SHA" >/dev/null
           done
+      # Manual-only. Sign exact Docker archive BYTES, not an image label or
+      # a host-local tag. No GHCR package write, public Release or deployment.
+      - name: Assemble source-bound Staging image archive
+        shell: bash
+        env:
+          CANDIDATE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          context="$(mktemp -d)"
+          trap 'rm -rf -- "$context"' EXIT
+          install -m 0555 "dist/anyflip-downloader_${CANDIDATE_VERSION}_linux_amd64" "$context/anyflip-downloader"
+          image="rcat-anyflip-staging:sha-${GITHUB_SHA}"
+          docker build --platform linux/amd64 \
+            -f deploy/staging/Dockerfile.signed-web \
+            --build-arg "SOURCE_COMMIT=${GITHUB_SHA}" \
+            -t "$image" "$context"
+          mkdir -p dist/staging
+          archive="dist/staging/anyflip-web_${CANDIDATE_VERSION}_linux_amd64.docker.tar"
+          docker image save --output "$archive" "$image"
+          sha256sum "$archive" > "$archive.sha256"
+          actual_id="$(docker image inspect --format '{{.Id}}' "$image")"
+          actual_source="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
+          [[ "$actual_id" =~ ^sha256:[0-9a-f]{64}$ && "$actual_source" == "$GITHUB_SHA" ]]
+          printf '%s\n' "$actual_id" > "$archive.image-id"
+          printf '%s\n' "$GITHUB_SHA" > "$archive.source-sha"
+      - name: Attest the immutable Staging Docker image archive
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/staging/*.docker.tar
+      - name: Verify Staging image archive bytes and source provenance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          archives=(dist/staging/*.docker.tar)
+          [[ "${#archives[@]}" -eq 1 && -f "${archives[0]}" ]] || exit 1
+          ( cd dist/staging && sha256sum -c *.docker.tar.sha256 )
+          gh attestation verify "${archives[0]}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+            --source-ref refs/heads/main \
+            --source-digest "$GITHUB_SHA" >/dev/null
       - name: Upload unapproved candidate assets
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
