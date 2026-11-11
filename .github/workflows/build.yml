@@ -93,6 +93,7 @@ jobs:
         bash -n scripts/gh-security-hardening.sh
         python3 -m py_compile scripts/check-google-auth-compose.py scripts/test-google-auth-compose.py
         python3 -m unittest discover -s tests -p 'test_attested_stage_archive.py' -q
+        python3 -m unittest discover -s tests -p 'test_stage_version_pair.py' -q
         python3 scripts/test-google-auth-compose.py
         node --check web/google.js
         # Google-mode Compose must validate WITHOUT ANYFLIP_WEB_TOKEN.
