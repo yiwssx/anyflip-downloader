@@ -68,10 +68,14 @@ def verify_version_pair(manifest_path):
         raise VersionPairRefused("two distinct signed source/image versions required")
 
     root = manifest_path.parent
+    # Reject missing or unsafe members BEFORE doing either expensive GitHub
+    # signature verification; never report partial readiness as a valid pair.
     for entry in (before, after):
         archive = root / entry["filename"]
         if not archive.is_file() or archive.is_symlink():
             raise VersionPairRefused("both signed archive files must be present")
+    for entry in (before, after):
+        archive = root / entry["filename"]
         # The shared verifier validates independently frozen BYTES, GitHub
         # attestation (trusted main+workflow+source), OCI graph and Docker IDs.
         result = archive_verifier.verify_archive(
