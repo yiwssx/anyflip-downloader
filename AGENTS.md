@@ -5,6 +5,13 @@
 - The authoritative current state is the code, docs/DEVELOPMENT_TRACKER.md, merged PRs and CI; historical checklist items about the removed local-account authentication are **not** current product requirements.
 - Use Go version from go.mod, embedded Web files in web/, Node/Playwright browser tests in tests/, and the workflows under .github/workflows/.
 
+## Human-triggered evidence-aware execution
+- Read the live GitHub issue/PR state, target branch and exact-head CI before acting; `docs/DEVELOPMENT_TRACKER.md` provides history and supporting evidence, not permission to reopen completed work. The absence of open issues is not a request to invent a new one.
+- Keep the owner's requested scope and Definition of Done fixed. Work within an existing approved issue/PR where applicable; do not manufacture new trackers, phases, workflows, broad refactors or repeated acceptance campaigns.
+- Reuse successful evidence only for the same source commit, claim, configuration and trust boundary. For a changed surface run its relevant existing checks and all required PR checks; do not re-run unrelated Go, browser, Docker or RCAT host tests just to repeat prior proof. Existing mandatory security/Go checks in the Delivery contract still apply when relevant.
+- Distinguish code merged, CI passed, and *operator-attested* Production acceptance. Do not treat CI as host proof, and do not silently reopen completed operator acceptance without a real regression.
+- Stop at DONE when the approved criteria are evidenced; otherwise identify the precise BLOCKED or pending owner/host action. Retry only with an evidence-backed corrective change, and never grant yourself Production authority.
+
 ## Non-negotiable safeguards
 - Work only with documents the operator is authorized to download or reproduce. Do not bypass login, DRM, entitlement checks, rate limits, or access-control denials.
 - Keep the publisher-host allowlist, IP/SSRF protection, verified TLS, bounded requests, atomic PDF publication, cancellation, and per-job isolation.
