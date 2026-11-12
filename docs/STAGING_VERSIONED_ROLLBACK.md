@@ -197,3 +197,55 @@ untouched and the periodic Stage timer remains disabled throughout.
 No Production, Port 8094, DNS/Cloudflare, current Stage secrets, GitHub
 Diagnostics Agent, or existing Staging Executor permissions change in
 this source-only PR.
+
+
+## 12 Nov 2026 — one-shot signed pair intake source (Host not yet touched)
+
+`scripts/accept-signed-stage-pair.py` is a narrowly scoped, **root-only,
+explicitly authorized artifact-intake** adapter. It accepts exactly the
+already recorded A/B GitHub Actions ZIPs `v0.2.0-rc.115` and
+`v0.2.0-rc.116`. It requires a clean reviewed GitHub `main` checkout,
+the original Legacy Stage root image lock, Host IP `10.10.1.100`, and a
+locally installed GitHub CLI. It validates both original downloaded ZIP
+SHA-256 values, the exact archive/source/image metadata and a static signed
+version-pair receipt before calling the **existing**
+`verify-stage-version-pair.py` once. That verifier independently checks the
+GitHub signature and `main`/workflow/source SHA and every OCI archive
+descriptor for **both downloaded archive byte streams**, not merely a CI log.
+
+Only when both signatures pass does the intake retain root-only archives at
+`/var/lib/rcat-staging-artifacts/verified-rc115-rc116/` and provision the
+strictly nonexecuting `/etc/rcat-staging/anyflip-verified-version-pair.json`
+owned by root, mode 0600. It fails closed on missing `gh`, missing
+authentication/network trust, changed ZIPs or any existing receipt/directory
+(no overwrite). This step **does not** invoke Docker, import images, stop Stage,
+touch volumes, create Owner Approvals, change the current Image Lock or enable
+the timer. An unsigned legacy image is NEVER reclassified as signed.
+
+Keep the two already downloaded ZIPs on operator-controlled private
+Staging-only storage; do not retrieve or rebuild the candidates again. With a
+**separate, clean staging-only source checkout** (not the live Production
+`/opt/anyflip-downloader` checkout), exact reviewed current main SHA and
+copies of the previously downloaded candidate ZIPs, the **one** intentional
+Host command, when the operator is ready, is:
+
+```bash
+sudo python3 /opt/rcat-staging-artifact-source/scripts/accept-signed-stage-pair.py \
+  --approve-staging-artifact-intake \
+  --reviewed-main-sha EXACT_REVIEWED_ANYFLIP_MAIN_SHA \
+  /private/rcat-transfer/anyflip-candidate-v0.2.0-rc.115.zip \
+  /private/rcat-transfer/anyflip-candidate-v0.2.0-rc.116.zip
+```
+
+Accept **only** `STAGING_SIGNED_AB_ARCHIVES_STORED_NO_IMPORT`. If
+`gh attestation verify` cannot independently authenticate BOTH archives,
+the process fails before publishing any root-only version pair receipt.
+Do **not** rerun an already completed intake or manually fabricate the
+protected receipt to bypass this independent signature gate.
+
+**Separately blocked Host operations:** after signed intake, a new explicitly
+authorized Host Docker image import + exact ID comparison is needed; a quiet
+maintenance stop and scratch-restore snapshot of the Legacy Stage volume is
+required before approving a versioned operation. The already merged v2
+Approval Runner additionally requires new human Approval for every exact
+transition. No legacy Stage timer/approval/Production rights are expanded.
