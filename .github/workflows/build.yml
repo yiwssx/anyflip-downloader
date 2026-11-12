@@ -94,6 +94,7 @@ jobs:
         python3 -m py_compile scripts/check-google-auth-compose.py scripts/test-google-auth-compose.py
         python3 -m unittest discover -s tests -p 'test_attested_stage_archive.py' -q
         python3 -m unittest discover -s tests -p 'test_stage_version_pair.py' -q
+        python3 -m unittest discover -s tests -p 'test_signed_pair_intake.py' -q
         python3 -m unittest discover -s tests -p 'test_stopped_stage_snapshot.py' -q
         python3 -m py_compile deploy/staging/stopped-stage-snapshot.py
         python3 -m unittest discover -s tests -p 'test_versioned_stage_hook.py' -q
