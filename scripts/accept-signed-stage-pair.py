@@ -54,6 +54,17 @@ def _hash_file(path):
 def _checkout(reviewed_sha):
     if not _SHA.fullmatch(reviewed_sha):
         raise IntakeRefused("exact reviewed 40-hex main SHA required")
+    # Root must never execute Python from an operator-writable checkout:
+    # immutable commit verification alone does not prevent a local TOCTOU.
+    for node in (
+        REVIEWED, REVIEWED / ".git", REVIEWED / "scripts",
+        REVIEWED / "deploy", REVIEWED / "deploy/staging",
+        Path(__file__), MANIFEST, VERIFIER,
+        REVIEWED / "scripts/verify-attested-staging-archive.py",
+    ):
+        s = node.lstat()
+        if (node.is_symlink() or s.st_uid != 0 or s.st_mode & 0o022):
+            raise IntakeRefused("trusted Stage source checkout must be root-owned and not writable")
     try:
         def git(*args):
             return subprocess.check_output(
@@ -63,7 +74,7 @@ def _checkout(reviewed_sha):
         origin = git("remote", "get-url", "origin")
         if (git("rev-parse", "HEAD") != reviewed_sha
                 or git("branch", "--show-current") != "main"
-                or git("status", "--porcelain", "--untracked-files=no")
+                or git("status", "--porcelain", "--untracked-files=all")
                 or origin not in {
                     "https://github.com/yiwssx/anyflip-downloader",
                     "https://github.com/yiwssx/anyflip-downloader.git",
