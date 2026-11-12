@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "rcat.anyflip.stage.signed_version_pair",
+  "application": "anyflip-downloader",
+  "environment": "staging",
+  "from": {
+    "filename": "anyflip-web_v0.2.0-rc.115_linux_amd64.docker.tar",
+    "source_commit": "3dca0d19ce18048129d7506bbba7aff98b852c06",
+    "archive_digest": "sha256:a552f0ca3d854a9251daa632ad524253e69090276493731dc7281fcd3165f6d7",
+    "image_id": "sha256:bc1491a6d0b2416969cad81f83a64f327dcc2bef0aeecb2b35f89d06c10f361a"
+  },
+  "to": {
+    "filename": "anyflip-web_v0.2.0-rc.116_linux_amd64.docker.tar",
+    "source_commit": "d14cc1e8a0bb268795cb24057e16aaa3a9e73131",
+    "archive_digest": "sha256:ce2541d4f6e9ba35db552381875366906dacf5d646fc773f753fec25ab330d44",
+    "image_id": "sha256:3a4ea4cd1b1a43bf6c7742b7e475edc273952577a2ea564604ae9e44d4980258"
+  }
+}
