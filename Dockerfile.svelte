@@ -19,6 +19,10 @@ ENV CGO_ENABLED=0
 RUN go build -trimpath -ldflags="-s -w" -o /out/anyflip-downloader .
 
 FROM alpine:3.22
+ARG SOURCE_COMMIT=unknown
+LABEL org.opencontainers.image.source="https://github.com/yiwssx/anyflip-downloader" \
+      org.opencontainers.image.revision="$SOURCE_COMMIT" \
+      org.opencontainers.image.title="RCAT AnyFlip Downloader Svelte UI"
 RUN apk add --no-cache ca-certificates \
     && addgroup -S -g 10001 anyflip \
     && adduser -S -D -H -u 10001 -G anyflip anyflip \
