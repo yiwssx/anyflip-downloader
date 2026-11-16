@@ -229,3 +229,22 @@
     {/each}
   </nav>
 </div>
+
+<!-- Compiled into same-origin CSS, not runtime inline styles. -->
+<style>
+  @media (min-width: 768px) {
+    aside[data-collapsed="true"] {
+      flex: 0 0 80px;
+      width: 80px;
+      min-width: 80px;
+      max-width: 80px;
+      overflow-x: clip;
+    }
+    aside[data-collapsed="false"] {
+      flex: 0 0 252px;
+      width: 252px;
+      min-width: 252px;
+      max-width: 252px;
+    }
+  }
+</style>
