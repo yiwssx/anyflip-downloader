@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test:visual": "node tests/preview.mjs",
-    "test:journeys": "node tests/user-workflows.mjs"
+    "test:journeys": "node tests/user-workflows.mjs",
+    "test:admin": "node tests/admin-workflows.mjs"
   },
   "dependencies": {
     "@lucide/svelte": "^1.70.0",
