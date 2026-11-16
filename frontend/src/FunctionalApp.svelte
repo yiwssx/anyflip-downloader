@@ -219,6 +219,7 @@
               {#if item.key==="overview"}<LayoutDashboard size={19} aria-hidden="true" />
               {:else if item.key==="download"}<ArrowDownToLine size={19} aria-hidden="true" />
               {:else if item.key==="history"}<History size={19} aria-hidden="true" />
+              {:else if item.key==="admin"}<ShieldCog size={19} aria-hidden="true" />
               {:else}<Settings2 size={19} aria-hidden="true" />{/if}
               {#if !sidebarCollapsed}{item.title}{/if}
             </button>
@@ -247,7 +248,9 @@
         </header>
 
         <main id="main" tabindex="-1" class="mx-auto w-full max-w-[1200px] space-y-6 px-5 py-7 sm:px-8 lg:px-12 lg:py-9">
+          {#if view!=="admin"}
           <div><p class="mb-1 text-sm font-medium text-muted-foreground">พื้นที่ทำงาน</p><h2 class="text-2xl font-bold tracking-tight sm:text-3xl">{navSections.find(s=>s.key===view)?.title}</h2></div>
+          {/if}
 
           {#if mode==="token"}
             <Card class="space-y-3 p-5 sm:p-6">
@@ -356,6 +359,8 @@
                 <div class="grid min-h-48 place-items-center rounded-xl border border-dashed border-border p-6 text-center"><div><History size={28} class="mx-auto mb-3 text-muted-foreground" aria-hidden="true" /><p class="text-sm font-medium">{!authorized ? "เข้าสู่ระบบเพื่อดูประวัติ" : workspace.jobs.length ? "ไม่พบรายการที่ตรงกับการค้นหา" : "ยังไม่มีประวัติงาน"}</p></div></div>
               {/if}
             </Card>
+          {:else if view==="admin" && user && (user.role==="admin"||user.role==="super_admin")}
+            <AdminPanel viewer={user} onDenied={onAdminDenied} />
           {:else}
             <Card class="max-w-3xl space-y-5 p-6 sm:p-8">
               <h3 class="text-xl font-semibold">รูปแบบการแสดงผล</h3>
@@ -368,12 +373,13 @@
       </div>
     </div>
 
-    <nav aria-label="เมนูหลักสำหรับมือถือ" class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-card/95 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] shadow-[0_-6px_26px_rgba(0,0,0,0.035)] backdrop-blur-xl md:hidden">
+    <nav aria-label="เมนูหลักสำหรับมือถือ" class={`fixed inset-x-0 bottom-0 z-30 grid ${navSections.length===5 ? "grid-cols-5" : "grid-cols-4"} border-t border-border bg-card/95 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] shadow-[0_-6px_26px_rgba(0,0,0,0.035)] backdrop-blur-xl md:hidden`}>
       {#each navSections as item (item.key)}
         <button type="button" aria-current={view===item.key ? "page" : undefined} class={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium ${view===item.key ? "text-primary" : "text-muted-foreground"}`} onclick={()=>selectView(item.key)}>
           {#if item.key==="overview"}<LayoutDashboard size={22} aria-hidden="true" />
           {:else if item.key==="download"}<ArrowDownToLine size={22} aria-hidden="true" />
           {:else if item.key==="history"}<History size={22} aria-hidden="true" />
+          {:else if item.key==="admin"}<ShieldCog size={22} aria-hidden="true" />
           {:else}<Settings2 size={22} aria-hidden="true" />{/if}
           {item.title}
         </button>
