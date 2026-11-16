@@ -36,20 +36,26 @@ Color source of truth: `frontend/src/app.css` using OKLCH `--background`, `--pri
 ## Screen IA and interaction conventions
 
 1. Mobile: four-item bottom nav for Overview, Download, History, Appearance; safe-area padding.
-2. Desktop: accessible sidebar navigation; compact main content with clear hierarchy and grouped tasks.
+2. Desktop: accessible **collapsible** sidebar navigation; compact main content with clear hierarchy and grouped tasks.
 3. User journeys: review/submit URL, stage timeline, progress, cancel/retry/download, batch operations, scoped history, exact errors.
 4. Administration: role-aware navigation, separated modules, paginated tables, role-change confirmations, conflict feedback; **no giant never-ending dashboard**.
 5. Accessible semantics: keyboard, skip navigation, aria-live for async status, focus management, reduced motion and contrast testing on changed screens.
 
 ## Bounded engineering gates (without repeating unrelated acceptance)
 
-| Gate | Evidence required | Status at SUI-01 branch creation |
+| Gate | Evidence required | Current evidence (2026-11-16) |
 | --- | --- | --- |
-| Foundation code | Svelte preview, semantic tokens, real source components, shadcn-svelte registry config | Implementing |
-| Dependencies | reproducible lockfile, dependency review, `svelte-check` and Vite production build | Pending CI / lock |
-| Frontend regression | Desktop/mobile screenshot and keyboard checks against preview | Pending |
+| Foundation code | Svelte preview, semantic tokens, source-owned Button/Card, shadcn-svelte registry config | Implemented on PR #131; no feature parity claim |
+| Dependencies | reproducible lockfile, `npm ci`, `svelte-check` and Vite production build | `package-lock.json` committed; final exact-head CI pending |
+| Frontend regression | Desktop/mobile screenshot and keyboard checks against preview | 6-width Chromium/axe/keyboard run #43807229740 PASS; screenshots inspected at 320/390/768/1440. Final exact-head CI pending |
 | API parity / auth | API and Google/RBAC browser matrix for newly migrated views | Not in foundation scope |
 | Deployment | Go embedding, strict CSP, same-origin cookies, backup and rollback | Not in foundation scope |
 | Production | Owner-approved exact digest and host/device acceptance | Not authorized |
 
 **Stop rule:** Do not mark this migration DONE from a successful foundation PR. A green preview build is not proof of end-to-end job, OAuth or RBAC parity. Do not reopen historical accepted UIH tasks simply because this new implementation exists.
+
+## Reviewed preview evidence (synthetic only)
+
+- [Chromium visual run](https://github.com/yiwssx/anyflip-downloader/actions/runs/43807229740) captured 18 screenshots (overview light/dark + download dark at six widths); preview checks found no horizontal overflow, browser exceptions or unauthorized `/api`/`/auth` calls.
+- Manual screenshot sample at 320/390/768/1440 identified fixed-width sidebar and compressed metric cards; SUI-01 follow-up adds an explicit sidebar collapse toggle and switches to two-column metric cards on tablet.
+- Browser checks are only synthetic. None certify real Safari/iOS touch behavior, actual Google Workspace authentication, RBAC, host CSP or downloadable PDFs.
