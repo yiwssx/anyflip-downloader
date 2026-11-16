@@ -46,6 +46,7 @@ jobs:
           done
           if [ "$ready" != "1" ]; then cat "$RUNNER_TEMP/sui-preview.log"; exit 1; fi
           npm run test:visual
+          npm run test:journeys
       - name: Preserve synthetic SUI screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
