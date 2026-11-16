@@ -13,20 +13,62 @@ permissions:
 jobs:
   frontend-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
-      # Transitional setup while SUI-01 lockfile is pending; switch to npm ci
-      # after committing a reviewed lockfile before allowing any cutover.
+      # SUI-01 one-time bootstrap: capture registry-resolved lockfile, then
+      # commit it and change this command to 'npm ci' (exact dependency graph).
       - name: Install frontend dependencies
         run: npm install --no-audit --no-fund
       - name: Svelte diagnostics
         run: npm run check
       - name: Build isolated preview
         run: npm run build
+      - name: Install Chromium for focused visual checks
+        run: npx playwright install --with-deps chromium
+      - name: Responsive and accessibility preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run preview -- --port 4173 > "$RUNNER_TEMP/sui-preview.log" 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:4173/ >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" != "1" ]; then cat "$RUNNER_TEMP/sui-preview.log"; exit 1; fi
+          npm run test:visual
+      - name: Preserve synthetic SUI screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sui01-preview-chromium
+          path: frontend/test-artifacts/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7
+      # Transitional evidence export only. Lockfile has public dependency data,
+      # no credentials; output in bounded chunks for GitHub connector import.
+      # Remove this step once lockfile is committed to the feature branch.
+      - name: Export resolved lockfile chunks for reproducibility
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const bytes = fs.readFileSync('package-lock.json');
+          const encoded = bytes.toString('base64');
+          const size = 4000;
+          console.log('RCAT_LOCKFILE_TOTAL=' + Math.ceil(encoded.length / size));
+          for (let start = 0; start < encoded.length; start += size) {
+            console.log('RCAT_LOCK_CHUNK_' + String(start / size).padStart(4,'0') + '=' + encoded.slice(start, start + size));
+          }
+          NODE
