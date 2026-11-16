@@ -66,6 +66,26 @@ try {
         computedWidth: getComputedStyle(el).width,
       }));
       assert.equal(collapsed.state, "true", "Svelte state must mark sidebar as collapsed");
+      if (collapsed.width > 90) {
+        const debug = await page.evaluate(() => {
+          const el = document.querySelector('aside[aria-label="เมนูหลัก"]');
+          const css = getComputedStyle(el);
+          const matched = [];
+          const walk = (rules) => {
+            for (const rule of rules) {
+              if (rule.selectorText?.includes("collapsed") || rule.cssText?.includes("flex: 0 0 80px")) {
+                matched.push({ selector: rule.selectorText ?? "", css: rule.cssText.slice(0, 450), matches: rule.selectorText ? el.matches(rule.selectorText) : undefined });
+              }
+              if (rule.cssRules) walk(rule.cssRules);
+            }
+          };
+          for (const sheet of document.styleSheets) {
+            try { walk(sheet.cssRules); } catch {}
+          }
+          return { state: el.dataset.collapsed, inline: el.getAttribute("style"), width: css.width, minWidth: css.minWidth, maxWidth: css.maxWidth, flexBasis: css.flexBasis, matched: matched.slice(0, 20), sheets: document.styleSheets.length };
+        });
+        console.log("SIDEBAR_LAYOUT_DIAGNOSTIC=" + JSON.stringify(debug));
+      }
       assert.ok(collapsed.width <= 90, `Sidebar failed to collapse at ${viewport.width}px: ${JSON.stringify(collapsed)}`);
       await page.getByRole("button", { name: "ขยายเมนู" }).click();
       assert.equal(await page.getByRole("button", { name: "ยุบเมนู" }).getAttribute("aria-expanded"), "true");
