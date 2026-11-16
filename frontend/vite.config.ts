@@ -12,6 +12,12 @@ export default defineConfig({
     },
   },
   build: {
+    rollupOptions: {
+      input: {
+        index: fileURLToPath(new URL("./index.html", import.meta.url)),
+        google: fileURLToPath(new URL("./google.html", import.meta.url)),
+      },
+    },
     outDir: "dist",
     emptyOutDir: true,
   },
