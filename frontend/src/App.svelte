@@ -42,7 +42,7 @@
 
 <svelte:head>
   <title>RCAT AnyFlip · Design Preview</title>
-  <meta name="theme-color" content={isDark ? "#1c1c1e" : "#f5f5f7"} />
+  <meta name="theme-color" content={isDark ? "#10271d" : "#f3faf1"} />
 </svelte:head>
 
 <div class="min-h-svh bg-background text-foreground">
@@ -50,10 +50,10 @@
 
   <div class="mx-auto flex min-h-svh w-full max-w-[1600px]">
     <!-- Desktop navigation; mobile gets a compact bottom nav instead. -->
-    <aside data-collapsed={sidebarCollapsed} class="sticky top-0 hidden h-svh shrink-0 flex-col border-r border-border/75 bg-card/80 px-4 py-6 md:flex" aria-label="เมนูหลัก">
+    <aside data-collapsed={sidebarCollapsed} class="rcat-sidebar sticky top-0 hidden h-svh shrink-0 flex-col border-r border-border/75 px-4 py-6 md:flex" aria-label="เมนูหลัก">
       <div class="space-y-3 pb-6">
         <div class={sidebarCollapsed ? "flex justify-center" : "flex items-center gap-3 px-2"}>
-          <div class="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm" aria-hidden="true"><FileText size={24} strokeWidth={1.8} /></div>
+          <img src="/logo.svg" alt="RCAT AnyFlip" width="44" height="44" class="rcat-brand-mark size-11 shrink-0" />
           {#if !sidebarCollapsed}
             <div class="min-w-0">
               <p class="text-base font-bold leading-tight tracking-tight">RCAT AnyFlip</p>
@@ -105,10 +105,13 @@
     </aside>
 
     <div class="min-w-0 flex-1 pb-28 md:pb-8">
-      <header class="sticky top-0 z-20 flex min-h-[76px] items-center justify-between gap-4 border-b border-border/70 bg-background/95 px-5 backdrop-blur-xl sm:px-8 lg:px-12">
-        <div class="min-w-0">
-          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">RCAT DIGITAL SERVICES</p>
-          <h1 class="truncate text-lg font-bold tracking-tight sm:text-xl">AnyFlip Downloader</h1>
+      <header class="rcat-app-header sticky top-0 z-20 flex min-h-[76px] items-center justify-between gap-4 border-b border-border/70 bg-card/95 px-5 backdrop-blur-xl sm:px-8 lg:px-12">
+        <div class="flex min-w-0 items-center gap-3">
+          <img src="/logo.svg" alt="" aria-hidden="true" width="44" height="44" class="rcat-brand-mark size-10 shrink-0 sm:size-11" />
+          <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">RCAT DIGITAL SERVICES</p>
+            <h1 class="truncate text-lg font-bold tracking-tight sm:text-xl">AnyFlip Downloader</h1>
+          </div>
         </div>
         <div class="flex items-center gap-2">
           <span class="hidden rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:inline-flex">Design Preview</span>
@@ -128,7 +131,7 @@
         </div>
 
         {#if view === "overview"}
-          <Card class="relative overflow-hidden border-none bg-linear-to-br from-primary to-[oklch(0.45_0.17_258)] p-6 text-primary-foreground shadow-lg sm:p-8">
+          <Card class="rcat-hero relative overflow-hidden border-none p-6 text-white shadow-lg sm:p-8">
             <div class="relative z-10 max-w-xl">
               <p class="mb-3 text-xs font-bold uppercase tracking-widest text-white/80">RCAT DOWNLOAD CENTER</p>
               <h3 class="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">จัดการเอกสาร ได้ง่ายในที่เดียว</h3>
