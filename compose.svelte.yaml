@@ -6,5 +6,7 @@ services:
     build:
       context: ${SUI_SOURCE_DIR:-.}
       dockerfile: Dockerfile.svelte
+      args:
+        SOURCE_COMMIT: ${SUI_SOURCE_SHA:-unknown}
     environment:
       ANYFLIP_WEB_UI: svelte
