@@ -109,6 +109,16 @@ func (s *webServer) handler() http.Handler {
 	})
     if s.frontendMode=="svelte" {
       mux.HandleFunc("GET /svelte/assets/",serveSvelteAsset)
+      // Vite rewrites <link rel="icon"> and static public assets to its
+      // /svelte/ base during the embedded production build. Serve only
+      // these two immutable institution-owned SVGs; do not expose the
+      // generated directory or arbitrary asset paths.
+      mux.HandleFunc("GET /svelte/favicon.svg",func(w http.ResponseWriter,_ *http.Request){
+        serveEmbeddedWebAsset(w,"web/svelte/favicon.svg","image/svg+xml")
+      })
+      mux.HandleFunc("GET /svelte/logo.svg",func(w http.ResponseWriter,_ *http.Request){
+        serveEmbeddedWebAsset(w,"web/svelte/logo.svg","image/svg+xml")
+      })
     }
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
