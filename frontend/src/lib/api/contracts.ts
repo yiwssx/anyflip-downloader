@@ -75,5 +75,10 @@ export function parseUser(data: unknown): SessionUser {
   if (typeof raw.email !== "string" || !["user","admin","super_admin"].includes(String(raw.role))) {
     throw new Error("ข้อมูลบัญชีไม่ถูกต้อง");
   }
-  return {email:raw.email,role:raw.role as SessionUser["role"]};
+  return {
+    email:raw.email,
+    role:raw.role as SessionUser["role"],
+    identityRef: typeof raw.identityRef === "string" && /^g-[A-Za-z0-9_-]{1,198}$/.test(raw.identityRef)
+      ? raw.identityRef : undefined,
+  };
 }
