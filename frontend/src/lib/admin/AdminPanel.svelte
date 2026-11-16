@@ -149,7 +149,7 @@
 <section aria-labelledby="adminTitle" class="space-y-6">
   <div class="flex flex-wrap items-start justify-between gap-4">
     <div>
-      <p class="text-xs font-bold uppercase tracking-widest text-primary">INSTITUTION ADMINISTRATION</p>
+      <p class="text-xs font-bold uppercase tracking-widest text-accent-foreground">INSTITUTION ADMINISTRATION</p>
       <h2 id="adminTitle" class="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">ศูนย์จัดการระบบ</h2>
       <p class="mt-2 text-sm text-muted-foreground">{ROLE_NAMES[viewer.role]} · ข้อมูลและสิทธิ์ตรวจสอบโดย Go Backend</p>
     </div>
