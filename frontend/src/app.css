@@ -102,14 +102,14 @@
 .rcat-brand-mark {
   display: block;
   aspect-ratio: 1;
-  width: 100%;
-  height: 100%;
   object-fit: contain;
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 3px 14px rgb(10 72 40 / 12%);
 }
 .rcat-brand-mark--login {
+  width: 100%;
+  height: 100%;
   border: 3px solid rgb(255 255 255 / 78%);
   box-shadow: 0 12px 30px rgb(3 44 23 / 24%);
 }
