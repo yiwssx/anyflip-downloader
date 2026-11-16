@@ -38,12 +38,24 @@
   let historySearch = $state("");
   let historyFilter = $state("all");
 
+  // Scrub identity-specific form state as well as queued/history data.
+  // A different Workspace account must never inherit the previous user's URL.
+  function scrubOwnerInputs():void {
+    bookURL = "";
+    bookTitle = "";
+    batchURLs = "";
+    historySearch = "";
+    historyFilter = "all";
+    threads = 3;
+    bestQuality = false;
+  }
   const api = new JobsClient({
     mode,
     getToken: () => token,
     onAuthExpired: (reason) => {
       authError = reason;
       user = null;
+      scrubOwnerInputs();
       workspace.stop();
     },
   });
@@ -76,7 +88,9 @@
     checking = true;
     authError = "";
     try {
-      user = await api.getSession();
+      const session = await api.getSession();
+      if (!session) scrubOwnerInputs();
+      user = session;
       if(user) await workspace.loadHistory();
     }catch(err) {
       user = null;
@@ -104,6 +118,7 @@
       await api.logout();
       user = null;
       authError = "";
+      scrubOwnerInputs();
       workspace.stop();
     }catch(err) {
       authError = err instanceof Error ? err.message : "ออกจากระบบไม่สำเร็จ";
