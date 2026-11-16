@@ -3,8 +3,11 @@ import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 
-// Preview-only build. Serving these artifacts through Go is a later, gated change.
+// Default preview paths remain unchanged. An explicit build-only flag emits
+// same-origin /svelte/assets URLs for opt-in, Go-embedded candidate images.
+const embedBuild = process.env.SUI_EMBED_BUILD === "1";
 export default defineConfig({
+  base: embedBuild ? "/svelte/" : "/",
   plugins: [svelte(), tailwindcss()],
   resolve: {
     alias: {
