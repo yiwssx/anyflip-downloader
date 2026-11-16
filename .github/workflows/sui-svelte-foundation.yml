@@ -1,0 +1,32 @@
+name: SUI Svelte foundation
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/sui-svelte-foundation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # Transitional setup while SUI-01 lockfile is pending; switch to npm ci
+      # after committing a reviewed lockfile before allowing any cutover.
+      - name: Install frontend dependencies
+        run: npm install --no-audit --no-fund
+      - name: Svelte diagnostics
+        run: npm run check
+      - name: Build isolated preview
+        run: npm run build
