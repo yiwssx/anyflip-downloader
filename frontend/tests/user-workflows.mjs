@@ -92,7 +92,7 @@ try {
       return route.fulfill({status:404,body:""});
     });
     await page.goto(base+"/google.html",{waitUntil:"networkidle"});
-    await page.getByText("synthetic@rcat.ac.th").waitFor({timeout:5000});
+    await page.getByText("synthetic@rcat.ac.th").waitFor({state:"attached",timeout:5000});
     assert.ok(meCalls>=1);
     await page.getByRole("navigation",{name:"เมนูหลักสำหรับมือถือ"}).getByRole("button",{name:"ประวัติงาน"}).click();
     await page.getByRole("button",{name:"ดูสถานะ"}).click();
