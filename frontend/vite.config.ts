@@ -16,6 +16,7 @@ export default defineConfig({
       input: {
         index: fileURLToPath(new URL("./index.html", import.meta.url)),
         google: fileURLToPath(new URL("./google.html", import.meta.url)),
+        token: fileURLToPath(new URL("./token.html", import.meta.url)),
       },
     },
     outDir: "dist",
