@@ -62,9 +62,11 @@ try {
       assert.equal(await page.getByRole("button", { name: "ขยายเมนู" }).getAttribute("aria-expanded"), "false");
       const collapsed = await page.locator("aside[aria-label='เมนูหลัก']").evaluate((el) => ({
         width: el.getBoundingClientRect().width,
-        className: el.className,
+        state: el.getAttribute("data-collapsed"),
+        computedWidth: getComputedStyle(el).width,
       }));
-      assert.ok(collapsed.width <= 90, `Sidebar failed to collapse at ${viewport.width}px: width=${collapsed.width}, classes=${collapsed.className}`);
+      assert.equal(collapsed.state, "true", "Svelte state must mark sidebar as collapsed");
+      assert.ok(collapsed.width <= 90, `Sidebar failed to collapse at ${viewport.width}px: ${JSON.stringify(collapsed)}`);
       await page.getByRole("button", { name: "ขยายเมนู" }).click();
       assert.equal(await page.getByRole("button", { name: "ยุบเมนู" }).getAttribute("aria-expanded"), "true");
     }
