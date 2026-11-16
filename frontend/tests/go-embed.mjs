@@ -44,7 +44,8 @@ try{
       assert.equal(res.status(),200,brandPath+" must be accessible on the Go origin");
       assert.match(res.headers()["content-type"]??"",/image\/svg\+xml/);
     }
-    const logo=page.locator('img[src$="/logo.svg"]').first();
+    // Mobile sidebar is intentionally hidden: inspect a displayed mark only.
+    const logo=page.locator('img[src$="/logo.svg"]:visible').first();
     await logo.waitFor({timeout:10000});
     assert.equal(await logo.evaluate(el=>el.complete&&el.naturalWidth>0),true,"Official RCAT icon did not render");
     assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue("--primary").trim()),"#176b3c");
