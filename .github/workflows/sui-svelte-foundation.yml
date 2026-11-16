@@ -98,6 +98,47 @@ jobs:
           done
           cd frontend
           SUI_GO_BASE_URL=http://127.0.0.1:8095 SUI_GO_GOOGLE_URL=http://127.0.0.1:8096 npm run test:go-embed
+      - name: Verify production Svelte runtime overlay on a disposable CI container
+        working-directory: .
+        timeout-minutes: 12
+        shell: bash
+        env:
+          ANYFLIP_AUTH_MODE: google
+          ANYFLIP_RBAC_ENABLED: "0"
+          GOOGLE_CLIENT_ID: ci-synthetic-client
+          GOOGLE_CLIENT_SECRET: ci-synthetic-secret
+          GOOGLE_REDIRECT_URI: https://anyflip.rcat.ac.th/auth/google/callback
+        run: |
+          set -euo pipefail
+          bash -n scripts/deploy-svelte-ui.sh
+          sh -n scripts/verify-svelte-ui.sh
+          export SUI_SOURCE_DIR="$GITHUB_WORKSPACE" SUI_SOURCE_SHA="$GITHUB_SHA"
+          project="sui05-ci-${GITHUB_RUN_ID}"
+          compose=(docker compose -p "$project" -f compose.web.yaml -f compose.svelte.yaml)
+          # The volume is CI-only, never a Host operator volume.
+          cleanup() { "${compose[@]}" logs --tail=50 anyflip-web || true; "${compose[@]}" down -v --remove-orphans || true; }
+          trap cleanup EXIT
+          "${compose[@]}" config --format json | python3 -c '
+          import json,sys,os
+          service=json.load(sys.stdin)["services"]["anyflip-web"]
+          assert service["environment"]["ANYFLIP_WEB_UI"]=="svelte"
+          assert service["build"]["dockerfile"]=="Dockerfile.svelte"
+          assert service["build"]["args"]["SOURCE_COMMIT"]==os.environ["GITHUB_SHA"]
+          print("SUI05_COMPOSE_SOURCE_AND_MODE=PASS")
+          '
+          "${compose[@]}" up -d --build --no-deps anyflip-web
+          ready=0
+          for attempt in {1..45}; do
+            if curl --silent --fail http://127.0.0.1:8094/healthz >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [[ "$ready" != 1 ]]; then echo "SUI05_CI_HEALTH_FAILED" >&2; exit 1; fi
+          BASE_URL=http://127.0.0.1:8094 CANONICAL_HOST=anyflip.rcat.ac.th sh scripts/verify-svelte-ui.sh
+          container="$("${compose[@]}" ps -q anyflip-web)"
+          image="$(docker inspect --format '{{.Image}}' "$container")"
+          revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
+          [[ "$revision" == "$GITHUB_SHA" ]] || { echo "SUI05_CI_REVISION_MISMATCH" >&2; exit 1; }
+          echo "SUI05_SOURCE_PINNED_CONTAINER=PASS"
       - name: Preserve synthetic SUI screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

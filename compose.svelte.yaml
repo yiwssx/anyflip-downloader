@@ -1,0 +1,12 @@
+# SUI-05 approved Svelte primary UI deployment overlay.
+# Use LAST, after the original host's compose.web.yaml and compose.quota.yaml.
+# Does not replace Google OAuth, server-side RBAC, ports or volumes.
+services:
+  anyflip-web:
+    build:
+      context: ${SUI_SOURCE_DIR:-.}
+      dockerfile: Dockerfile.svelte
+      args:
+        SOURCE_COMMIT: ${SUI_SOURCE_SHA:-unknown}
+    environment:
+      ANYFLIP_WEB_UI: svelte
