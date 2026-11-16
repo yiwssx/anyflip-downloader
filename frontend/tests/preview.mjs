@@ -60,6 +60,11 @@ try {
       const collapse = page.getByRole("button", { name: "ยุบเมนู" });
       await collapse.click();
       assert.equal(await page.getByRole("button", { name: "ขยายเมนู" }).getAttribute("aria-expanded"), "false");
+      await page.waitForFunction(
+        () => document.querySelector('aside[aria-label="เมนูหลัก"]')?.getBoundingClientRect().width <= 90,
+        undefined,
+        { timeout: 2000, polling: "raf" },
+      ).catch(() => {}); // A bounded settle window; the assertion below reports real layout failures.
       const collapsed = await page.locator("aside[aria-label='เมนูหลัก']").evaluate((el) => ({
         width: el.getBoundingClientRect().width,
         state: el.getAttribute("data-collapsed"),
