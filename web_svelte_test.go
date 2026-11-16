@@ -100,7 +100,26 @@ func TestWebSvelteFrontendAssetsAndCSP(t *testing.T) {
         }
         resp.Body.Close()
     }
-    for _,path:=range []string{"/svelte/assets/../README.md","/svelte/assets/secret.env","/svelte/assets/notfound.js"}{
+    // Vite rewrites public icon URLs under its /svelte/ base. These exact
+    // institutional SVGs must be available, but no other web/svelte files.
+    for _,brandPath:=range []string{"/svelte/favicon.svg","/svelte/logo.svg"} {
+        resp:=webRequest(t,server,"GET",brandPath,nil,false)
+        if resp.StatusCode!=http.StatusOK {
+            resp.Body.Close()
+            t.Fatalf("%s missing after Vite base rewrite: HTTP %d",brandPath,resp.StatusCode)
+        }
+        if resp.Header.Get("Content-Type")!="image/svg+xml" ||
+           resp.Header.Get("Cache-Control")!="no-store" {
+            resp.Body.Close()
+            t.Fatalf("%s has incorrect mime/cache headers",brandPath)
+        }
+        body,readErr:=io.ReadAll(resp.Body)
+        resp.Body.Close()
+        if readErr!=nil || !strings.Contains(string(body),"<svg") {
+            t.Fatalf("%s is not a valid embedded SVG",brandPath)
+        }
+    }
+    for _,path:=range []string{"/svelte/assets/../README.md","/svelte/assets/secret.env","/svelte/assets/notfound.js","/svelte/README.md"}{
         resp:=webRequest(t,server,"GET",path,nil,false)
         resp.Body.Close()
         if resp.StatusCode==200 {t.Fatalf("unexpected asset exposure at %s",path)}

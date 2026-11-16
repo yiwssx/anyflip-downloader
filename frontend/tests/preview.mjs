@@ -17,6 +17,13 @@ const viewports = [
 ];
 const browser = await chromium.launch({ headless: true });
 await fs.mkdir(outputDir, { recursive: true });
+// Prevent stale Svelte brand assets from diverging from the already accepted
+// official RCAT logo/favicon embedded by Go for the actual production origin.
+for (const name of ["logo.svg","favicon.svg"]) {
+  const original=await fs.readFile(path.resolve("..","web",name));
+  const preview=await fs.readFile(path.resolve("public",name));
+  assert.deepEqual(preview,original,`Vite asset ${name} differs from Go-served RCAT branding`);
+}
 
 try {
   for (const viewport of viewports) {
@@ -39,6 +46,16 @@ try {
     const response = await page.goto(origin, { waitUntil: "networkidle" });
     assert.equal(response?.status(), 200, "preview must return HTTP 200");
     await page.getByRole("heading", { name: "AnyFlip Downloader" }).waitFor();
+    // RCAT's original icon must render on mobile and desktop; not a generic document glyph.
+    assert.equal(await page.locator('link[rel="icon"]').getAttribute("href"), "/favicon.svg");
+    const brandMark=page.locator('header img[src="/logo.svg"]').first();
+    assert.equal(await brandMark.evaluate(el=>el.complete && el.naturalWidth>0),true,"RCAT logo failed to load in header");
+    const colors=await page.evaluate(()=>({
+      primary:getComputedStyle(document.documentElement).getPropertyValue("--primary").trim(),
+      background:getComputedStyle(document.documentElement).getPropertyValue("--background").trim(),
+    }));
+    assert.equal(colors.primary,"#176b3c","RCAT primary must use green, not old blue");
+    assert.equal(colors.background,"#f3faf1","RCAT default surface must be bright mint-white");
 
     assert.equal(
       await page.locator("html").evaluate((element) => element.classList.contains("dark")),

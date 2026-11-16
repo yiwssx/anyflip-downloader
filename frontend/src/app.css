@@ -4,53 +4,57 @@
 
 /* RCAT iOS-inspired semantics — product UI only; never recolor the official crest.
    Modern shadcn-svelte-compatible OKLCH tokens. Light-first, no remote fonts. */
+/* RCAT agricultural college — bright forest green, white, and warm gold.
+   The official logo is displayed without color filters or recoloring. */
 :root {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Thai", Tahoma, sans-serif;
   color-scheme: light;
   --radius: 0.875rem;
-  --background: oklch(0.972 0.002 260);
-  --foreground: oklch(0.23 0.006 265);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.23 0.006 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.23 0.006 265);
-  --primary: oklch(0.56 0.205 257);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.947 0.006 260);
-  --secondary-foreground: oklch(0.30 0.012 260);
-  --muted: oklch(0.950 0.003 260);
-  --muted-foreground: oklch(0.48 0.009 260);
-  --accent: oklch(0.94 0.024 255);
-  --accent-foreground: oklch(0.32 0.105 260);
-  --destructive: oklch(0.57 0.21 25);
-  --border: oklch(0.903 0.006 260);
-  --input: oklch(0.88 0.007 260);
-  --ring: oklch(0.56 0.205 257);
-  --success: oklch(0.66 0.18 150);
-  --surface-raised: oklch(1 0 0);
+  --background: #f3faf1;
+  --foreground: #183e2b;
+  --card: #ffffff;
+  --card-foreground: #183e2b;
+  --popover: #ffffff;
+  --popover-foreground: #183e2b;
+  --primary: #176b3c;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f5e5;
+  --secondary-foreground: #245637;
+  --muted: #eff7ed;
+  --muted-foreground: #4a6955;
+  --accent: #fff1b6;
+  --accent-foreground: #3f3c12;
+  --destructive: #b82e35;
+  --border: #d4e7d2;
+  --input: #9bbfa3;
+  --ring: #176b3c;
+  --success: #197647;
+  --gold: #e6b90c;
+  --surface-raised: #ffffff;
 }
 .dark {
   color-scheme: dark;
-  --background: oklch(0.18 0.007 260);
-  --foreground: oklch(0.95 0.003 260);
-  --card: oklch(0.25 0.009 260);
-  --card-foreground: oklch(0.95 0.003 260);
-  --popover: oklch(0.27 0.007 260);
-  --popover-foreground: oklch(0.95 0.003 260);
-  --primary: oklch(0.68 0.17 255);
-  --primary-foreground: oklch(0.14 0.01 260);
-  --secondary: oklch(0.32 0.009 260);
-  --secondary-foreground: oklch(0.94 0.003 260);
-  --muted: oklch(0.30 0.007 260);
-  --muted-foreground: oklch(0.74 0.009 260);
-  --accent: oklch(0.35 0.05 255);
-  --accent-foreground: oklch(0.96 0.006 255);
-  --destructive: oklch(0.65 0.21 25);
-  --border: oklch(0.36 0.009 260);
-  --input: oklch(0.43 0.012 260);
-  --ring: oklch(0.68 0.17 255);
-  --success: oklch(0.73 0.18 150);
-  --surface-raised: oklch(0.28 0.009 260);
+  --background: #10271d;
+  --foreground: #f2f9ef;
+  --card: #193a29;
+  --card-foreground: #f2f9ef;
+  --popover: #204631;
+  --popover-foreground: #f2f9ef;
+  --primary: #9cdda6;
+  --primary-foreground: #11321f;
+  --secondary: #274734;
+  --secondary-foreground: #f1f8ef;
+  --muted: #213e2d;
+  --muted-foreground: #bdd4c1;
+  --accent: #5c4b18;
+  --accent-foreground: #fff0b3;
+  --destructive: #fc8588;
+  --border: #365b41;
+  --input: #4f7657;
+  --ring: #a5dea8;
+  --success: #96dcaa;
+  --gold: #f3ca48;
+  --surface-raised: #1e4330;
 }
 @theme inline {
   --color-background: var(--background);
@@ -72,6 +76,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-success: var(--success);
+  --color-gold: var(--gold);
   --color-surface-raised: var(--surface-raised);
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 3px);
@@ -79,6 +84,36 @@
   --radius-xl: calc(var(--radius) + 6px);
   --radius-2xl: calc(var(--radius) + 12px);
 }
+
+/* Component-level brand treatments; no inline styles or remote fonts/assets. */
+.rcat-hero {
+  background: linear-gradient(125deg, #0c522d 0%, #137b41 64%, #25934d 100%);
+  border-bottom: 4px solid #f9d84c;
+  color: #ffffff;
+  box-shadow: 0 16px 36px rgb(14 94 49 / 12%);
+}
+.rcat-hero .rcat-hero-copy { color: #f1fff4; }
+.rcat-sidebar {
+  background: linear-gradient(180deg, var(--card) 0%, var(--background) 100%);
+}
+.rcat-app-header {
+  box-shadow: inset 0 3px 0 var(--gold);
+}
+.rcat-brand-mark {
+  display: block;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 3px 14px rgb(10 72 40 / 12%);
+}
+.rcat-brand-mark--login {
+  width: 100%;
+  height: 100%;
+  border: 3px solid rgb(255 255 255 / 78%);
+  box-shadow: 0 12px 30px rgb(3 44 23 / 24%);
+}
+
 @layer base {
   * { @apply border-border; }
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }

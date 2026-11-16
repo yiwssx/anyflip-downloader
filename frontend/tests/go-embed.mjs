@@ -37,6 +37,18 @@ try{
     const styles=await page.locator('link[rel="stylesheet"][href^="/svelte/assets/"]').count();
     assert.ok(scripts>0&&styles>0,`Svelte assets missing in ${candidate.mode}`);
     await page.getByRole("heading",{name:"AnyFlip Downloader"}).waitFor({timeout:10000});
+    // Real Go origin must serve the existing official RCAT brand files in either auth mode.
+    assert.equal(await page.locator('link[rel="icon"]').getAttribute("href"),"/svelte/favicon.svg","Vite embedded base must point to the served same-origin favicon");
+    for(const brandPath of ["/svelte/favicon.svg","/svelte/logo.svg","/favicon.svg","/logo.svg"]){
+      const res=await context.request.get(candidate.base+brandPath);
+      assert.equal(res.status(),200,brandPath+" must be accessible on the Go origin");
+      assert.match(res.headers()["content-type"]??"",/image\/svg\+xml/);
+    }
+    // Mobile sidebar is intentionally hidden: inspect a displayed mark only.
+    const logo=page.locator('img[src$="/logo.svg"]:visible').first();
+    await logo.waitFor({timeout:10000});
+    assert.equal(await logo.evaluate(el=>el.complete&&el.naturalWidth>0),true,"Official RCAT icon did not render");
+    assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue("--primary").trim()),"#176b3c");
     if(candidate.mode==="token"){
       await page.getByRole("navigation",{name:"เมนูหลักสำหรับมือถือ"})
         .getByRole("button",{name:"ดาวน์โหลด"}).click();

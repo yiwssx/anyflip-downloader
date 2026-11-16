@@ -39,6 +39,13 @@ old_running="$(docker inspect --format '{{.State.Running}}' "$old_id")"
 [[ "$old_running" == "true" ]] || die "existing container not running"
 old_google="$(docker inspect --format '{{range .Config.Env}}{{if eq . "ANYFLIP_AUTH_MODE=google"}}yes{{end}}{{end}}' "$old_id")"
 [[ "$old_google" == yes ]] || die "production Google Workspace auth not confirmed; do not change mode"
+# An already-migrated Host must roll back to its previous Svelte UI,
+# not silently regress to the obsolete Vanilla UI on a failed brand update.
+old_svelte="$(docker inspect --format '{{range .Config.Env}}{{if eq . "ANYFLIP_WEB_UI=svelte"}}yes{{end}}{{end}}' "$old_id")"
+old_legacy="$(docker inspect --format '{{range .Config.Env}}{{if eq . "ANYFLIP_WEB_UI=legacy"}}yes{{end}}{{end}}' "$old_id")"
+[[ "$old_svelte" != yes || "$old_legacy" != yes ]] || die "conflicting previous frontend modes"
+previous_frontend=legacy
+[[ "$old_svelte" != yes ]] || previous_frontend=svelte
 project="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$old_id")"
 [[ "$project" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || die "invalid existing Compose project name"
 old_image_id="$(docker inspect --format '{{.Image}}' "$old_id")"
@@ -51,7 +58,7 @@ rollback_tag="rcat-anyflip-rollback:sui05-${stamp}"
 receipt="/root/anyflip-svelte-rollback-${stamp}"
 (umask 077; mkdir -m 700 "$receipt") || die "cannot create private rollback receipt"
 docker image tag "$old_image_id" "$rollback_tag"
-printf '%s\n' "source_sha=$source_sha" "previous_image_id=$old_image_id" "rollback_image=$rollback_tag" "project=$project" > "$receipt/receipt.txt"
+printf '%s\n' "source_sha=$source_sha" "previous_image_id=$old_image_id" "previous_frontend=$previous_frontend" "rollback_image=$rollback_tag" "project=$project" > "$receipt/receipt.txt"
 chmod 600 "$receipt/receipt.txt"
 
 cat > "$receipt/rollback.yaml" <<EOF
@@ -60,7 +67,7 @@ services:
   anyflip-web:
     image: "$rollback_tag"
     environment:
-      ANYFLIP_WEB_UI: legacy
+      ANYFLIP_WEB_UI: "$previous_frontend"
 EOF
 chmod 600 "$receipt/rollback.yaml"
 
