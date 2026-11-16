@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
-import AxeBuilder from "@axe-core/playwright";
+
 import AxeBuilder from "@axe-core/playwright";
 
 const base=process.env.SUI_PREVIEW_URL||"http://127.0.0.1:4173";
