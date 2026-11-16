@@ -149,7 +149,7 @@ export class WorkspaceModel {
     }catch(err) {
       if(version===this.generation)this.formError=this.describeError(err);
     }finally {
-      if(version===this.generation)this.creating=false;
+      this.creating=false;
     }
   }
 
@@ -167,7 +167,7 @@ export class WorkspaceModel {
     }catch(err) {
       if(version===this.generation)this.batchError=this.describeError(err);
     }finally {
-      if(version===this.generation)this.batching=false;
+      this.batching=false;
     }
   }
 
