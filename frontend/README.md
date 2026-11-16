@@ -1,6 +1,6 @@
 # RCAT AnyFlip — Svelte 5 UI foundation (SUI-01)
 
-**Status: non-production preview.** This directory is intentionally isolated. The existing Go-embedded `web/` UI, Google Workspace authentication, RBAC, jobs, Docker services and live host remain unchanged.
+**Status: SUI-01 accepted preview + SUI-02 isolated user-flow candidate (not served by Go).** This directory is intentionally isolated. The existing Go-embedded `web/` UI, Google Workspace authentication, RBAC, jobs, Docker services and live host remain unchanged.
 
 ## Stack
 
@@ -33,3 +33,14 @@ The preview runs at the local Vite server only. It deliberately **does not** cal
 **Never alter** `compose.quota.yaml`, `anyflip-quota.service`, private RBAC store, job volumes, OAuth secrets, Cloudflare Tunnel, DNS, existing LAN port or production images as a side effect of this work.
 
 Follow [Issue #130](https://github.com/yiwssx/anyflip-downloader/issues/130), `AGENTS.md`, and [ADR-SUI-001](../docs/SUI_SVELTE_DESIGN_SYSTEM.md).
+
+## Isolated functional entrypoints (SUI-02)
+
+- `/index.html`: preserved SUI-01 visual-only preview.
+- `/token.html`: legacy Bearer token user workflows (for synthetic/controlled local tests).
+- `/google.html`: Google Workspace cookie user workflows, with real /auth/me handshake only when eventually served by Go.
+- All three are static Vite outputs. Neither new functional entrypoint is wired into the Go `web/` production embed yet.
+- SUI-02 synthetic CI stubs `/api/jobs*` and `/auth/*`; no real document, user cookie, OAuth client or production URL is contacted.
+- Critical invariants: no cross-user cache persistence, no client-only RBAC grant, 32-hex job IDs, bounded backoff, cancellation of stale polls, explicit 401/403 and 429 handling, native PDF download.
+
+To verify locally, run `npm ci && npm run check && npm run build`, then `npm run preview` and `npm run test:journeys` with Chromium installed.
