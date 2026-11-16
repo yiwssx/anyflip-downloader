@@ -24,7 +24,9 @@ try{
       const dest=new URL(request.url());
       if(dest.origin!==new URL(candidate.base).origin)remote.push(dest.href);
     });
-    const response=await page.goto(candidate.base+"/",{waitUntil:"networkidle"});
+    // Google sign-in may issue session checks/retries, so networkidle is not a reliable page-load gate.
+    // Assert the meaningful user-visible state below instead of assuming zero background requests.
+    const response=await page.goto(candidate.base+"/",{waitUntil:"domcontentloaded",timeout:15000});
     assert.equal(response?.status(),200);
     const csp=response.headers()["content-security-policy"];
     assert.ok(csp?.includes("script-src 'self'"));
