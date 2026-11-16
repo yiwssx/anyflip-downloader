@@ -24,10 +24,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
-      # SUI-01 one-time bootstrap: capture registry-resolved lockfile, then
-      # commit it and change this command to 'npm ci' (exact dependency graph).
-      - name: Install frontend dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install lockfile-pinned dependencies
+        run: npm ci --no-audit --no-fund
       - name: Svelte diagnostics
         run: npm run check
       - name: Build isolated preview
@@ -56,19 +54,3 @@ jobs:
           path: frontend/test-artifacts/screenshots/
           if-no-files-found: ignore
           retention-days: 7
-      # Transitional evidence export only. Lockfile has public dependency data,
-      # no credentials; output in bounded chunks for GitHub connector import.
-      # Remove this step once lockfile is committed to the feature branch.
-      - name: Export resolved lockfile chunks for reproducibility
-        shell: bash
-        run: |
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const bytes = fs.readFileSync('package-lock.json');
-          const encoded = bytes.toString('base64');
-          const size = 4000;
-          console.log('RCAT_LOCKFILE_TOTAL=' + Math.ceil(encoded.length / size));
-          for (let start = 0; start < encoded.length; start += size) {
-            console.log('RCAT_LOCK_CHUNK_' + String(start / size).padStart(4,'0') + '=' + encoded.slice(start, start + size));
-          }
-          NODE
