@@ -368,7 +368,7 @@
               <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4"><span class="font-semibold">ธีมแอป</span><Button variant="outline" onclick={toggleTheme}>{#if isDark}<Sun size={18} aria-hidden="true" /> โหมดสว่าง{:else}<Moon size={18} aria-hidden="true" /> โหมดมืด{/if}</Button></div>
             </Card>
           {/if}
-          <p class="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><Info size={17} class="shrink-0" aria-hidden="true" /> Frontend Candidate SUI-02 · การยืนยันตัวตนและสิทธิ์ดาวน์โหลดเป็นความรับผิดชอบของ Go Backend · ยังไม่ถูกเปิดใช้ใน Production</p>
+          <p class="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><Info size={17} class="shrink-0" aria-hidden="true" /> Svelte Frontend Candidate · การยืนยันตัวตนและสิทธิ์ดาวน์โหลดเป็นความรับผิดชอบของ Go Backend · ยังไม่ถูกเปิดใช้ใน Production</p>
         </main>
       </div>
     </div>
