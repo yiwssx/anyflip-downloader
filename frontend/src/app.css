@@ -97,18 +97,3 @@
   body { padding-bottom: env(safe-area-inset-bottom); }
 }
 
-/* Stable desktop sizing independent of utility-class extraction.
-   A DOM data attribute, not an inline style, preserves strict CSP. */
-@media (min-width: 768px) {
-  aside[aria-label="เมนูหลัก"][data-collapsed="true"] {
-    width: 80px;
-    min-width: 80px;
-    max-width: 80px;
-    overflow-x: clip;
-  }
-  aside[aria-label="เมนูหลัก"][data-collapsed="false"] {
-    width: 252px;
-    min-width: 252px;
-    max-width: 252px;
-  }
-}
