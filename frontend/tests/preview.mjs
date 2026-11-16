@@ -17,6 +17,13 @@ const viewports = [
 ];
 const browser = await chromium.launch({ headless: true });
 await fs.mkdir(outputDir, { recursive: true });
+// Prevent stale Svelte brand assets from diverging from the already accepted
+// official RCAT logo/favicon embedded by Go for the actual production origin.
+for (const name of ["logo.svg","favicon.svg"]) {
+  const original=await fs.readFile(path.resolve("..","web",name));
+  const preview=await fs.readFile(path.resolve("public",name));
+  assert.deepEqual(preview,original,`Vite asset ${name} differs from Go-served RCAT branding`);
+}
 
 try {
   for (const viewport of viewports) {
