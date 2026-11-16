@@ -5,6 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
+import AxeBuilder from "@axe-core/playwright";
 
 const base=process.env.SUI_PREVIEW_URL||"http://127.0.0.1:4173";
 const screenshotDir=process.env.SUI_SCREENSHOTS_DIR||path.resolve("test-artifacts/screenshots");
@@ -70,6 +71,9 @@ try {
     await page.getByRole("navigation",{name:"หน้าในระบบ"}).getByRole("button",{name:"ผู้ดูแล"}).click();
     await page.getByRole("heading",{name:"ศูนย์จัดการระบบ"}).waitFor();
     await page.getByRole("button",{name:/ระงับงาน/}).waitFor({timeout:6000});
+    const a11y = await new AxeBuilder({page}).withTags(["wcag2a","wcag2aa","wcag21aa","wcag22aa"]).analyze();
+    const serious=a11y.violations.filter(v=>["serious","critical"].includes(v.impact??""));
+    assert.deepEqual(serious.map(v=>({id:v.id,impact:v.impact})),[],"Admin surface has serious accessibility violations");
     await page.screenshot({path:path.join(screenshotDir,"sui03-admin-desktop.png"),fullPage:true});
     await page.getByRole("button",{name:"ถัดไป"}).click();
     await page.getByText("หน้า 2 · ทั้งหมด 25 งาน").waitFor();
