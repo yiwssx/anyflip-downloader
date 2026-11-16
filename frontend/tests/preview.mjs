@@ -57,6 +57,12 @@ try {
     } else {
       assert.equal(await mobile.isVisible(), false, "mobile bottom navigation hidden on desktop");
       assert.equal(await desktop.isVisible(), true, "desktop sidebar visible");
+      const collapse = page.getByRole("button", { name: "ยุบเมนู" });
+      await collapse.click();
+      assert.equal(await page.getByRole("button", { name: "ขยายเมนู" }).getAttribute("aria-expanded"), "false");
+      assert.ok(await page.locator("aside[aria-label='เมนูหลัก']").evaluate((el) => el.getBoundingClientRect().width) <= 90);
+      await page.getByRole("button", { name: "ขยายเมนู" }).click();
+      assert.equal(await page.getByRole("button", { name: "ยุบเมนู" }).getAttribute("aria-expanded"), "true");
     }
 
     const axe = await new AxeBuilder({ page }).withTags([
