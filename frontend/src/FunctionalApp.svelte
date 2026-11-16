@@ -8,14 +8,15 @@
     type AuthMode, type Job, type SessionUser,
   } from "$lib/api/contracts";
   import { WorkspaceModel } from "$lib/jobs/workspace.svelte";
+  import AdminPanel from "$lib/admin/AdminPanel.svelte";
   import {
     ArrowDownToLine, CheckCircle2, ChevronRight, Clock3,
     FileText, History, Info, LayoutDashboard, LogOut,
     Moon, PanelLeftClose, PanelLeftOpen, RefreshCw,
-    Settings2, ShieldCheck, Sun, XCircle,
+    Settings2, ShieldCheck, Sun, XCircle, ShieldCog,
   } from "@lucide/svelte";
 
-  type View = "overview" | "download" | "history" | "appearance";
+  type View = "overview" | "download" | "history" | "appearance" | "admin";
   const mode: AuthMode = document.documentElement.dataset.authMode === "google" ? "google" : "token";
   const sections: {key: View;title:string}[] = [
     {key:"overview", title:"ภาพรวม"},
@@ -37,6 +38,11 @@
   let batchURLs = $state("");
   let historySearch = $state("");
   let historyFilter = $state("all");
+  const navSections:{key:View;title:string}[] = $derived(
+    mode==="google" && (user?.role==="admin"||user?.role==="super_admin")
+      ? [...sections, {key:"admin",title:"ผู้ดูแล"}]
+      : sections
+  );
 
   // Scrub identity-specific form state as well as queued/history data.
   // A different Workspace account must never inherit the previous user's URL.
@@ -128,7 +134,15 @@
     isDark = !isDark;
     document.documentElement.classList.toggle("dark", isDark);
   }
+  function onAdminDenied(reason:string):void {
+    authError = reason;
+    user = null;
+    scrubOwnerInputs();
+    workspace.stop();
+    view = "overview";
+  }
   function selectView(next:View):void {
+    if(next==="admin" && !(mode==="google" && (user?.role==="admin"||user?.role==="super_admin")))return;
     view = next;
     if(next === "history" && authorized) void workspace.loadHistory();
   }
@@ -200,7 +214,7 @@
           </button>
         </div>
         <nav aria-label="หน้าในระบบ" class="grid gap-1.5">
-          {#each sections as item (item.key)}
+          {#each navSections as item (item.key)}
             <button type="button" aria-current={view===item.key ? "page" : undefined} aria-label={sidebarCollapsed ? item.title : undefined} class={`flex min-h-12 items-center rounded-xl text-left text-sm transition-colors hover:bg-accent ${view===item.key ? "bg-accent font-semibold text-accent-foreground" : "text-muted-foreground"} ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"}`} onclick={()=>selectView(item.key)}>
               {#if item.key==="overview"}<LayoutDashboard size={19} aria-hidden="true" />
               {:else if item.key==="download"}<ArrowDownToLine size={19} aria-hidden="true" />
@@ -233,7 +247,7 @@
         </header>
 
         <main id="main" tabindex="-1" class="mx-auto w-full max-w-[1200px] space-y-6 px-5 py-7 sm:px-8 lg:px-12 lg:py-9">
-          <div><p class="mb-1 text-sm font-medium text-muted-foreground">พื้นที่ทำงาน</p><h2 class="text-2xl font-bold tracking-tight sm:text-3xl">{sections.find(s=>s.key===view)?.title}</h2></div>
+          <div><p class="mb-1 text-sm font-medium text-muted-foreground">พื้นที่ทำงาน</p><h2 class="text-2xl font-bold tracking-tight sm:text-3xl">{navSections.find(s=>s.key===view)?.title}</h2></div>
 
           {#if mode==="token"}
             <Card class="space-y-3 p-5 sm:p-6">
@@ -355,7 +369,7 @@
     </div>
 
     <nav aria-label="เมนูหลักสำหรับมือถือ" class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-card/95 px-2 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] shadow-[0_-6px_26px_rgba(0,0,0,0.035)] backdrop-blur-xl md:hidden">
-      {#each sections as item (item.key)}
+      {#each navSections as item (item.key)}
         <button type="button" aria-current={view===item.key ? "page" : undefined} class={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium ${view===item.key ? "text-primary" : "text-muted-foreground"}`} onclick={()=>selectView(item.key)}>
           {#if item.key==="overview"}<LayoutDashboard size={22} aria-hidden="true" />
           {:else if item.key==="download"}<ArrowDownToLine size={22} aria-hidden="true" />
