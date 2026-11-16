@@ -50,7 +50,7 @@
 
   <div class="mx-auto flex min-h-svh w-full max-w-[1600px]">
     <!-- Desktop navigation; mobile gets a compact bottom nav instead. -->
-    <aside class={`sticky top-0 hidden h-svh shrink-0 flex-col border-r border-border/75 bg-card/80 px-4 py-6 md:flex ${sidebarCollapsed ? "w-20" : "w-[252px]"}`} aria-label="เมนูหลัก">
+    <aside class={`sticky top-0 hidden h-svh shrink-0 flex-col border-r border-border/75 bg-card/80 px-4 py-6 md:flex ${sidebarCollapsed ? "sui-sidebar-collapsed" : "sui-sidebar-expanded"}`} aria-label="เมนูหลัก">
       <div class="space-y-3 pb-6">
         <div class={sidebarCollapsed ? "flex justify-center" : "flex items-center gap-3 px-2"}>
           <div class="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm" aria-hidden="true"><FileText size={24} strokeWidth={1.8} /></div>
