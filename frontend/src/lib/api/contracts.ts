@@ -49,7 +49,7 @@ function count(value: unknown): number {
 export function parseJob(data: unknown): Job {
   if (!data || typeof data !== "object") throw new Error("ข้อมูลสถานะงานไม่ถูกต้อง");
   const raw = data as Record<string,unknown>;
-  if (!isJobId(raw.id) || !Object.prototype.hasOwnProperty.call(STAGE_LABEL,raw.stage)) {
+  if (!isJobId(raw.id) || !(typeof raw.stage === "string" && Object.prototype.hasOwnProperty.call(STAGE_LABEL,raw.stage))) {
     throw new Error("ข้อมูลสถานะงานไม่ถูกต้อง");
   }
   return {
