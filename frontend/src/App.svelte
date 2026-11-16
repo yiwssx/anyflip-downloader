@@ -10,6 +10,8 @@
     History,
     Info,
     LayoutDashboard,
+    PanelLeftClose,
+    PanelLeftOpen,
     Moon,
     Settings2,
     ShieldCheck,
@@ -19,6 +21,7 @@
   type View = "overview" | "download" | "history" | "appearance";
   let view = $state<View>("overview");
   let isDark = $state(false);
+  let sidebarCollapsed = $state(false);
 
   const sections: { key: View; title: string }[] = [
     { key: "overview", title: "ภาพรวม" },
@@ -47,33 +50,49 @@
 
   <div class="mx-auto flex min-h-svh w-full max-w-[1600px]">
     <!-- Desktop navigation; mobile gets a compact bottom nav instead. -->
-    <aside class="sticky top-0 hidden h-svh w-[252px] shrink-0 flex-col border-r border-border/75 bg-card/80 px-4 py-6 md:flex" aria-label="เมนูหลัก">
-      <div class="flex items-center gap-3 px-3 pb-9">
-        <div class="grid size-11 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm" aria-hidden="true"><FileText size={24} strokeWidth={1.8} /></div>
-        <div>
-          <p class="text-base font-bold leading-tight tracking-tight">RCAT AnyFlip</p>
-          <p class="mt-1 text-xs font-medium text-muted-foreground">DOWNLOAD WORKSPACE</p>
+    <aside class={`sticky top-0 hidden h-svh shrink-0 flex-col border-r border-border/75 bg-card/80 px-4 py-6 md:flex ${sidebarCollapsed ? "w-20" : "w-[252px]"}`} aria-label="เมนูหลัก">
+      <div class="space-y-3 pb-6">
+        <div class={sidebarCollapsed ? "flex justify-center" : "flex items-center gap-3 px-2"}>
+          <div class="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm" aria-hidden="true"><FileText size={24} strokeWidth={1.8} /></div>
+          {#if !sidebarCollapsed}
+            <div class="min-w-0">
+              <p class="text-base font-bold leading-tight tracking-tight">RCAT AnyFlip</p>
+              <p class="mt-1 text-xs font-medium text-muted-foreground">DOWNLOAD WORKSPACE</p>
+            </div>
+          {/if}
         </div>
+        <button
+          type="button"
+          aria-expanded={!sidebarCollapsed}
+          aria-label={sidebarCollapsed ? "ขยายเมนู" : "ยุบเมนู"}
+          class="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-secondary/60 px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+          onclick={() => (sidebarCollapsed = !sidebarCollapsed)}
+        >
+          {#if sidebarCollapsed}<PanelLeftOpen size={18} aria-hidden="true" />{:else}<PanelLeftClose size={18} aria-hidden="true" /> ยุบเมนู{/if}
+        </button>
       </div>
       <nav class="grid gap-1.5" aria-label="หน้าในระบบ">
         {#each sections as item (item.key)}
           <button
             type="button"
             aria-current={view === item.key ? "page" : undefined}
+            aria-label={sidebarCollapsed ? item.title : undefined}
+            title={sidebarCollapsed ? item.title : undefined}
             class:font-semibold={view === item.key}
             class:bg-accent={view === item.key}
             class:text-accent-foreground={view === item.key}
-            class="flex min-h-12 items-center gap-3 rounded-xl px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
+            class={`flex min-h-12 items-center rounded-xl text-left text-sm text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"}`}
             onclick={() => selectView(item.key)}
           >
             {#if item.key === "overview"}<LayoutDashboard size={19} aria-hidden="true" />
             {:else if item.key === "download"}<ArrowDownToLine size={19} aria-hidden="true" />
             {:else if item.key === "history"}<History size={19} aria-hidden="true" />
             {:else}<Settings2 size={19} aria-hidden="true" />{/if}
-            {item.title}
+            {#if !sidebarCollapsed}{item.title}{/if}
           </button>
         {/each}
       </nav>
+      {#if !sidebarCollapsed}
       <div class="mt-auto space-y-3">
         <div class="rounded-2xl border border-border bg-background p-4">
           <ShieldCheck size={21} class="mb-2 text-primary" aria-hidden="true" />
@@ -82,6 +101,7 @@
         </div>
         <p class="px-2 text-xs text-muted-foreground">Svelte UI · Foundation Preview</p>
       </div>
+      {/if}
     </aside>
 
     <div class="min-w-0 flex-1 pb-28 md:pb-8">
@@ -122,7 +142,7 @@
             <FileText class="absolute -bottom-8 -right-5 rotate-[-13deg] text-white/10" size={196} strokeWidth={0.9} aria-hidden="true" />
           </Card>
 
-          <section aria-label="สถานะงานตัวอย่าง" class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <section aria-label="สถานะงานตัวอย่าง" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Card class="flex items-center gap-4 p-5">
               <div class="grid size-12 place-items-center rounded-2xl bg-accent text-primary"><FileText size={23} aria-hidden="true" /></div>
               <div><p class="text-sm text-muted-foreground">งานทั้งหมด</p><p class="text-3xl font-bold tracking-tight">—</p></div>
