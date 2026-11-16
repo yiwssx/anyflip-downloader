@@ -59,3 +59,29 @@ Color source of truth: `frontend/src/app.css` using OKLCH `--background`, `--pri
 - [Chromium visual run](https://github.com/yiwssx/anyflip-downloader/actions/runs/43807229740) captured 18 screenshots (overview light/dark + download dark at six widths); preview checks found no horizontal overflow, browser exceptions or unauthorized `/api`/`/auth` calls.
 - Manual screenshot sample at 320/390/768/1440 identified fixed-width sidebar and compressed metric cards; SUI-01 follow-up adds an explicit sidebar collapse toggle and switches to two-column metric cards on tablet.
 - Browser checks are only synthetic. None certify real Safari/iOS touch behavior, actual Google Workspace authentication, RBAC, host CSP or downloadable PDFs.
+
+
+## RCAT institutional brand correction — 2026-11-16
+
+The previous iOS-system-blue preview palette was replaced in the actual Svelte application at the owner's direction. The **official agricultural-college brand is green, white and yellow/gold, with a bright default appearance**, while retaining the compact responsive iOS-inspired layout. The earlier color examples above are historical architecture decisions, **not** the current final theme.
+
+| New semantic token | Bright theme | Intent |
+| --- | --- | --- |
+| `--background` | `#F3FAF1` | bright mint-white canvas |
+| `--card` | `#FFFFFF` | clean white information surfaces |
+| `--primary` | `#176B3C` | readable forest-green primary actions |
+| `--foreground` | `#183E2B` | high-contrast dark-green typography |
+| `--secondary` | `#E8F5E5` | gentle green secondary/selected states |
+| `--accent` | `#FFF1B6` | warm pale-yellow active states |
+| `--gold` | `#E6B90C` | gold accent, not a low-contrast text color |
+| `--ring` | `#176B3C` | visible keyboard focus |
+
+Dark mode remains available with forest-green surfaces and green/gold semantics; light mode is default. All colors originate in `frontend/src/app.css` so the User, Admin and preview interfaces use a consistent shadcn-svelte token foundation. The landing/overview hero uses `rcat-hero` instead of blue-specific arbitrary gradients. **Do not add low-contrast yellow text on white backgrounds or recolor the college insignia.**
+
+### Existing official icon restored (no generated artwork)
+
+The exact RCAT AnyFlip artwork already existed in the Go web assets as `web/logo.svg` (512x512, embedded same-origin image) and `web/favicon.svg`. The Svelte migration had failed to reference it. Identical original files are now mirrored under `frontend/public/` solely so Vite Preview and live Go serve the same images. The actual Go-hosted Svelte application continues requesting **`/logo.svg` and `/favicon.svg` from the existing trusted Go origin**, not from a CDN or an untrusted writable location. The system displays it on Google login, workspace sidebar, responsive header, and as the browser favicon. Mobile browser theme color also matches the updated palette.
+
+Changed-surface regression: `frontend/tests/preview.mjs` checks identical source/public assets, loaded icon, favicon link and the light palette across six widths; `frontend/tests/go-embed.mjs` checks the real Go asset routes, MIME, load and token colors for both login modes. Existing authenticated user/Admin tests remain the authoritative acceptance for job and role behavior. The backend, OAuth, RBAC, quotas, Docker and production deployment were **not** modified by this branding change.
+
+Release of the new branding still requires a new Svelte image build and the controlled SUI-05 host cutover; GitHub merge alone cannot replace a running container.
