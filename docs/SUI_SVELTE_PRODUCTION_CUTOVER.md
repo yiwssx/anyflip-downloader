@@ -25,7 +25,7 @@ sudo bash "$release/scripts/deploy-svelte-ui.sh" /opt/anyflip-downloader
 
 The script reads **existing** Host Compose/.env/quota settings, discovers the existing Compose project/container, tags the previous image under a new local rollback tag, writes a mode-600 receipt under `/root/anyflip-svelte-rollback-<timestamp>/`, validates the merged Compose configuration, builds from the **worktree only**, recreates **only** the AnyFlip Web service with `--no-deps --no-build --force-recreate`, verifies the pinned source revision, unchanged mounts/binding, Docker health, Google Svelte HTML, JS/CSS MIME, strict CSP/no-store, and anonymous /auth/me + jobs API 401.
 
-If anything after recreation fails, it attempts to restore the prior image in **legacy** mode with the original Host base/quota files; it preserves the receipt for inspection. On failure to identify the original live project or Host quota overlay, it exits without deploying. **No `docker compose down -v`, no reset/stash/overwrite of host-local changes, no DNS/Tunnel/credential modification.**
+If anything after recreation fails, it attempts to restore the prior image **with its previous UI mode** (Svelte stays Svelte; legacy stays legacy), using the original Host base/quota files; it preserves the receipt for inspection. On failure to identify the original live project or Host quota overlay, it exits without deploying. **No `docker compose down -v`, no reset/stash/overwrite of host-local changes, no DNS/Tunnel/credential modification.**
 
 **Downtime boundary:** the Web service is recreated, so currently active jobs may be cancelled or interrupted. Plan a quiet window and inform users. This script does not claim to know whether anonymous/unreadable live jobs are active.
 
