@@ -1,9 +1,15 @@
-name: SUI Svelte foundation
+name: SUI Svelte integration
 
 on:
   pull_request:
     paths:
       - "frontend/**"
+      - "web_svelte.go"
+      - "web_svelte_test.go"
+      - "web.go"
+      - "web/svelte/**"
+      - "Dockerfile.svelte"
+      - "scripts/build-svelte-embed.sh"
       - ".github/workflows/sui-svelte-foundation.yml"
   workflow_dispatch:
 
@@ -13,7 +19,7 @@ permissions:
 jobs:
   frontend-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: frontend
@@ -32,7 +38,7 @@ jobs:
         run: npm run build
       - name: Install Chromium for focused visual checks
         run: npx playwright install --with-deps chromium
-      - name: Responsive and accessibility preview
+      - name: Responsive, user and Admin contract checks
         shell: bash
         run: |
           set -euo pipefail
@@ -48,11 +54,55 @@ jobs:
           npm run test:visual
           npm run test:journeys
           npm run test:admin
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - name: Compile exact Go-embedded Svelte candidate and exercise strict CSP
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd frontend && SUI_EMBED_BUILD=1 npm run build)
+          mkdir -p web/svelte
+          cp -R frontend/dist/. web/svelte/
+          go test -run '^TestWebSvelteFrontend' -count=1 ./...
+          go build -trimpath -o "$RUNNER_TEMP/sui04-web" .
+          job1="$(mktemp -d "$RUNNER_TEMP/sui04-token-XXXXXXXX")"
+          job2="$(mktemp -d "$RUNNER_TEMP/sui04-google-XXXXXXXX")"
+          pid1=""
+          pid2=""
+          cleanup() {
+            if [[ -n "$pid1" ]]; then kill "$pid1" 2>/dev/null || true; wait "$pid1" 2>/dev/null || true; fi
+            if [[ -n "$pid2" ]]; then kill "$pid2" 2>/dev/null || true; wait "$pid2" 2>/dev/null || true; fi
+            rm -rf -- "$job1" "$job2"
+          }
+          trap cleanup EXIT
+          ANYFLIP_WEB_UI=svelte ANYFLIP_WEB_TOKEN=ci-sui04-synthetic-long-token ANYFLIP_JOB_DIR="$job1" \
+            "$RUNNER_TEMP/sui04-web" -web -listen 127.0.0.1:8095 > "$RUNNER_TEMP/sui04-token.log" 2>&1 &
+          pid1=$!
+          ANYFLIP_WEB_UI=svelte ANYFLIP_AUTH_MODE=google \
+            GOOGLE_CLIENT_ID=ci-synthetic-client GOOGLE_CLIENT_SECRET=ci-synthetic-secret \
+            GOOGLE_REDIRECT_URI=http://127.0.0.1:8096/auth/google/callback ANYFLIP_JOB_DIR="$job2" \
+            "$RUNNER_TEMP/sui04-web" -web -listen 127.0.0.1:8096 > "$RUNNER_TEMP/sui04-google.log" 2>&1 &
+          pid2=$!
+          for port in 8095 8096; do
+            ready=0
+            for attempt in {1..30}; do
+              if curl --silent --fail "http://127.0.0.1:$port/healthz" >/dev/null; then ready=1; break; fi
+              sleep 1
+            done
+            if [[ "$ready" != "1" ]]; then
+              cat "$RUNNER_TEMP/sui04-token.log" "$RUNNER_TEMP/sui04-google.log"
+              exit 1
+            fi
+          done
+          cd frontend
+          SUI_GO_BASE_URL=http://127.0.0.1:8095 SUI_GO_GOOGLE_URL=http://127.0.0.1:8096 npm run test:go-embed
       - name: Preserve synthetic SUI screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: sui01-preview-chromium
+          name: sui-preview-and-go-embed
           path: frontend/test-artifacts/screenshots/
           if-no-files-found: ignore
           retention-days: 7
