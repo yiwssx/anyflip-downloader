@@ -82,7 +82,7 @@ try {
     await dialog.getByRole("button",{name:"ยืนยัน"}).click();
     assert.equal(reason,"resources");
     await page.getByText("ร้องขอยกเลิกแล้ว").waitFor();
-    await page.getByRole("tab",{name:"บัญชีและบทบาท"}).click();
+    await page.getByRole("button",{name:"บัญชีและบทบาท"}).click();
     assert.equal(await page.getByRole("button",{name:"เปลี่ยนบทบาท"}).count(),0);
     assert.equal(adminAudit,0);
     assert.deepEqual(roleChanges,[]);
@@ -120,7 +120,7 @@ try {
     });
     await page.goto(base+"/google.html",{waitUntil:"networkidle"});
     await page.getByRole("navigation",{name:"เมนูหลักสำหรับมือถือ"}).getByRole("button",{name:"ผู้ดูแล"}).click();
-    await page.getByRole("tab",{name:"บัญชีและบทบาท"}).click();
+    await page.getByRole("button",{name:"บัญชีและบทบาท"}).click();
     await page.getByRole("button",{name:"เปลี่ยนบทบาท"}).waitFor({timeout:6000});
     assert.equal(await page.getByRole("button",{name:"เปลี่ยนบทบาท"}).count(),1,"self Super Admin must not be editable");
     await page.screenshot({path:path.join(screenshotDir,"sui03-superadmin-mobile.png"),fullPage:true});
@@ -134,7 +134,7 @@ try {
     await dialog.waitFor({state:"hidden"});
     assert.equal(newRole,"admin");
     assert.ok(auditCalls>0);
-    await page.getByRole("tab",{name:"Audit Log"}).click();
+    await page.getByRole("button",{name:"Audit Log"}).click();
     await page.getByText("role_change").waitFor();
     deny=true;
     await page.getByRole("button",{name:"รีเฟรช"}).click();
