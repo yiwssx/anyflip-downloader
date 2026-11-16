@@ -73,6 +73,9 @@ try {
     await page.getByRole("button",{name:/ระงับงาน/}).waitFor({timeout:6000});
     const a11y = await new AxeBuilder({page}).withTags(["wcag2a","wcag2aa","wcag21aa","wcag22aa"]).analyze();
     const serious=a11y.violations.filter(v=>["serious","critical"].includes(v.impact??""));
+    if(serious.length)console.log("SUI03_AXE_NODES="+JSON.stringify(serious.map(v=>({
+      id:v.id,nodes:v.nodes.slice(0,12).map(n=>({target:n.target,summary:n.failureSummary?.slice(0,500)}))
+    }))));
     assert.deepEqual(serious.map(v=>({id:v.id,impact:v.impact})),[],"Admin surface has serious accessibility violations");
     await page.screenshot({path:path.join(screenshotDir,"sui03-admin-desktop.png"),fullPage:true});
     await page.getByRole("button",{name:"ถัดไป"}).click();
