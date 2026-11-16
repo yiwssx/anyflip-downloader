@@ -1,0 +1,9 @@
+.git
+.git/
+**/node_modules/
+frontend/dist/
+frontend/test-artifacts/
+**/.env
+**/.env.*
+**/*.tsbuildinfo
+.DS_Store

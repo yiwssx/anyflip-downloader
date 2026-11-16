@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-//go:embed web/index.html web/tokens.css web/style.css web/readability.css web/admin.css web/workspace.js web/app.js web/google.html web/google.js web/admin-api.js web/admin.js web/favicon.svg web/logo.svg
+//go:embed web/index.html web/tokens.css web/style.css web/readability.css web/admin.css web/workspace.js web/app.js web/google.html web/google.js web/admin-api.js web/admin.js web/favicon.svg web/logo.svg web/svelte
 var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -62,6 +62,7 @@ type webServer struct {
 	root     string
 	token    string
 	google   *googleAuth // nil for backward-compatible token-only mode
+	frontendMode string // legacy default or opt-in Svelte
 	sem      chan struct{}
 	client   *http.Client // Optional controlled test transport; nil in production.
 	authThrottle *authThrottle
@@ -82,13 +83,15 @@ func newWebServerForAuthMode(token, root, mode string) (*webServer, error) {
 	if mode == "token" && len(token) < 16 {
 		return nil, fmt.Errorf("ANYFLIP_WEB_TOKEN must be at least 16 characters")
 	}
+  frontendMode, frontendErr := selectWebFrontend()
+  if frontendErr != nil {return nil, frontendErr}
 	if root == "" {
 		return nil, errors.New("web job directory is required")
 	}
 	if err := os.MkdirAll(root, 0700); err != nil {
 		return nil, err
 	}
-	server := &webServer{jobs: make(map[string]*webJob), root: root, token: token, sem: make(chan struct{}, 2), authThrottle: newAuthThrottle()}
+	server := &webServer{jobs: make(map[string]*webJob), root: root, token: token, frontendMode: frontendMode, sem: make(chan struct{}, 2), authThrottle: newAuthThrottle()}
 	if err := server.loadWebHistory(time.Now()); err != nil {
 		return nil, err
 	}
@@ -104,6 +107,9 @@ func (s *webServer) handler() http.Handler {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, _ = io.WriteString(w, "ok")
 	})
+    if s.frontendMode=="svelte" {
+      mux.HandleFunc("GET /svelte/assets/",serveSvelteAsset)
+    }
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -121,9 +127,17 @@ func (s *webServer) handler() http.Handler {
 				http.Redirect(w, r, canonical.Scheme+"://"+canonical.Host+"/", http.StatusSeeOther)
 				return
 			}
-			serveEmbeddedWebAsset(w, "web/google.html", "text/html; charset=utf-8")
+			if s.frontendMode=="svelte" {
+        serveEmbeddedWebAsset(w,"web/svelte/google.html","text/html; charset=utf-8")
+      }else{
+        serveEmbeddedWebAsset(w, "web/google.html", "text/html; charset=utf-8")
+      }
 		} else {
-			serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
+			if s.frontendMode=="svelte" {
+        serveEmbeddedWebAsset(w,"web/svelte/token.html","text/html; charset=utf-8")
+      }else{
+        serveEmbeddedWebAsset(w, "web/index.html", "text/html; charset=utf-8")
+      }
 		}
 	})
 	mux.HandleFunc("GET /favicon.svg", func(w http.ResponseWriter, _ *http.Request) {
