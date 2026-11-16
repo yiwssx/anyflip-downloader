@@ -96,3 +96,9 @@
 @media (max-width: 767px) {
   body { padding-bottom: env(safe-area-inset-bottom); }
 }
+
+/* Explicit component layout states: avoids min-content expansion on compact desktop. */
+@layer components {
+  .sui-sidebar-collapsed { width: 80px; min-width: 80px; max-width: 80px; overflow-x: clip; }
+  .sui-sidebar-expanded { width: 252px; min-width: 252px; max-width: 252px; }
+}
