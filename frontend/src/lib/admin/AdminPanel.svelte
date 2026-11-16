@@ -190,13 +190,13 @@
   </Card>
 
   <Card class="overflow-hidden p-4 sm:p-6">
-    <div role="tablist" aria-label="ส่วนจัดการระบบ" class="grid grid-cols-2 gap-2 rounded-xl bg-secondary p-1 sm:grid-cols-3">
+    <div role="group" aria-label="ส่วนจัดการระบบ" class="grid grid-cols-3 gap-1 rounded-xl bg-secondary p-1">
       {#each [
         {key:"jobs",label:"ติดตามงาน"},
         {key:"users",label:"บัญชีและบทบาท"},
         ...(mayEditRole?[{key:"audit",label:"Audit Log"}]:[]),
       ] as item (item.key)}
-        <button type="button" role="tab" aria-selected={tab===item.key} class={`min-h-11 rounded-lg px-3 text-sm font-semibold transition-colors ${tab===item.key?"bg-card text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`} onclick={()=>tab=item.key as Tab}>{item.label}</button>
+        <button type="button" aria-pressed={tab===item.key} class={`min-h-11 rounded-lg px-2 text-xs font-semibold transition-colors sm:px-3 sm:text-sm ${tab===item.key?"bg-card text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`} onclick={()=>tab=item.key as Tab}>{item.label}</button>
       {/each}
     </div>
 
