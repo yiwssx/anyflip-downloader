@@ -122,7 +122,7 @@ cat > "$tmp/rollback.yaml" <<EOF
 services:
   anyflip-web:
     image: "$rollback_tag"
-    build: null
+    build: !reset null
     restart: "$old_restart"
     environment:
       ANYFLIP_WEB_UI: "$old_mode"
