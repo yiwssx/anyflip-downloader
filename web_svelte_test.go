@@ -100,6 +100,19 @@ func TestWebSvelteFrontendAssetsAndCSP(t *testing.T) {
     server := httptest.NewServer(candidate.handler())
     defer server.Close()
 
+    // The Svelte page must not expose the retired JavaScript/CSS routes.
+    // These paths stay usable only in plain Go legacy fixture mode.
+    for _, legacyPath := range []string{
+        "/tokens.css", "/style.css", "/readability.css",
+        "/workspace.js", "/app.js", "/admin.css", "/admin-api.js", "/admin.js",
+    } {
+        resp := webRequest(t, server, "GET", legacyPath, nil, false)
+        resp.Body.Close()
+        if resp.StatusCode != http.StatusNotFound {
+            t.Fatalf("retired frontend asset %s exposed in Svelte mode: HTTP %d", legacyPath, resp.StatusCode)
+        }
+    }
+
     home := webRequest(t, server, "GET", "/", nil, false)
     if home.StatusCode != http.StatusOK {
         t.Fatalf("Svelte home HTTP %d", home.StatusCode)
