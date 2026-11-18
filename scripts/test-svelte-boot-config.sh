@@ -5,6 +5,7 @@ set -Eeuo pipefail
 docker compose version >/dev/null
 bash -n scripts/install-svelte-boot.sh
 bash -n scripts/reconcile-svelte-boot.sh
+bash -n scripts/install-svelte-boot-readonly-guard.sh
 bash -n scripts/test-svelte-boot-config.sh
 
 # Without a pinned approved Svelte image, this configuration must fail closed.
