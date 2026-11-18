@@ -10,14 +10,36 @@ import (
 )
 
 // These files are embedded in the Go binary, never served from a writable
-// host directory. The default legacy UI requires no Node build or bundle.
+// host directory. In Svelte-only builds the legacy UI is never selected.
 var (
   svelteHTMLAsset = regexp.MustCompile(`/(svelte/assets/[A-Za-z0-9._-]+\.(js|css))`)
   svelteAssetName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(js|css|svg|png|webp|woff|woff2)$`)
 )
 
 func selectWebFrontend() (string, error) {
+  return selectWebFrontendForBuild(requireSvelteUI)
+}
+
+// Build tags, not runtime environment variables, decide whether a binary is
+// Svelte-only. Missing or invalid Svelte assets must stop startup rather than
+// silently serving a retired legacy UI.
+func selectWebFrontendForBuild(svelteOnly bool) (string, error) {
   mode := strings.TrimSpace(os.Getenv("ANYFLIP_WEB_UI"))
+  if svelteOnly {
+    switch mode {
+    case "", "svelte":
+      if err := validateSvelteBundle(); err != nil {
+        return "", fmt.Errorf("Svelte-only production UI unavailable: %w", err)
+      }
+      return "svelte", nil
+    case "legacy":
+      return "", fmt.Errorf("legacy frontend is disabled in Svelte-only production builds")
+    default:
+      return "", fmt.Errorf("unsupported ANYFLIP_WEB_UI mode %q", mode)
+    }
+  }
+  // Existing plain Go unit tests and CLI-compatible builds retain their
+  // legacy fixture until their frontend assumptions are migrated.
   switch mode {
   case "", "legacy":
     return "legacy", nil
