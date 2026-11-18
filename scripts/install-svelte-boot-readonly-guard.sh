@@ -38,7 +38,10 @@ fi
 systemctl disable --now rcat-anyflip-svelte-boot.service
 install -m 0644 "$new" "$unit"
 systemctl daemon-reload
-systemctl reset-failed rcat-anyflip-svelte-boot.service
+# systemd may have already unloaded this disabled unit, so there is no failed
+# state to clear. This cleanup is optional; the required disabled/read-only
+# assertions below still fail closed.
+systemctl reset-failed rcat-anyflip-svelte-boot.service 2>/dev/null || true
 enabled="$(systemctl is-enabled rcat-anyflip-svelte-boot.service || true)"
 [[ "$enabled" == disabled ]] || die "unit-must-remain-disabled"
 grep -Fq 'ExecStart=/usr/local/libexec/rcat-anyflip-svelte-boot.sh check' "$unit" ||
