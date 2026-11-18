@@ -133,7 +133,7 @@ if [[ -e "$dropin" ]] && ! cmp -s "$tmp" "$dropin"; then
   fail "existing-svelte-dropin-differs-refuse-overwrite"
 fi
 install -d -m 0755 "$dropdir"
-candidate="$dropdir/.90-svelte-pinned.conf.$"
+candidate="$(mktemp "$dropdir/.90-svelte-pinned.conf.XXXXXX")"
 install -m 0644 "$tmp" "$candidate"
 mv -T -- "$candidate" "$dropin"
 systemctl daemon-reload
