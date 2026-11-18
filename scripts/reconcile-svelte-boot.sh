@@ -64,9 +64,7 @@ assert any(str(p.get("published"))=="8094" and
 assert service.get("volumes"), "quota job volume missing"
 ' "$BOOT_IMAGE_TAG" "$BOOT_PORT" || die "composed-config-is-not-approved"
 
-mapfile -t ids < <(docker ps -aq
-  --filter "label=com.docker.compose.project=$BOOT_PROJECT"
-  --filter "label=com.docker.compose.service=anyflip-web")
+mapfile -t ids < <(docker ps -aq --filter "label=com.docker.compose.project=$BOOT_PROJECT" --filter "label=com.docker.compose.service=anyflip-web")
 [[ "${#ids[@]}" -eq 1 ]] || die "expected-one-existing-container"
 cid="${ids[0]}"
 actual_service="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$cid")"

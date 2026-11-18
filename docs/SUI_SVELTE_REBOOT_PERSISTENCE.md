@@ -83,3 +83,34 @@ sudo bash "$NEW_APPROVED_RELEASE/scripts/install-svelte-boot.sh" /opt/anyflip-do
 ## Acceptance / limitations
 
 GitHub CI validates shell scripts, the shared Compose template with real Docker Compose merge semantics, and existing Go/Docker checks. **Only Host observations** can prove that the existing custom quota unit runs before the boot recovery and that no unknown third-party startup unit subsequently recreates the app. Keep the owner/operator's reboot journal as the final evidence. The new guard does not watch for accidental manual Compose re-deploys while the Host is continuously running; use the quota-aware pinned Compose command for every authorized recreation.
+
+
+## Recovery from the 2026-11-18 partial installer run
+
+The first Host execution of `scripts/install-svelte-boot.sh` failed during its installed `check` step with:
+
+```text
+/usr/local/libexec/rcat-anyflip-svelte-boot.sh: line 68: --filter: command not found
+SVELTE_BOOT=BLOCKED reason=expected-one-existing-container
+SVELTE_BOOT_INSTALL=BLOCKED reason=installed-configuration-did-not-verify
+```
+
+**Root cause:** the repository's `reconcile-svelte-boot.sh` separated `docker ps -aq` from its `--filter` arguments with an unescaped newline inside a process substitution. Shell parsing ran `--filter` as another command. This was a coding bug; it is not evidence of an OAuth, Quota, Svelte or Docker crash.
+
+The failed installer wrote a private `active.env`, a pinned Compose overlay and a systemd *unit file* before the check, but **had not yet called `systemctl enable` or `docker update --restart=no`**. The running application container was therefore not recreated by the installer. Keep the partial state; do not delete private `/etc/rcat-anyflip-svelte` or re-deploy the web app.
+
+After the **corrected source** is merged with green CI, use a fresh detached worktree at the exact accepted commit and run:
+
+```bash
+sudo git -C /opt/anyflip-downloader fetch --no-tags origin main
+FIX_SHA=REPLACE_WITH_VERIFIED_MERGED_SHA
+FIX_RELEASE="/opt/anyflip-boot-fix-$(date -u +%Y%m%dT%H%M%SZ)"
+sudo git -C /opt/anyflip-downloader worktree add --detach "$FIX_RELEASE" "$FIX_SHA"
+sudo bash "$FIX_RELEASE/scripts/install-svelte-boot.sh" /opt/anyflip-downloader --re-pin
+sudo /usr/local/libexec/rcat-anyflip-svelte-boot.sh check
+sudo systemctl is-enabled rcat-anyflip-svelte-boot.service
+```
+
+The `--re-pin` flag is required because `active.env` and `compose.pinned.yaml` were written during the failed installation. It retains the existing healthy Svelte image identity. This corrected installer does not restart the running web container. Do **not** reboot the Host merely to test this repair: wait for a scheduled maintenance window and record boot journal/health evidence then.
+
+The fixed `scripts/test-svelte-boot-config.sh` now executes the selected `docker ps` expression in an isolated Bash test with a synthetic Docker function, rather than depending only on `bash -n` which could not detect the bug.
