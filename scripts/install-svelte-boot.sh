@@ -136,6 +136,10 @@ install -m 0755 "$src/scripts/reconcile-svelte-boot.sh" /usr/local/libexec/rcat-
 install -m 0755 "$src/scripts/verify-svelte-ui.sh" /usr/local/libexec/rcat-anyflip-verify-svelte.sh
 install -m 0644 "$unit_source" "$unit"
 systemctl daemon-reload
+# Prove the installed code, private state, quota-aware Compose and live Svelte
+# runtime match BEFORE changing the existing container's restart policy.
+bash /usr/local/libexec/rcat-anyflip-svelte-boot.sh check ||
+  die "installed-configuration-did-not-verify"
 systemctl enable rcat-anyflip-svelte-boot.service >/dev/null
 
 # Docker's early autorestart could run BEFORE the quota mount. The dedicated
@@ -144,9 +148,6 @@ old_restart="$(docker inspect --format '{{.HostConfig.RestartPolicy.Name}}' "$ci
 if [[ "$old_restart" != no ]]; then
   docker update --restart=no "$cid" >/dev/null
 fi
-
-bash /usr/local/libexec/rcat-anyflip-svelte-boot.sh check ||
-  die "installed-configuration-did-not-verify"
 echo "SVELTE_BOOT_INSTALL=PASS"
 echo "SVELTE_BOOT_IMAGE=$img"
 echo "SVELTE_BOOT_SOURCE=$revision"
