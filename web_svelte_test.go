@@ -32,6 +32,44 @@ func TestWebSvelteFrontendModeFailClosed(t *testing.T) {
     }
 }
 
+// A production binary compiled with -tags=svelte_only must never serve the
+// retired frontend, even when the quota service omitted ANYFLIP_WEB_UI.
+func TestSvelteOnlyProductionNeverFallsBackToLegacy(t *testing.T) {
+    bundleAvailable := validateSvelteBundle() == nil
+    for _, tc := range []struct {
+        name string
+        env string
+    }{
+        {"unset", ""},
+        {"explicit-svelte", "svelte"},
+        {"explicit-legacy", "legacy"},
+        {"invalid", "bogus"},
+    } {
+        t.Run(tc.name, func(t *testing.T) {
+            t.Setenv("ANYFLIP_WEB_UI", tc.env)
+            got, err := selectWebFrontendForBuild(true)
+            switch tc.env {
+            case "", "svelte":
+                if bundleAvailable {
+                    if err != nil || got != "svelte" {
+                        t.Fatalf("Svelte-only bundle should select svelte, got %q / %v", got, err)
+                    }
+                } else if err == nil || !strings.Contains(err.Error(), "Svelte-only production UI unavailable") {
+                    t.Fatalf("missing Svelte bundle must fail closed, got %q / %v", got, err)
+                }
+            case "legacy":
+                if err == nil || !strings.Contains(err.Error(), "disabled") {
+                    t.Fatalf("production must refuse legacy mode, got %q / %v", got, err)
+                }
+            default:
+                if err == nil {
+                    t.Fatalf("unexpected frontend mode accepted: %q", got)
+                }
+            }
+        })
+    }
+}
+
 func TestWebSvelteFrontendAssetsAndCSP(t *testing.T) {
     // Default remains the legacy HTML; no Svelte bundle/build is needed.
     t.Setenv("ANYFLIP_WEB_UI", "")
