@@ -1,7 +1,7 @@
-# RCAT AnyFlip — dedicated Svelte runtime recovery after hard-quota mount.
-# Managed by scripts/install-svelte-boot.sh. No scheduled polling.
+# RCAT AnyFlip — READ-ONLY Svelte drift guard after quota mount.
+# Managed by scripts/install-svelte-boot.sh. Never recreate containers at boot.
 [Unit]
-Description=RCAT AnyFlip Svelte UI — pinned boot recovery (after quota)
+Description=RCAT AnyFlip Svelte UI — read-only pinned boot guard (after quota)
 Requires=docker.service anyflip-quota.service
 After=docker.service anyflip-quota.service
 ConditionPathExists=/etc/rcat-anyflip-svelte/active.env
@@ -9,7 +9,9 @@ ConditionPathExists=/etc/rcat-anyflip-svelte/compose.pinned.yaml
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/libexec/rcat-anyflip-svelte-boot.sh ensure
+# Docker may still be restoring container identities immediately after daemon readiness.
+# A forced Compose recreate can collide with a concurrent restore. Check only.
+ExecStart=/usr/local/libexec/rcat-anyflip-svelte-boot.sh check
 RemainAfterExit=yes
 TimeoutStartSec=180
 UMask=0077
