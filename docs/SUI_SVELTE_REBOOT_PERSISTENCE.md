@@ -114,3 +114,57 @@ sudo systemctl is-enabled rcat-anyflip-svelte-boot.service
 The `--re-pin` flag is required because `active.env` and `compose.pinned.yaml` were written during the failed installation. It retains the existing healthy Svelte image identity. This corrected installer does not restart the running web container. Do **not** reboot the Host merely to test this repair: wait for a scheduled maintenance window and record boot journal/health evidence then.
 
 The fixed `scripts/test-svelte-boot-config.sh` now executes the selected `docker ps` expression in an isolated Bash test with a synthetic Docker function, rather than depending only on `bash -n` which could not detect the bug.
+
+
+## Urgent host boot incident — 2026-11-18 (PR #139)
+
+The operator rebooted the shared Ubuntu Host. Both independent failures were observed in the actual boot log:
+
+1. `containerd.service` **timed out** on an early boot attempt at 10:54:54. It subsequently became Active; Docker initialization and large-scale container restoration was still in progress until about 10:59:14. This is a separate Host-wide startup delay, NOT proven to be caused by the AnyFlip unit.
+2. The original `rcat-anyflip-svelte-boot.service` invoked `reconcile-svelte-boot.sh ensure` at 10:59:14 while Docker was still restoring the AnyFlip container. `docker compose ... up -d --force-recreate` and its rollback both failed with **Docker container name conflict** at 10:59:16. This **is** a direct production safety defect in the original boot recovery design. The operator's later `check` showed `SVELTE_BOOT=DRIFT_DETECTED`, requiring inspection of the active image/mode and operator-owned `anyflip-quota.service` command. The boot-time failure does not justify deleting containers or mounts.
+
+**Safety correction:** the systemd unit in this release invokes only
+`/usr/local/libexec/rcat-anyflip-svelte-boot.sh check`. It does not
+automatically Recreate or Rollback a container while the Docker daemon is
+still restoring container identities. If drift is found, the guard records a
+failed check for **explicit operator diagnosis**. To prevent accidental
+mutation on the already affected Host, the one-time safety installer
+`scripts/install-svelte-boot-readonly-guard.sh` verifies the installed
+unit matches exactly the previously approved version, **disables** it,
+installs the safe read-only unit, and deliberately **leaves it disabled**.
+No Docker restart, Compose operation or quotas/volumes change occurs.
+
+After green CI and merge on a verified exact commit, the authorized Host operator runs:
+
+```bash
+sudo git -C /opt/anyflip-downloader fetch --no-tags origin main
+SAFETY_SHA=REPLACE_WITH_MERGED_SHA
+SAFETY_RELEASE="/opt/anyflip-boot-safe-$(date -u +%Y%m%dT%H%M%SZ)"
+sudo git -C /opt/anyflip-downloader worktree add --detach "$SAFETY_RELEASE" "$SAFETY_SHA"
+sudo bash "$SAFETY_RELEASE/scripts/install-svelte-boot-readonly-guard.sh" /opt/anyflip-downloader
+```
+
+Expected: `SVELTE_BOOT_SAFETY=PASS`, `SVELTE_BOOT_UNIT=disabled`,
+`SVELTE_BOOT_EXEC=read-only-check`. This is a **host incident safety mitigation**,
+not proof that Svelte will automatically recover on future restarts. Do not
+re-enable the unit until the actual Host `anyflip-quota.service` startup
+command is reviewed and the shared Docker/containerd boot failure is diagnosed.
+
+**Next read-only operator investigation** (do not dump private OAuth files):
+
+```bash
+sudo systemctl show docker.service containerd.service -p Id -p TimeoutStartUSec -p ActiveState -p Result
+sudo journalctl -b -u containerd.service -u docker.service --since "2026-11-18 10:52:00" --until "2026-11-18 10:59:30" --no-pager
+sudo systemctl show anyflip-quota.service -p Type -p ExecMainStatus -p ActiveState -p SubState -p Result
+sudo systemctl cat anyflip-quota.service  # REDACT secrets before sharing
+sudo docker inspect anyflip-downloader-anyflip-web-1 --format '{{.Image}} {{.State.Status}} {{.HostConfig.RestartPolicy.Name}}'
+sudo docker inspect anyflip-downloader-anyflip-web-1 --format '{{range .Config.Env}}{{if or (eq . "ANYFLIP_WEB_UI=svelte") (eq . "ANYFLIP_WEB_UI=legacy")}}{{println .}}{{end}}{{end}}'
+```
+
+Only after inspecting the operator-owned service can the correct durable
+fix be made: **its startup Compose inputs must pin the same approved Svelte
+image and quota**, rather than relying on a second mutating boot unit to
+repair a legacy recreation. The Host-wide `containerd` timeout also
+requires root-cause analysis before any new reboot test. No force restart,
+mass container start, Docker daemon config change, network modification or
+volume deletion is part of the source-only patch.
