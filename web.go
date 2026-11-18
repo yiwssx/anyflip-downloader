@@ -62,7 +62,7 @@ type webServer struct {
 	root     string
 	token    string
 	google   *googleAuth // nil for backward-compatible token-only mode
-	frontendMode string // legacy default or opt-in Svelte
+	frontendMode string // Svelte-only production build; legacy fixtures in plain Go tests
 	sem      chan struct{}
 	client   *http.Client // Optional controlled test transport; nil in production.
 	authThrottle *authThrottle
