@@ -9,6 +9,7 @@ bash -n scripts/install-svelte-boot-readonly-guard.sh
 bash -n scripts/test-svelte-boot-config.sh
 bash -n scripts/install-svelte-quota-startup.sh
 bash -n scripts/apply-svelte-quota-startup.sh
+bash -n scripts/upgrade-svelte-only-image.sh
 
 # Without a pinned approved Svelte image, this configuration must fail closed.
 if env -u RCAT_SVELTE_IMAGE docker compose \
@@ -150,4 +151,38 @@ quota=Path("scripts/install-svelte-quota-startup.sh").read_text()
 assert 'candidate="$(mktemp "$dropdir/.90-svelte-pinned.conf.XXXXXX")"' in quota
 assert 'mv -T -- "$candidate" "$dropin"' in quota
 print("SVELTE_QUOTA_ATOMIC_DROPIN=PASS")
+PY
+
+# Focused CI contract: this tool upgrades the immutable image only through the
+# already accepted quota-owned startup, never via a second systemd boot worker.
+python3 - <<'PY'
+from pathlib import Path
+s=Path("scripts/upgrade-svelte-only-image.sh").read_text()
+required=[
+    'docker build --pull=false --build-arg "SOURCE_COMMIT=$revision"',
+    '-f "$src/Dockerfile.svelte" -t "$stage" "$src"',
+    'th.ac.rcat.anyflip.frontend',
+    'SVELTE_ONLY_PREPARE=PASS',
+    'SVELTE_ONLY_UPGRADE=PASS',
+    '"$3" == --jobs-idle',
+    'systemctl restart anyflip-quota.service',
+    'systemctl daemon-reload',
+    'BOOT_IMAGE_ID=$NEXT_IMAGE_ID',
+    'Environment=RCAT_SVELTE_IMAGE=$NEXT_IMAGE_TAG',
+    'PREVIOUS_CONFIGURATION=$backup',
+    'quota-mount-missing',
+    'competing-boot-recovery-not-disabled',
+    'new-google-auth-not-active',
+    'new-job-volume-differs',
+]
+for token in required:
+    assert token in s, "missing Svelte-only operator release contract: " + token
+for forbidden in (
+    'docker compose down', '--force-recreate', 'docker system prune',
+    'docker volume rm', 'systemctl restart docker.service',
+    'systemctl enable rcat-anyflip-svelte-boot.service'
+):
+    assert forbidden not in s, "unsafe Svelte-only image upgrade operation: " + forbidden
+assert s.count('systemctl restart anyflip-quota.service')==1
+print("SVELTE_ONLY_CONTROLLED_IMAGE_UPGRADE_CONTRACT=PASS")
 PY
