@@ -1,6 +1,6 @@
-# SUI-04 candidate only. The existing Dockerfile / Production release stays
-# unchanged. Build the Svelte assets in an isolated Node stage and embed them
-# directly in Go; Node is NOT installed in the runtime container.
+# Production Svelte-only image: build Vite assets in a separate Node stage.
+# The Go build tag makes missing frontend mode select Svelte and explicitly
+# rejects legacy; invalid assets fail closed. Node is absent at runtime.
 FROM node:22-alpine AS frontend-build
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
@@ -16,7 +16,7 @@ RUN go mod download
 COPY . .
 COPY --from=frontend-build /src/frontend/dist/ ./web/svelte/
 ENV CGO_ENABLED=0
-RUN go build -trimpath -ldflags="-s -w" -o /out/anyflip-downloader .
+RUN go build -tags=svelte_only -trimpath -ldflags="-s -w" -o /out/anyflip-downloader .
 
 FROM alpine:3.22
 ARG SOURCE_COMMIT=unknown
