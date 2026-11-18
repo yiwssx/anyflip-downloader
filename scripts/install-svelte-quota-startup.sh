@@ -74,8 +74,8 @@ docker image inspect "$BOOT_IMAGE_TAG" >/dev/null 2>&1 ||
 [[ "$(docker image inspect -f '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$BOOT_IMAGE_TAG")" == "$BOOT_SOURCE_SHA" ]] ||
   fail "pinned-source-revision-drift"
 
-mapfile -t ids < <(docker ps -q --filter "label=com.docker.compose.project=$BOOT_PROJECT" --filter "label=com.docker.compose.service=anyflip-web")
-[[ "${#ids[@]}" -eq 1 ]] || fail "expected-exactly-one-running-production-container"
+mapfile -t ids < <(docker ps -aq --filter "label=com.docker.compose.project=$BOOT_PROJECT" --filter "label=com.docker.compose.service=anyflip-web")
+[[ "${#ids[@]}" -eq 1 ]] || fail "expected-exactly-one-production-container-no-stale-recreate"
 cid="${ids[0]}"
 [[ "$(docker inspect -f '{{.State.Running}}' "$cid")" == true ]] ||
   fail "web-container-not-running"
@@ -133,14 +133,23 @@ if [[ -e "$dropin" ]] && ! cmp -s "$tmp" "$dropin"; then
   fail "existing-svelte-dropin-differs-refuse-overwrite"
 fi
 install -d -m 0755 "$dropdir"
-install -m 0644 "$tmp" "$dropin"
+candidate="$dropdir/.90-svelte-pinned.conf.$"
+install -m 0644 "$tmp" "$candidate"
+mv -T -- "$candidate" "$dropin"
 systemctl daemon-reload
 
-# Fail closed: the effective systemd command MUST include the pinned overlay.
+# Fail closed: BOTH start and stop must refer to the same pinned overlay.
 effective="$(systemctl show -P ExecStart anyflip-quota.service)"
+stop_effective="$(systemctl show -P ExecStop anyflip-quota.service)"
+environment_effective="$(systemctl show -P Environment anyflip-quota.service)"
 [[ "$effective" == *"$state/compose.pinned.yaml"* &&
    "$effective" == *"up --no-build --no-color anyflip-web"* ]] ||
   fail "effective-systemd-start-command-mismatch"
+[[ "$stop_effective" == *"$state/compose.pinned.yaml"* &&
+   "$stop_effective" == *"stop anyflip-web"* ]] ||
+  fail "effective-systemd-stop-command-mismatch"
+[[ " $environment_effective " == *" RCAT_SVELTE_IMAGE=$BOOT_IMAGE_TAG "* ]] ||
+  fail "pinned-image-not-exported-by-systemd"
 [[ "$(systemctl is-enabled rcat-anyflip-svelte-boot.service || true)" == disabled ]] ||
   fail "boot-competitor-reenabled"
 echo "QUOTA_SVELTE_STARTUP=CONFIGURED"
