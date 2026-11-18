@@ -50,3 +50,35 @@ assert "ExecStart=/usr/local/libexec/rcat-anyflip-svelte-boot.sh ensure" in unit
 assert "WantedBy=multi-user.target" in unit
 print("SVELTE_BOOT_SYSTEMD_ORDER=PASS")
 PY
+
+# Regression for an incident on 2026-11-18: a multiline process
+# substitution accidentally executed --filter as a separate shell command.
+# A shell syntax check alone did not catch it. Execute only the extracted
+# docker-ps expression with a synthetic docker function (no Host access).
+python3 - <<'PY'
+from pathlib import Path
+import subprocess
+
+source=Path("scripts/reconcile-svelte-boot.sh").read_text()
+start=source.index("mapfile -t ids < <(docker ps -aq")
+end=source.index("\n[[ ",start)
+snippet=source[start:end]
+harness=r"""
+set -Eeuo pipefail
+BOOT_PROJECT=test-production
+docker() {
+  [[ "$#" -eq 6 && "$1" == ps && "$2" == -aq &&
+     "$3" == --filter &&
+     "$4" == label=com.docker.compose.project=test-production &&
+     "$5" == --filter &&
+     "$6" == label=com.docker.compose.service=anyflip-web ]] || return 87
+  printf '%s\n' 'synthetic-container-id'
+}
+""" + snippet + """
+[[ ${#ids[@]} -eq 1 && "${ids[0]}" == synthetic-container-id ]]
+"""
+result=subprocess.run(["bash","-c",harness],capture_output=True,text=True)
+if result.returncode:
+    raise SystemExit("SVELTE_BOOT_DOCKER_FILTER_REGRESSION=FAIL\n"+result.stderr)
+print("SVELTE_BOOT_DOCKER_FILTER_REGRESSION=PASS")
+PY
