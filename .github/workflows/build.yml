@@ -108,7 +108,8 @@ jobs:
         assert s.get("volumes"), "job storage must survive"
         print("SVELTE_BOOT_COMPOSE_CONTRACT=PASS")
         '
-        grep -q '^Requires=docker.service anyflip-quota.service        bash -n scripts/gh-repo-standards.sh
+        python3 -c "from pathlib import Path; s=Path('deploy/systemd/rcat-anyflip-svelte-boot.service').read_text(); assert 'Requires=docker.service anyflip-quota.service' in s; assert 'After=docker.service anyflip-quota.service' in s; print('SVELTE_BOOT_UNIT_ORDER=PASS')"
+        bash -n scripts/gh-repo-standards.sh
         bash -n scripts/gh-security-hardening.sh
         python3 -m py_compile scripts/check-google-auth-compose.py scripts/test-google-auth-compose.py
         python3 -m unittest discover -s tests -p 'test_attested_stage_archive.py' -q
