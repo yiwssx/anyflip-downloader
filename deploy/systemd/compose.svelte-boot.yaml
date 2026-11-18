@@ -3,7 +3,7 @@
 services:
   anyflip-web:
     image: "${RCAT_SVELTE_IMAGE:?approved Svelte image required}"
-    build: null
+    build: !reset null
     restart: "no"
     environment:
       ANYFLIP_WEB_UI: svelte
