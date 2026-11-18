@@ -23,6 +23,7 @@ systemctl is-active --quiet anyflip-quota.service ||
   die "hard-quota-service-not-active"
 [[ -f "$src/scripts/reconcile-svelte-boot.sh" &&
    -f "$src/deploy/systemd/rcat-anyflip-svelte-boot.service" &&
+   -f "$src/deploy/systemd/compose.svelte-boot.yaml" &&
    -f "$src/scripts/verify-svelte-ui.sh" ]] || die "release-files-missing"
 [[ -z "$(git -C "$src" status --porcelain --untracked-files=no -- scripts/reconcile-svelte-boot.sh scripts/install-svelte-boot.sh deploy/systemd/rcat-anyflip-svelte-boot.service scripts/verify-svelte-ui.sh)" ]] ||
   die "unreviewed-boot-script-modifications"
@@ -100,18 +101,10 @@ trap 'rm -rf -- "$tmp"' EXIT
   printf 'BOOT_MOUNTS=%q\n' "$mounts"
   printf 'BOOT_PORT=%q\n' "$port"
 } > "$tmp/active.env"
-cat > "$tmp/compose.pinned.yaml" <<EOF
-# Managed by RCAT AnyFlip — pinned image, never rebuild on boot.
-services:
-  anyflip-web:
-    image: "$tag"
-    build: null
-    restart: "no"
-    environment:
-      ANYFLIP_WEB_UI: svelte
-EOF
+install -m 0600 "$src/deploy/systemd/compose.svelte-boot.yaml" "$tmp/compose.pinned.yaml"
 chmod 600 "$tmp/active.env" "$tmp/compose.pinned.yaml"
 
+export RCAT_SVELTE_IMAGE="$tag"
 # Verify merged config without printing its Google OAuth secrets.
 docker compose --project-directory "$host" -p "$project" \
   --env-file "$host/.env" \
