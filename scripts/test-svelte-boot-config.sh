@@ -46,7 +46,9 @@ from pathlib import Path
 unit=Path("deploy/systemd/rcat-anyflip-svelte-boot.service").read_text()
 assert "Requires=docker.service anyflip-quota.service" in unit
 assert "After=docker.service anyflip-quota.service" in unit
-assert "ExecStart=/usr/local/libexec/rcat-anyflip-svelte-boot.sh ensure" in unit
+assert "ExecStart=/usr/local/libexec/rcat-anyflip-svelte-boot.sh check" in unit
+assert "ExecStart=/usr/local/libexec/rcat-anyflip-svelte-boot.sh ensure" not in unit
+print("SVELTE_BOOT_NON_MUTATING_STARTUP=PASS")
 assert "WantedBy=multi-user.target" in unit
 print("SVELTE_BOOT_SYSTEMD_ORDER=PASS")
 PY
