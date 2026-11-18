@@ -109,7 +109,12 @@ if [[ "$phase" == --prepare ]]; then
   [[ "$(docker image inspect -f '{{index .Config.Labels "th.ac.rcat.anyflip.frontend"}}' "$stage")" == "svelte-only" ]] ||
     fail "candidate-not-svelte-only"
   new_tag="rcat-anyflip-svelte:boot-${revision:0:12}-${image_id:7:12}"
-  docker image tag "$image_id" "$new_tag"
+  if docker image inspect "$new_tag" >/dev/null 2>&1; then
+    [[ "$(docker image inspect -f '{{.Id}}' "$new_tag")" == "$image_id" ]] ||
+      fail "immutable-release-tag-already-used-by-different-image"
+  else
+    docker image tag "$image_id" "$new_tag"
+  fi
   tmp="$(mktemp "$state/.candidate.XXXXXX")"
   chmod 600 "$tmp"
   {
