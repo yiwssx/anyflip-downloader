@@ -1,0 +1,9 @@
+# Managed by RCAT AnyFlip — validated pinned Svelte runtime only.
+# RCAT_SVELTE_IMAGE must be exported from an operator-approved immutable image.
+services:
+  anyflip-web:
+    image: "${RCAT_SVELTE_IMAGE:?approved Svelte image required}"
+    build: null
+    restart: "no"
+    environment:
+      ANYFLIP_WEB_UI: svelte
