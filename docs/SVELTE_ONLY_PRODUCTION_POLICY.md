@@ -37,13 +37,21 @@ server-side RBAC, CLI download behavior, PDF/history/quota and Cloudflare
 routing are unchanged.
 
 The runtime binary is self-contained and includes the correct Vite
-assets; no Node process is needed after build. Its OCI label
+assets; no Node process is needed after build. The production build-tagged
+`web_assets_svelte_only.go` embeds only the Vite Svelte bundle and the
+official institutional logo/favicon. Unlike the plain Go compatibility build,
+it **does not embed legacy HTML, JavaScript or CSS at all**. Retired
+`/app.js`, `/tokens.css`, `/admin.js` and related static routes return
+404 in Svelte mode; Google OAuth and RBAC API routes remain active.
+
+Its OCI label
 `th.ac.rcat.anyflip.frontend=svelte-only` can be inspected without
 exposing an OAuth secret. The default, plain Go build and legacy HTML
-assets are temporarily retained **only** to avoid invalidating
-pre-existing CLI/Go tests; they are not an allowed frontend for the new
-Svelte-only production image. This change is not physical deletion of
-every historical legacy UI file or Git history.
+assets are retained **in the Git source tree and default local test build**
+only to avoid invalidating pre-existing CLI/Go tests. They are **excluded
+from the Svelte-only production binary** and cannot be selected or served
+by its HTTP UI. This change does not erase Git history or delete those
+local testing fixtures.
 
 ## Release order (do NOT reuse the old image as proof of this policy)
 
