@@ -42,6 +42,7 @@ actual_image="$(docker image inspect --format '{{.Id}}' "$BOOT_IMAGE_TAG")"
 actual_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$BOOT_IMAGE_TAG")"
 [[ "$actual_revision" == "$BOOT_SOURCE_SHA" ]] || die "pinned-source-mismatch"
 
+export RCAT_SVELTE_IMAGE="$BOOT_IMAGE_TAG"
 compose=(docker compose --project-directory "$BOOT_HOST" -p "$BOOT_PROJECT"
   --env-file "$BOOT_HOST/.env"
   -f "$BOOT_HOST/compose.web.yaml"
@@ -93,10 +94,12 @@ verify() {
 running="$(docker inspect --format '{{.State.Running}}' "$cid")"
 if [[ "$old_id" == "$BOOT_IMAGE_ID" && "$old_mode" == svelte && "$running" == true ]]; then
   # The common reboot path is NO-OP: never recreate a healthy matching service.
-  verify "$cid" || die "correct-image-but-http-or-health-failed"
-  echo "SVELTE_BOOT=PASS"
-  echo "SVELTE_BOOT_ACTION=NOOP"
-  exit 0
+  if verify "$cid"; then
+    echo "SVELTE_BOOT=PASS"
+    echo "SVELTE_BOOT_ACTION=NOOP"
+    exit 0
+  fi
+  [[ "$action" == ensure ]] || die "pinned-image-unhealthy-no-mutation"
 fi
 if [[ "$action" == check ]]; then
   echo "SVELTE_BOOT=DRIFT_DETECTED"
@@ -124,7 +127,6 @@ services:
     environment:
       ANYFLIP_WEB_UI: "$old_mode"
 EOF
-old_compose=("${compose[@]:0:${#compose[@]}-2}" -f "$tmp/rollback.yaml")
 # Use the existing base+quota, never the Svelte pinned overlay for rollback.
 old_compose=(docker compose --project-directory "$BOOT_HOST" -p "$BOOT_PROJECT"
   --env-file "$BOOT_HOST/.env"
