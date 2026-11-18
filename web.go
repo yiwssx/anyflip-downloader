@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/subtle"
-	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,9 +18,6 @@ import (
 	"sync"
 	"time"
 )
-
-//go:embed web/index.html web/tokens.css web/style.css web/readability.css web/admin.css web/workspace.js web/app.js web/google.html web/google.js web/admin-api.js web/admin.js web/favicon.svg web/logo.svg web/svelte
-var webUI embed.FS
 
 var jobIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 
@@ -156,6 +152,7 @@ func (s *webServer) handler() http.Handler {
 	mux.HandleFunc("GET /logo.svg", func(w http.ResponseWriter, _ *http.Request) {
 		serveEmbeddedWebAsset(w, "web/logo.svg", "image/svg+xml")
 	})
+	if s.frontendMode == "legacy" {
 	mux.HandleFunc("GET /tokens.css", func(w http.ResponseWriter, _ *http.Request) {
 		serveEmbeddedWebAsset(w, "web/tokens.css", "text/css; charset=utf-8")
 	})
@@ -175,7 +172,9 @@ func (s *webServer) handler() http.Handler {
 			serveEmbeddedWebAsset(w, "web/app.js", "text/javascript; charset=utf-8")
 		}
 	})
+	}
 	if s.google != nil {
+		if s.frontendMode == "legacy" {
         // The asset itself is public; RBAC still protects all admin data APIs.
         // Serve in Google mode even when the role feature is disabled so the
         // bundled SSO page never requests a missing script.
@@ -188,6 +187,7 @@ func (s *webServer) handler() http.Handler {
         mux.HandleFunc("GET /admin.js",func(w http.ResponseWriter,_ *http.Request) {
             serveEmbeddedWebAsset(w,"web/admin.js","text/javascript; charset=utf-8")
         })
+		}
 		mux.HandleFunc("GET /auth/google", s.google.start)
 		mux.HandleFunc("GET /auth/google/callback", s.google.callback)
 		mux.HandleFunc("GET /auth/me", s.google.me)
