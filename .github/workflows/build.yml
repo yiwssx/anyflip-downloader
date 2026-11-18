@@ -89,6 +89,8 @@ jobs:
         bash -n scripts/test-tunnel-ingress.sh
         bash scripts/test-tunnel-ingress.sh
         bash -n scripts/preflight-google-cutover.sh
+        # Svelte boot mode is image-pinned and must not restore legacy after reboot.
+        bash scripts/test-svelte-boot-config.sh
         bash -n scripts/gh-repo-standards.sh
         bash -n scripts/gh-security-hardening.sh
         python3 -m py_compile scripts/check-google-auth-compose.py scripts/test-google-auth-compose.py
