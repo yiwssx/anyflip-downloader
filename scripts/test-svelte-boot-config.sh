@@ -7,6 +7,8 @@ bash -n scripts/install-svelte-boot.sh
 bash -n scripts/reconcile-svelte-boot.sh
 bash -n scripts/install-svelte-boot-readonly-guard.sh
 bash -n scripts/test-svelte-boot-config.sh
+bash -n scripts/install-svelte-quota-startup.sh
+bash -n scripts/apply-svelte-quota-startup.sh
 
 # Without a pinned approved Svelte image, this configuration must fail closed.
 if env -u RCAT_SVELTE_IMAGE docker compose \
@@ -84,4 +86,34 @@ result=subprocess.run(["bash","-c",harness],capture_output=True,text=True)
 if result.returncode:
     raise SystemExit("SVELTE_BOOT_DOCKER_FILTER_REGRESSION=FAIL\n"+result.stderr)
 print("SVELTE_BOOT_DOCKER_FILTER_REGRESSION=PASS")
+PY
+
+# The permanent fix changes the ORIGINAL quota unit, not another boot
+# service. Synthetic contract: source must preserve quota readiness and
+# bind/mount identity, pin one image, and never restart a live service while
+# merely installing its systemd drop-in.
+python3 - <<'PY'
+from pathlib import Path
+installer=Path("scripts/install-svelte-quota-startup.sh").read_text()
+apply=Path("scripts/apply-svelte-quota-startup.sh").read_text()
+for token in (
+  "ExecStartPre=/usr/local/sbin/anyflip-quota-ready",
+  "RequiresMountsFor=/mnt/anyflip-quota-stage",
+  "BindsTo=mnt-anyflip",
+  "systemctl daemon-reload",
+  "Environment=RCAT_SVELTE_IMAGE=$BOOT_IMAGE_TAG",
+  "ExecStart=/usr/bin/docker compose --project-directory $host -p $BOOT_PROJECT",
+  "-f $state/compose.pinned.yaml up --no-build --no-color anyflip-web",
+  "-f $state/compose.pinned.yaml stop anyflip-web",
+  '[[ "$(systemctl is-enabled rcat-anyflip-svelte-boot.service || true)" == disabled ]]',
+):
+    assert token in installer, f"Permanent quota startup guard missing: {token}"
+assert "systemctl restart anyflip-quota.service" not in installer, "installer must not restart production"
+assert "docker compose down" not in installer
+assert "systemctl restart anyflip-quota.service" in apply, "controlled cutover missing"
+assert '[[ "$#" -eq 2 && "$2" == --apply ]]' in apply, "apply must require explicit operator flag"
+assert "docker compose down" not in apply
+assert "docker image rm" not in apply
+assert "docker volume" not in apply
+print("SVELTE_ORIGINAL_QUOTA_STARTUP_CONTRACT=PASS")
 PY
