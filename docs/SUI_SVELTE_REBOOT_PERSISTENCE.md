@@ -14,7 +14,7 @@
 The operator installs **one** small root-only, `systemd` oneshot service **after** confirming the actual currently working production Svelte UI. This creates:
 
 - `/etc/rcat-anyflip-svelte/active.env` (0600, metadata only: original immutable image ID, source SHA, Compose project, mount identity and bind).
-- `/etc/rcat-anyflip-svelte/compose.pinned.yaml` (0600, immutable-local-image reference with `build: null`, `restart: "no"`, `ANYFLIP_WEB_UI: svelte`).
+- `/etc/rcat-anyflip-svelte/compose.pinned.yaml` (0600, immutable-local-image reference with `build: !reset null`, `restart: "no"`, `ANYFLIP_WEB_UI: svelte`).
 - Local image tag `rcat-anyflip-svelte:boot-<source>-<image>` pointing to the **existing running image**; no download, rebuild or pull.
 - `/usr/local/libexec/rcat-anyflip-svelte-boot.sh` and a local copy of the previously accepted `verify-svelte-ui.sh`.
 - `rcat-anyflip-svelte-boot.service`, enabled at `multi-user.target`, with `Requires/After=docker.service anyflip-quota.service`.
