@@ -35,6 +35,13 @@ jobs:
     - name: Build
       run: go build -v ./...
 
+    - name: Validate Svelte-only production build
+      run: |
+        go build -tags=svelte_only ./...
+        grep -Fq 'go build -tags=svelte_only' Dockerfile.svelte
+        go test -tags=svelte_only -run '^TestSvelteOnlyProductionDoesNotEmbedLegacyAssets$' ./...
+        go test -run '^TestSvelteOnlyProductionNeverFallsBackToLegacy$' ./...
+
     - name: Verify dependency module hashes
       run: go mod verify
 
