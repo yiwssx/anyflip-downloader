@@ -35,6 +35,148 @@ jobs:
     - name: Build
       run: go build -v ./...
 
+    - name: Validate Svelte-only production build
+      run: |
+        go build -tags=svelte_only ./...
+        grep -Fq 'go build -tags=svelte_only' Dockerfile.svelte
+        go test -run '^TestSvelteOnlyProductionNeverFallsBackToLegacy
+      run: go mod verify
+
+    - name: Validate repository agent skills
+      run: python3 scripts/validate-agent-skills.py
+
+    - name: Validate repository governance policy
+      run: python3 scripts/check-repository-policy.py
+
+    - name: Enforce frontend asset and CSP invariants
+      run: node scripts/check-frontend-policy.mjs
+
+    - name: Check embedded Web JavaScript syntax
+      run: |
+        node --check web/workspace.js
+        node --check web/app.js
+        node --check web/google.js
+        node --check web/admin-api.js
+        node --check web/admin.js
+
+    - name: Vet
+      run: go vet ./...
+
+    - name: Test
+      run: go test -v ./...
+
+    - name: Race Test
+      run: go test -race ./...
+
+    - name: Go reachable vulnerability scan
+      run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  docker-smoke:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        persist-credentials: false
+
+    - name: Check portable deployment script syntax
+      run: |
+        sh -n scripts/verify-web-deployment.sh
+        sh -n scripts/prepare-signed-web-staging.sh
+        sh -n deploy/staging/isolated-anyflip.sh
+        sh -n deploy/staging/anyflip-fixed-hook.sh
+        bash -n scripts/install-restricted-staging-hook.sh
+        sh -n scripts/verify-host-readiness.sh
+        bash -n scripts/start-tunnel-ingress.sh
+        bash -n scripts/verify-tunnel-ingress.sh
+        bash -n scripts/test-tunnel-ingress.sh
+        bash scripts/test-tunnel-ingress.sh
+        bash -n scripts/preflight-google-cutover.sh
+        # Svelte boot mode is image-pinned and must not restore legacy after reboot.
+        bash scripts/test-svelte-boot-config.sh
+        bash -n scripts/gh-repo-standards.sh
+        bash -n scripts/gh-security-hardening.sh
+        python3 -m py_compile scripts/check-google-auth-compose.py scripts/test-google-auth-compose.py
+        python3 -m unittest discover -s tests -p 'test_attested_stage_archive.py' -q
+        python3 -m unittest discover -s tests -p 'test_stage_version_pair.py' -q
+        python3 -m unittest discover -s tests -p 'test_signed_pair_intake.py' -q
+        python3 -m unittest discover -s tests -p 'test_stopped_stage_snapshot.py' -q
+        python3 -m py_compile deploy/staging/stopped-stage-snapshot.py
+        python3 -m unittest discover -s tests -p 'test_versioned_stage_hook.py' -q
+        python3 -m py_compile deploy/staging/anyflip-versioned-fixed-hook.py
+        python3 scripts/test-google-auth-compose.py
+        node --check web/google.js
+        # Google-mode Compose must validate WITHOUT ANYFLIP_WEB_TOKEN.
+        ANYFLIP_WEB_TOKEN= ANYFLIP_AUTH_MODE=google GOOGLE_CLIENT_ID=12345-synthetic.apps.googleusercontent.com GOOGLE_CLIENT_SECRET=ci-synthetic GOOGLE_REDIRECT_URI=https://anyflip.rcat.ac.th/auth/google/callback docker compose -f compose.web.yaml config --quiet
+        # Validate isolated tunnel Compose configuration without starting its connector.
+        RCAT_ANYFLIP_TUNNEL_TOKEN=ci-synthetic-no-privileges docker compose -f compose.tunnel.yaml config --quiet
+
+    - name: Build and run non-root container
+      env:
+        # CI-only token: not used by any real deployment.
+        ANYFLIP_WEB_TOKEN: ci-only-temporary-token-20261023-strong
+      shell: bash
+      run: |
+        set -euo pipefail
+        cleanup() {
+          docker compose -f compose.web.yaml logs --tail=80 || true
+          # The Actions runner is ephemeral; this deliberately deletes only CI volumes.
+          docker compose -f compose.web.yaml down -v --remove-orphans || true
+        }
+        trap cleanup EXIT
+
+        docker compose -f compose.web.yaml config --quiet
+        docker compose -f compose.web.yaml up --detach --build
+
+        check_ready() {
+          local ok=0
+          for _ in {1..45}; do
+            if curl --fail --silent --show-error --max-time 2 http://127.0.0.1:8094/healthz >/dev/null 2>&1; then
+              ok=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ok" != 1 ]; then
+            echo "Web service did not become healthy within 90 seconds" >&2
+            docker compose -f compose.web.yaml ps || true
+            return 1
+          fi
+        }
+
+        check_ready
+        BASE_URL=http://127.0.0.1:8094 sh scripts/verify-web-deployment.sh
+
+        # CI-only crash simulation on the disposable named volume.
+        # No real book content, operator host or mounted host volume is touched.
+        docker compose -f compose.web.yaml exec -T anyflip-web sh -ec '
+          cd /data/jobs
+          mkdir .anyflip-pdf-stage-ci20261029
+          printf "CI synthetic staged PDF" > .anyflip-pdf-stage-ci20261029/result.pdf
+          touch -t 202001010000 .anyflip-pdf-stage-ci20261029/result.pdf
+          touch -t 202001010000 .anyflip-pdf-stage-ci20261029
+          mkdir .anyflip-pdf-stage-fresh2026
+        '
+        container_id="$(docker compose -f compose.web.yaml ps -q anyflip-web)"
+        docker kill --signal=KILL "$container_id"
+        docker compose -f compose.web.yaml up --detach --no-deps anyflip-web
+        check_ready
+        docker compose -f compose.web.yaml exec -T anyflip-web sh -ec '
+          test ! -e /data/jobs/.anyflip-pdf-stage-ci20261029
+          test -d /data/jobs/.anyflip-pdf-stage-fresh2026
+        '
+        echo "PASS: crash-orphan PDF stage reclaimed without deleting fresh stage"
+
+        # A read-only, token-free host preflight against the CI runner only.
+        BASE_URL=http://127.0.0.1:8094 sh scripts/verify-host-readiness.sh
+
+        # Verify API/health remain available after a real container restart.
+        docker compose -f compose.web.yaml restart anyflip-web
+        check_ready
+        BASE_URL=http://127.0.0.1:8094 sh scripts/verify-web-deployment.sh
+ ./...
+
     - name: Verify dependency module hashes
       run: go mod verify
 
