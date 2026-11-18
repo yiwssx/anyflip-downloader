@@ -117,3 +117,37 @@ assert "docker image rm" not in apply
 assert "docker volume" not in apply
 print("SVELTE_ORIGINAL_QUOTA_STARTUP_CONTRACT=PASS")
 PY
+
+# 2026-11-18 Host regression: systemctl reset-failed may return nonzero
+# because the already-disabled guard is no longer loaded by systemd.
+# Execute the actual cleanup / fail-closed disabled checks with a mock
+# systemctl; no production service is invoked.
+python3 - <<'PY'
+from pathlib import Path
+import subprocess
+source=Path("scripts/install-svelte-boot-readonly-guard.sh").read_text()
+begin=source.index("systemctl daemon-reload\n",source.index("# Disable the old force-recreate unit"))
+end=source.index("grep -Fq 'ExecStart=/usr/local/libexec/",begin)
+snippet=source[begin:end]
+mock=r"""
+set -Eeuo pipefail
+die() { echo "fail: $*" >&2; exit 90; }
+systemctl() {
+ case "$1" in
+  daemon-reload) return 0 ;;
+  reset-failed) echo "Unit not loaded" >&2; return 5 ;;
+  is-enabled) printf '%s\n' disabled; return 0 ;;
+  *) return 99 ;;
+ esac
+}
+"""
+result=subprocess.run(["bash","-c",mock+snippet],capture_output=True,text=True)
+if result.returncode:
+    raise SystemExit("SVELTE_BOOT_UNLOADED_UNIT_REGRESSION=FAIL\n"+result.stderr)
+assert 'enabled="$(systemctl is-enabled' in snippet
+print("SVELTE_BOOT_UNLOADED_UNIT_REGRESSION=PASS")
+quota=Path("scripts/install-svelte-quota-startup.sh").read_text()
+assert 'candidate="$(mktemp "$dropdir/.90-svelte-pinned.conf.XXXXXX")"' in quota
+assert 'mv -T -- "$candidate" "$dropin"' in quota
+print("SVELTE_QUOTA_ATOMIC_DROPIN=PASS")
+PY
