@@ -28,9 +28,18 @@ systemctl is-active --quiet anyflip-quota.service ||
 [[ -z "$(git -C "$src" status --porcelain --untracked-files=no -- scripts/reconcile-svelte-boot.sh scripts/install-svelte-boot.sh deploy/systemd/rcat-anyflip-svelte-boot.service scripts/verify-svelte-ui.sh)" ]] ||
   die "unreviewed-boot-script-modifications"
 
+# A separate isolated Staging instance may use the same Compose service
+# label. Select the canonical production LAN port, never a staging container.
 mapfile -t ids < <(docker ps -q --filter label=com.docker.compose.service=anyflip-web)
-[[ "${#ids[@]}" -eq 1 ]] || die "expected-one-running-anyflip-service"
-cid="${ids[0]}"
+production_ids=()
+for possible in "${ids[@]}"; do
+  candidate_port="$(docker inspect --format '{{range (index .HostConfig.PortBindings "8080/tcp")}}{{.HostIp}}:{{.HostPort}}{{end}}' "$possible")"
+  case "$candidate_port" in
+    10.10.1.100:8094|127.0.0.1:8094) production_ids+=("$possible") ;;
+  esac
+done
+[[ "${#production_ids[@]}" -eq 1 ]] || die "expected-one-production-service-on-port-8094"
+cid="${production_ids[0]}"
 project="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$cid")"
 [[ "$project" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || die "missing-project-identity"
 mode="$(docker inspect --format '{{range .Config.Env}}{{if eq . "ANYFLIP_WEB_UI=svelte"}}yes{{end}}{{end}}' "$cid")"
